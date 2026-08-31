@@ -1,0 +1,6 @@
+{
+  "name": "packaging",
+  "description": "Create, rename, audit, and refactor agent skill marketplace repos",
+  "version": "0.1.0",
+  "contextFileName": "GEMINI.md"
+}

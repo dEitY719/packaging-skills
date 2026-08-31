@@ -1,0 +1,20 @@
+{
+  "name": "packaging",
+  "description": "Build and maintain agent skill marketplace repos: scaffold a new one, rename it to convention, audit its layout, and refactor it into shape",
+  "version": "0.1.0",
+  "author": {
+    "name": "dEitY719",
+    "url": "https://github.com/dEitY719"
+  },
+  "homepage": "https://github.com/dEitY719/packaging-skills",
+  "repository": "https://github.com/dEitY719/packaging-skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "plugin",
+    "marketplace",
+    "packaging",
+    "scaffolding",
+    "refactoring"
+  ]
+}

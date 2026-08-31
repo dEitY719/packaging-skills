@@ -1,0 +1,20 @@
+{
+  "name": "packaging-skills",
+  "interface": {
+    "displayName": "Packaging Skills"
+  },
+  "plugins": [
+    {
+      "name": "packaging",
+      "source": {
+        "source": "url",
+        "url": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "packaging",
+  "version": "0.1.0",
+  "description": "Build and maintain agent skill marketplace repos: scaffold a new one, rename it to convention, audit its layout, and refactor it into shape.",
+  "author": {
+    "name": "dEitY719",
+    "url": "https://github.com/dEitY719"
+  },
+  "homepage": "https://github.com/dEitY719/packaging-skills",
+  "repository": "https://github.com/dEitY719/packaging-skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "plugin",
+    "marketplace",
+    "packaging",
+    "scaffolding",
+    "refactoring",
+    "audit"
+  ],
+  "skills": "./skills/",
+  "hooks": {},
+  "interface": {
+    "displayName": "Packaging",
+    "shortDescription": "Create, rename, audit, and refactor agent skill marketplace repos",
+    "longDescription": "Packaging bundles the four skills used to build and maintain skill marketplace repos: create scaffolds a new repo end to end, rename-repo moves an existing one onto the naming convention and fixes every hardcoded reference, structure-check audits a repo's layout read-only, and structure-refactor applies the fixes.",
+    "developerName": "dEitY719",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Package these skills into a new plugin marketplace repo.",
+      "Check this plugin repo's structure."
+    ],
+    "websiteURL": "https://github.com/dEitY719/packaging-skills",
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}

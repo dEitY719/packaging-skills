@@ -1,0 +1,34 @@
+{
+  "name": "packaging",
+  "version": "0.1.0",
+  "description": "Build and maintain agent skill marketplace repos: scaffold, rename, audit, refactor.",
+  "author": {
+    "name": "dEitY719",
+    "url": "https://github.com/dEitY719"
+  },
+  "homepage": "https://github.com/dEitY719/packaging-skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "plugin",
+    "marketplace",
+    "packaging",
+    "scaffolding",
+    "refactoring",
+    "audit"
+  ],
+  "skills": "./skills/",
+  "skillInstructions": "Kimi Code tool mapping for packaging skills:\n\n- When a packaging skill says to ask the user, ask for confirmation before a destructive step (repo rename, push, `--apply`), or present options, call Kimi Code's `AskUserQuestion` tool. Do not render those choices as plain assistant text unless `AskUserQuestion` is unavailable or the session is in auto permission mode.\n- When a packaging skill refers to `TodoWrite`, use Kimi Code's `TodoList` tool.\n- When a skill asks to dispatch a subagent, use Kimi Code's `Agent` tool with a Kimi subagent type; do not pass `general-purpose` as `subagent_type`. Use `subagent_type: \"coder\"` for implementation and `subagent_type: \"explore\"` for read-only repo exploration.\n- Use Kimi Code's `Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob` tools by their actual exposed names. Search file contents with `Grep`; find files by path pattern with `Glob`.\n- `structure-check` is read-only: never call `Write`, `Edit`, or a mutating `Bash` command from it. `structure-refactor` is dry-run unless the user passed `--apply`.",
+  "interface": {
+    "displayName": "Packaging",
+    "shortDescription": "Create, rename, audit, and refactor agent skill marketplace repos",
+    "longDescription": "Packaging bundles the four skills used to build and maintain skill marketplace repos: create, rename-repo, structure-check, and structure-refactor.",
+    "developerName": "dEitY719",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/dEitY719/packaging-skills"
+  }
+}

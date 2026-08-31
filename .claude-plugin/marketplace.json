@@ -1,0 +1,20 @@
+{
+  "name": "packaging-skills",
+  "description": "Claude plugin packaging skills — create, rename, audit, and refactor skill marketplace repos",
+  "owner": {
+    "name": "dEitY719",
+    "url": "https://github.com/dEitY719"
+  },
+  "plugins": [
+    {
+      "name": "packaging",
+      "description": "Build and maintain agent skill marketplace repos: scaffold a new one, rename it to convention, audit its layout, and refactor it into shape",
+      "version": "0.1.0",
+      "source": "./",
+      "author": {
+        "name": "dEitY719",
+        "url": "https://github.com/dEitY719"
+      }
+    }
+  ]
+}
