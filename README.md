@@ -93,13 +93,23 @@ first because it holds the tooling used to split out the rest.
 
 ## CI
 
-[`.github/workflows/validate.yml`](.github/workflows/validate.yml) validates the
-manifests, the skill frontmatter, and version agreement across manifests.
+[`.github/workflows/validate.yml`](.github/workflows/validate.yml) is a thin
+caller. The checks themselves — manifests, skill frontmatter, progressive
+disclosure, the Codex description budget, version agreement, shell scripts —
+live once in
+[`dEitY719/harness-skills`](https://github.com/dEitY719/harness-skills)'
+reusable `skill-check.yml` workflow, which every split-out skill repo calls:
 
-It is currently a self-contained workflow. Once the shared `harness-skills` repo
-exists, this should be converted to call its reusable workflow instead, so all
-the split-out skill repos validate identically from one definition. That
-conversion is deliberately deferred — tracked as a follow-up.
+```yaml
+jobs:
+  validate:
+    uses: dEitY719/harness-skills/.github/workflows/skill-check.yml@main
+    with:
+      plugin-name: packaging
+```
+
+To change what is checked, edit that workflow, not this repo. This resolves the
+follow-up this README previously flagged (dotfiles #1410 D-10 / #1638 NF-2).
 
 ## License
 
