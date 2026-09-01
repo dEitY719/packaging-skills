@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>structure-refactor 사용 결과 — packaging</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { interpolate-size: allow-keywords; }
+
+    /* ===== THEMES (class-based ONLY — no @media prefers-color-scheme) ===== */
+    html.theme-dark {
+      --bg: #0A0A0A; --surface: #141414; --surface-hover: #1C1C1C;
+      --border: rgba(255,255,255,0.04);
+      --text: #EDEDED; --text-secondary: #888;
+      --accent: #3b82f6; --accent-secondary: #8b5cf6;
+      --positive: #10b981; --negative: #f43f5e; --warning: #f59e0b;
+    }
+    html.theme-light {
+      --bg: #FAFAF9; --surface: #FFFFFF; --surface-hover: #F5F5F4;
+      --border: rgba(0,0,0,0.06);
+      --text: #0f172a; --text-secondary: #64748b;
+      --accent: #2563eb; --accent-secondary: #7c3aed;
+      --positive: #059669; --negative: #e11d48; --warning: #d97706;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.01em; font-feature-settings: 'cv11', 'ss01';
+      transition: background 0.3s, color 0.3s;
+      scrollbar-gutter: stable;
+      overflow-x: hidden;
+    }
+    h1,h2,h3,h4,h5,h6 {
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+    h1 { font-weight: 700; }
+    h2 { font-weight: 600; }
+    body, p, li, td, th, span, label { font-weight: 400; }
+    p,li,td,th,span,label { color: var(--text); }
+    .text-secondary { color: var(--text-secondary); }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px;
+      transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+    /* ===== ANIMATIONS (CSS-first — always reliable) ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .animate { animation: fadeInUp 0.6s ease-out both; }
+    .animate.delay-1 { animation-delay: 0.1s; }
+    .animate.delay-2 { animation-delay: 0.2s; }
+    .animate.delay-3 { animation-delay: 0.3s; }
+    .animate.delay-4 { animation-delay: 0.4s; }
+    .animate.delay-5 { animation-delay: 0.5s; }
+    .animate.delay-6 { animation-delay: 0.6s; }
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      body { background: white !important; color: black !important; }
+      .viz-menu, .reveal { display: revert; opacity: 1 !important; transform: none !important; }
+      .card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+      * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+    @page { margin: 1in; @bottom-center { content: "Page " counter(page); font-size: 9pt; color: #666; } }
+
+    /* ===== MENU ===== */
+    .viz-menu { position: fixed; top: 16px; right: 16px; z-index: 9999; }
+    .viz-menu-toggle {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(12px); transition: all 0.2s;
+    }
+    .viz-menu-toggle:hover { background: var(--surface-hover); }
+    .viz-menu-dropdown {
+      position: absolute; top: 52px; right: 0; min-width: 200px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px;
+      opacity: 0; visibility: hidden; transform: translateY(-8px);
+      transition: all 0.2s; backdrop-filter: blur(16px);
+    }
+    .viz-menu-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+    .viz-menu-dropdown button {
+      width: 100%; padding: 10px 14px; border: none; border-radius: 8px;
+      background: transparent; color: var(--text); font-size: 14px;
+      font-family: inherit; cursor: pointer; text-align: left;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+    }
+    .viz-menu-dropdown button:hover { background: var(--surface-hover); }
+
+    /* ===== SKIP TO CONTENT (accessibility) ===== */
+    .skip-to-content {
+      position: absolute; top: -40px; left: 6px; background: var(--accent);
+      color: white; padding: 8px 12px; text-decoration: none;
+      border-radius: 4px; opacity: 0; pointer-events: none;
+      transition: all 0.2s; z-index: 10000;
+    }
+    .skip-to-content:focus { top: 6px; opacity: 1; pointer-events: auto; }
+
+    /* ===== DETAILS ACCORDION ===== */
+    details { overflow: hidden; }
+    details summary { cursor: pointer; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    ::details-content {
+      transition: block-size 0.3s ease, opacity 0.3s ease;
+      block-size: 0; opacity: 0; overflow: hidden;
+    }
+    details[open]::details-content { block-size: auto; opacity: 1; }
+
+    /* ===== POPOVER ===== */
+    [popover] {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2); color: var(--text);
+    }
+    [popover]::backdrop { background: rgba(0,0,0,0.3); }
+
+    /* ===== ADD YOUR STYLES BELOW ===== */
+    main#main-content { --doc-accent: var(--accent-secondary); }
+
+    .shell { max-width: 1100px; margin: 0 auto; padding: 64px 24px; }
+
+    /* Hero */
+    header.hero { margin-bottom: 72px; }
+    .eyebrow {
+      color: var(--text-secondary); text-transform: uppercase;
+      letter-spacing: 0.22em; font-size: 0.8125rem; font-weight: 600;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+    }
+    header.hero h1 {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+      font-weight: 700; font-size: clamp(2.2rem, 6.4vw, 3.5rem);
+      margin: 14px 0 0; word-break: break-word;
+    }
+    header.hero h1 .suffix {
+      font-family: 'Inter', 'Noto Sans KR', sans-serif; font-weight: 700;
+      color: var(--text-secondary); display: block; font-size: 0.5em; margin-top: 10px;
+      letter-spacing: -0.02em;
+    }
+    .hero-rule {
+      width: 96px; height: 4px; border-radius: 2px;
+      background: var(--doc-accent); margin: 22px 0 24px;
+    }
+    .lead { font-size: 1.125rem; color: var(--text-secondary); max-width: 62ch; }
+    .lead code { color: var(--text); }
+
+    section { margin-bottom: 64px; }
+    section > h2 { font-size: clamp(2rem, 4vw, 2.25rem); margin-bottom: 8px; }
+    .sec-kicker { color: var(--text-secondary); font-size: 0.9375rem; margin-bottom: 28px; max-width: 68ch; }
+    .sec-num {
+      display: inline-block; font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.8125rem; font-weight: 700; color: var(--doc-accent);
+      letter-spacing: 0.12em; margin-bottom: 10px;
+    }
+
+    code.inline {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.9em; background: var(--surface-hover);
+      border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px;
+    }
+    pre.code {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--doc-accent);
+      border-radius: 8px; padding: 20px 22px; overflow-x: auto;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+      font-size: 0.9375rem; line-height: 1.8; color: var(--text);
+      white-space: pre;
+    }
+
+    /* Pipeline strip */
+    .pipe { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; }
+    .pipe-node {
+      flex: 1 1 220px; min-width: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: 3px solid var(--doc-accent);
+      border-radius: 8px; padding: 18px 20px;
+      transition: box-shadow 0.2s ease;
+    }
+    .pipe-node:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .pipe-node .p-idx {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; color: var(--doc-accent);
+    }
+    .pipe-node .p-title {
+      display: block; margin-top: 8px; font-weight: 600; font-size: 1.0625rem;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    .pipe-node .p-sub { display: block; margin-top: 6px; color: var(--text-secondary); font-size: 0.875rem; }
+    .pipe-arrow {
+      align-self: center; color: var(--text-secondary);
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace; font-size: 1.25rem;
+    }
+
+    /* Counter contrast */
+    .tally { display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: stretch; }
+    .tally-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 30px 26px; text-align: center;
+      transition: box-shadow 0.2s ease;
+    }
+    .tally-box:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .tally-box .t-label {
+      display: block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--text-secondary);
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+    }
+    .tally-box .t-num {
+      display: block; margin: 12px 0 4px; line-height: 1;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+      font-weight: 700; font-size: clamp(3.5rem, 12vw, 5.5rem);
+    }
+    .tally-box .t-unit { font-size: 1rem; color: var(--text-secondary); }
+    .tally-box--plan { border-top: 4px solid var(--doc-accent); }
+    .tally-box--plan .t-num { color: var(--doc-accent); }
+    .tally-box--done { border-top: 4px solid var(--warning); }
+    .tally-box--done .t-num { color: var(--warning); }
+    .tally-vs {
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-weight: 700; color: var(--text-secondary); font-size: 1.25rem;
+    }
+    .tally-note {
+      margin-top: 18px; padding: 16px 20px; border-radius: 8px;
+      border: 1px dashed var(--warning); color: var(--text);
+      font-size: 1rem;
+    }
+    .split-mini { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; justify-content: center; }
+    .pill {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.875rem; font-weight: 600; padding: 6px 12px;
+      border-radius: 999px; border: 1px solid var(--border);
+      background: var(--surface-hover); color: var(--text-secondary);
+    }
+
+    /* Terminal block */
+    .term {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+    .term-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      background: var(--surface-hover);
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.8125rem; color: var(--text-secondary); letter-spacing: 0.06em;
+    }
+    .term-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); border: 1px solid var(--text-secondary); }
+    .term-body { overflow-x: auto; padding: 20px 22px; }
+    .term-body pre {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+      font-size: 0.875rem; line-height: 1.9; white-space: pre; color: var(--text);
+      margin: 0;
+    }
+    .term-body .ln {
+      display: block; border-radius: 4px; padding: 0 6px; margin: 0 -6px;
+      transition: background 0.2s ease, opacity 0.2s ease;
+    }
+    .term-body.filtering .ln[data-key] { opacity: 0.28; }
+    .term-body.filtering .ln[data-key].hit {
+      opacity: 1; background: var(--surface-hover);
+      box-shadow: inset 2px 0 0 var(--doc-accent);
+    }
+
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; align-items: center; }
+    .filter-bar .fb-label {
+      font-size: 0.8125rem; color: var(--text-secondary); margin-right: 4px;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace; letter-spacing: 0.08em;
+    }
+    .chip {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.875rem; font-weight: 600; padding: 8px 14px;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-secondary); cursor: pointer;
+      transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+    }
+    .chip:hover { background: var(--surface-hover); color: var(--text); }
+    .chip[aria-pressed="true"] {
+      color: var(--doc-accent); box-shadow: inset 0 0 0 1px var(--doc-accent);
+      background: var(--surface-hover);
+    }
+    .filter-detail {
+      margin-top: 16px; color: var(--text-secondary); font-size: 0.9375rem; min-height: 1.6em;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+    .card h3 { font-size: 1.125rem; margin-bottom: 10px; }
+    .card p { color: var(--text-secondary); font-size: 1rem; }
+    .card .tag {
+      display: inline-block; margin-bottom: 12px; font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace; color: var(--doc-accent);
+    }
+    .kv { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
+    a.doclink {
+      display: inline-flex; align-items: center; gap: 10px;
+      color: var(--doc-accent); text-decoration: none; font-weight: 600;
+      border: 1px solid var(--doc-accent); border-radius: 8px; padding: 12px 18px;
+      transition: background 0.18s;
+    }
+    a.doclink:hover { background: var(--surface-hover); }
+
+    footer.page-foot {
+      border-top: 1px solid var(--border); padding-top: 28px; margin-top: 8px;
+      color: var(--text-secondary); font-size: 0.9375rem;
+    }
+
+    @media (max-width: 720px) {
+      .shell { padding: 44px 18px; }
+      .pipe-arrow { display: none; }
+      .tally { grid-template-columns: 1fr; }
+      .tally-vs { padding: 4px 0; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:10000;padding:8px 16px;background:var(--accent);color:white;text-decoration:none;border-radius:4px;" onfocus="this.style.cssText='position:fixed;left:16px;top:16px;z-index:10000;padding:8px 16px;background:var(--accent);color:white;text-decoration:none;border-radius:4px;'" onblur="this.style.cssText='position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;'">Skip to content</a>
+
+  <!-- MENU -->
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Dark</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Download PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Print / PDF</span></button>
+    </div>
+  </div>
+
+  <!-- SKIP TO CONTENT (accessibility) -->
+  <a href="#main-content" class="skip-to-content">Skip to content</a>
+
+  <main id="main-content" role="main">
+    <div class="shell">
+
+      <header class="hero">
+        <div class="eyebrow animate">packaging</div>
+        <h1 class="animate delay-1">structure-refactor<span class="suffix">사용 결과</span></h1>
+        <div class="hero-rule animate delay-2"></div>
+        <p class="lead animate delay-3">
+          <strong>한 줄 요약</strong> — repo 경로를 받아 표준 구조로 가는 순서 있는 변경 계획서를
+          생성합니다 (<code class="inline">--apply</code> 없으면 아무것도 쓰지 않습니다).
+        </p>
+      </header>
+
+      <!-- Pipeline -->
+      <section data-reveal aria-labelledby="h-pipe">
+        <div class="sec-num">00 / PIPELINE</div>
+        <h2 id="h-pipe">입력에서 산출물까지</h2>
+        <p class="sec-kicker">repo 경로를 넣으면 계획서가 나온다.</p>
+        <div class="pipe">
+          <article class="pipe-node">
+            <span class="p-idx">INPUT</span>
+            <span class="p-title">repo 경로</span>
+            <span class="p-sub">이 repo 자신</span>
+          </article>
+          <span class="pipe-arrow" aria-hidden="true">&rarr;</span>
+          <article class="pipe-node">
+            <span class="p-idx">RUN</span>
+            <span class="p-title">/packaging:structure-refactor --op</span>
+            <span class="p-sub">--apply 없음 = dry-run</span>
+          </article>
+          <span class="pipe-arrow" aria-hidden="true">&rarr;</span>
+          <article class="pipe-node">
+            <span class="p-idx">OUTPUT</span>
+            <span class="p-title">dry-run 계획서</span>
+            <span class="p-sub">총 13 변경 (필수 0, 권장 13)</span>
+          </article>
+        </div>
+      </section>
+
+      <!-- 1. 실행한 명령 -->
+      <section data-reveal aria-labelledby="h-cmd">
+        <div class="sec-num">01 / COMMAND</div>
+        <h2 id="h-cmd">실행한 명령</h2>
+        <p class="sec-kicker">범용 형식과, 이번에 실제로 준 인자.</p>
+        <pre class="code">범용:  /packaging:structure-refactor [repo-path] [--apply] [--mp|--op]
+이번:  /packaging:structure-refactor --op      (--apply 없음 = dry-run)</pre>
+      </section>
+
+      <!-- 2. 입력 -->
+      <section data-reveal aria-labelledby="h-input">
+        <div class="sec-num">02 / INPUT</div>
+        <h2 id="h-input">입력</h2>
+        <p class="sec-kicker">이 repo 자신.</p>
+        <div class="grid-2">
+          <article class="card">
+            <span class="tag">감지 결과</span>
+            <h3>single 모드</h3>
+            <p>plugin root 1개(루트), 스킬 4개.</p>
+            <div class="kv">
+              <span class="pill">mode: single</span>
+              <span class="pill">plugin root: 1</span>
+              <span class="pill">skills: 4</span>
+            </div>
+          </article>
+          <article class="card">
+            <span class="tag">git 상태</span>
+            <h3>git: yes / tree: clean</h3>
+            <p>dirty tree 가 아니므로 계획 산출이 그대로 진행됐다.</p>
+            <div class="kv">
+              <span class="pill">git: yes</span>
+              <span class="pill">tree: clean</span>
+            </div>
+          </article>
+          <article class="card">
+            <span class="tag">사전 상태</span>
+            <h3>필수 항목은 전부 충족</h3>
+            <p><code class="inline">docs/</code> 두 디렉터리는 이미 만들어 둔 뒤라 필수 항목은 전부 충족된 상태였고,
+            권장 R1/R2/R5 와 Pages 만 미충족이었다.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 3. 결과 -->
+      <section data-reveal aria-labelledby="h-result">
+        <div class="sec-num">03 / RESULT</div>
+        <h2 id="h-result">결과</h2>
+        <p class="sec-kicker">계획은 13건, 집행은 0건.</p>
+
+        <div class="tally">
+          <div class="tally-box tally-box--plan">
+            <span class="t-label">계획</span>
+            <span class="t-num" data-count="13">0</span>
+            <span class="t-unit">변경</span>
+          </div>
+          <div class="tally-vs" aria-hidden="true">VS</div>
+          <div class="tally-box tally-box--done">
+            <span class="t-label">집행</span>
+            <span class="t-num" data-count="0">0</span>
+            <span class="t-unit">건</span>
+          </div>
+        </div>
+
+        <div class="split-mini">
+          <span class="pill">필수 0</span>
+          <span class="pill">권장 13</span>
+        </div>
+
+        <p class="tally-note">dry-run 이므로 13건 중 <strong>0건이 집행됐다.</strong></p>
+
+        <div class="filter-bar" style="margin-top:40px;" role="group" aria-label="계획 항목 강조">
+          <span class="fb-label">계획 항목 강조</span>
+          <button type="button" class="chip" aria-pressed="true" data-filter="all" onclick="setFilter('all')">전체</button>
+          <button type="button" class="chip" aria-pressed="false" data-filter="R1" onclick="setFilter('R1')">R1</button>
+          <button type="button" class="chip" aria-pressed="false" data-filter="R2" onclick="setFilter('R2')">R2</button>
+          <button type="button" class="chip" aria-pressed="false" data-filter="Pages" onclick="setFilter('Pages')">Pages</button>
+          <button type="button" class="chip" aria-pressed="false" data-filter="R5" onclick="setFilter('R5')">R5</button>
+        </div>
+
+        <div class="term">
+          <div class="term-bar">
+            <span class="term-dot" aria-hidden="true"></span>
+            <span class="term-dot" aria-hidden="true"></span>
+            <span class="term-dot" aria-hidden="true"></span>
+            <span>dry-run 계획서</span>
+          </div>
+          <div class="term-body" id="termBody">
+<pre><span class="ln">claude-plugin structure refactor — packaging-skills   (mode: single  scope: recommended)</span>
+<span class="ln">  plugin roots: . (single)   skills: 4   (git: yes, tree: clean)</span>
+<span class="ln"> </span>
+<span class="ln">계획 (현재 → 목표):</span>
+<span class="ln" data-key="R1">  [R1] visualize  docs/skill-guides/{create,rename-repo,structure-check,structure-refactor}.html</span>
+<span class="ln" data-key="R2">  [R2] stub       docs/skill-output/{create,rename-repo,structure-check,structure-refactor}-usage.md</span>
+<span class="ln" data-key="Pages">  [Pages] enable  GitHub Pages (branch=main, path=/docs)</span>
+<span class="ln" data-key="R5">  [R5] link       README.md &lt;- 스킬 4개 guide Pages URL 링크 추가</span>
+<span class="ln"> </span>
+<span class="ln">총 13 변경  (필수 0, 권장 13)</span></pre>
+          </div>
+        </div>
+        <p class="filter-detail" id="filterDetail" aria-live="polite"></p>
+      </section>
+
+      <!-- 4. Pages 확인 -->
+      <section data-reveal aria-labelledby="h-pages">
+        <div class="sec-num">04 / PAGES</div>
+        <h2 id="h-pages">Pages 상태 확인</h2>
+        <p class="sec-kicker">비활성으로 확인된 근거.</p>
+        <pre class="code">gh api repos/dEitY719/packaging-skills/pages   →   404</pre>
+        <div class="card" style="margin-top:18px;">
+          <span class="tag">확인</span>
+          <h3>404 응답 = 비활성</h3>
+          <p>Pages 상태는 <code class="inline">gh api repos/dEitY719/packaging-skills/pages</code> 가
+          404 로 응답해 비활성으로 확인됐다.</p>
+        </div>
+      </section>
+
+      <!-- 5. 링크 -->
+      <section data-reveal aria-labelledby="h-link">
+        <div class="sec-num">05 / REFERENCE</div>
+        <h2 id="h-link">스킬 설명서</h2>
+        <p class="sec-kicker">플래그, 동작 단계, 집행 순서, 주의사항은 설명서에 있다.</p>
+        <a class="doclink" href="../skill-guides/structure-refactor.html">
+          <span>structure-refactor.html</span>
+          <span aria-hidden="true">&rarr;</span>
+        </a>
+      </section>
+
+      <footer class="page-foot" data-reveal>
+        <p class="text-secondary">packaging · structure-refactor · 사용 결과</p>
+      </footer>
+
+    </div>
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme (class-based, OS detection on first visit) ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      document.getElementById('themeIcon').textContent = t === 'dark' ? '🌙' : '☀️';
+      document.getElementById('themeLabel').textContent = t === 'dark' ? 'Dark' : 'Light';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('reveal'));
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count), prefix = el.dataset.prefix || '', suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1200;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1), eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) { if (e.isIntersecting) { animateCounters(); cObs.disconnect(); } });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, { quality: 1, pixelRatio: 2, filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); } });
+        var a = document.createElement('a'); a.href = url;
+        a.download = document.title.replace(/\s+/g, '-').toLowerCase() + '.png'; a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === Plan-line highlighter ===
+    var PLAN_DETAIL = {
+      all: '계획 4줄 전체. 합계 총 13 변경 (필수 0, 권장 13) — dry-run 이므로 0건이 집행됐다.',
+      R1: '[R1] visualize — docs/skill-guides/{create,rename-repo,structure-check,structure-refactor}.html',
+      R2: '[R2] stub — docs/skill-output/{create,rename-repo,structure-check,structure-refactor}-usage.md',
+      Pages: '[Pages] enable — GitHub Pages (branch=main, path=/docs). gh api repos/dEitY719/packaging-skills/pages 가 404 로 응답해 비활성으로 확인됐다.',
+      R5: '[R5] link — README.md 에 스킬 4개 guide Pages URL 링크 추가'
+    };
+    var termBody = document.getElementById('termBody');
+    var filterDetail = document.getElementById('filterDetail');
+    var filterChips = document.querySelectorAll('.chip[data-filter]');
+
+    function setFilter(key) {
+      filterChips.forEach(function(c) {
+        c.setAttribute('aria-pressed', c.dataset.filter === key ? 'true' : 'false');
+      });
+      var lines = termBody.querySelectorAll('.ln[data-key]');
+      if (key === 'all') {
+        termBody.classList.remove('filtering');
+        lines.forEach(function(l) { l.classList.remove('hit'); });
+      } else {
+        termBody.classList.add('filtering');
+        lines.forEach(function(l) { l.classList.toggle('hit', l.dataset.key === key); });
+      }
+      filterDetail.textContent = PLAN_DETAIL[key] || '';
+    }
+
+    setFilter('all');
+  </script>
+</body>
+</html>

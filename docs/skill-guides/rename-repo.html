@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>rename-repo — packaging skill guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { interpolate-size: allow-keywords; }
+
+    /* ===== THEMES (class-based ONLY — no @media prefers-color-scheme) ===== */
+    html.theme-dark {
+      --bg: #0A0A0A; --surface: #141414; --surface-hover: #1C1C1C;
+      --border: rgba(255,255,255,0.04);
+      --text: #EDEDED; --text-secondary: #888;
+      --accent: #3b82f6; --accent-secondary: #8b5cf6;
+      --positive: #10b981; --negative: #f43f5e; --warning: #f59e0b;
+    }
+    html.theme-light {
+      --bg: #FAFAF9; --surface: #FFFFFF; --surface-hover: #F5F5F4;
+      --border: rgba(0,0,0,0.06);
+      --text: #0f172a; --text-secondary: #64748b;
+      --accent: #2563eb; --accent-secondary: #7c3aed;
+      --positive: #059669; --negative: #e11d48; --warning: #d97706;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.01em; font-feature-settings: 'cv11', 'ss01';
+      transition: background 0.3s, color 0.3s;
+      scrollbar-gutter: stable;
+    }
+    h1,h2,h3,h4,h5,h6 {
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+    h1 { font-weight: 700; }
+    h2 { font-weight: 600; }
+    body, p, li, td, th, span, label { font-weight: 400; }
+    p,li,td,th,span,label { color: var(--text); }
+    .text-secondary { color: var(--text-secondary); }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px;
+      transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+    /* ===== ANIMATIONS (CSS-first — always reliable) ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .animate { animation: fadeInUp 0.6s ease-out both; }
+    .animate.delay-1 { animation-delay: 0.1s; }
+    .animate.delay-2 { animation-delay: 0.2s; }
+    .animate.delay-3 { animation-delay: 0.3s; }
+    .animate.delay-4 { animation-delay: 0.4s; }
+    .animate.delay-5 { animation-delay: 0.5s; }
+    .animate.delay-6 { animation-delay: 0.6s; }
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      body { background: white !important; color: black !important; }
+      .viz-menu, .reveal { display: revert; opacity: 1 !important; transform: none !important; }
+      .card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+      * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .viz-menu, .expand-bar { display: none !important; }
+      ::details-content { block-size: auto !important; opacity: 1 !important; }
+    }
+    @page { margin: 1in; @bottom-center { content: "Page " counter(page); font-size: 9pt; color: #666; } }
+
+    /* ===== MENU ===== */
+    .viz-menu { position: fixed; top: 16px; right: 16px; z-index: 9999; }
+    .viz-menu-toggle {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(12px); transition: all 0.2s;
+    }
+    .viz-menu-toggle:hover { background: var(--surface-hover); }
+    .viz-menu-dropdown {
+      position: absolute; top: 52px; right: 0; min-width: 200px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px;
+      opacity: 0; visibility: hidden; transform: translateY(-8px);
+      transition: all 0.2s; backdrop-filter: blur(16px);
+    }
+    .viz-menu-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+    .viz-menu-dropdown button {
+      width: 100%; padding: 10px 14px; border: none; border-radius: 8px;
+      background: transparent; color: var(--text); font-size: 14px;
+      font-family: inherit; cursor: pointer; text-align: left;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+    }
+    .viz-menu-dropdown button:hover { background: var(--surface-hover); }
+
+    /* ===== SKIP TO CONTENT (accessibility) ===== */
+    .skip-to-content {
+      position: absolute; top: -40px; left: 6px; background: var(--accent);
+      color: white; padding: 8px 12px; text-decoration: none;
+      border-radius: 4px; opacity: 0; pointer-events: none;
+      transition: all 0.2s; z-index: 10000;
+    }
+    .skip-to-content:focus { top: 6px; opacity: 1; pointer-events: auto; }
+
+    /* ===== DETAILS ACCORDION ===== */
+    details { overflow: hidden; }
+    details summary { cursor: pointer; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    ::details-content {
+      transition: block-size 0.3s ease, opacity 0.3s ease;
+      block-size: 0; opacity: 0; overflow: hidden;
+    }
+    details[open]::details-content { block-size: auto; opacity: 1; }
+
+    /* ===== POPOVER ===== */
+    [popover] {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2); color: var(--text);
+    }
+    [popover]::backdrop { background: rgba(0,0,0,0.3); }
+
+    /* ===== PAGE SHELL ===== */
+    body { --doc-accent: var(--accent); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 64px 24px; }
+
+    code, .mono, pre {
+      font-family: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+    }
+    code.inl {
+      font-size: 0.88em; padding: 2px 6px; border-radius: 5px;
+      background: var(--surface-hover); border: 1px solid var(--border);
+      color: var(--text); white-space: nowrap;
+    }
+
+    /* ===== HERO ===== */
+    header.hero { padding-bottom: 40px; margin-bottom: 8px; }
+    .eyebrow {
+      font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.24em; color: var(--text-secondary);
+      font-variant-caps: all-small-caps;
+    }
+    .hero h1 {
+      font-family: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+      font-size: clamp(2.6rem, 8vw, 4.2rem); font-weight: 700;
+      margin: 14px 0 0; letter-spacing: -0.04em; word-break: break-word;
+    }
+    .hero-rule {
+      width: 92px; height: 4px; border-radius: 2px;
+      background: var(--doc-accent); margin: 22px 0 26px;
+    }
+    .lead {
+      font-size: 1.15rem; max-width: 68ch; color: var(--text-secondary);
+      line-height: 1.7;
+    }
+    .lead strong { color: var(--text); font-weight: 600; }
+
+    /* ===== SECTIONS ===== */
+    section { margin-top: 64px; }
+    .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 26px; flex-wrap: wrap; }
+    .sec-num {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.82rem; font-weight: 700; color: var(--doc-accent);
+      border: 1px solid var(--doc-accent); border-radius: 6px;
+      padding: 2px 8px; letter-spacing: 0.06em;
+    }
+    section h2 { font-size: clamp(1.6rem, 4vw, 2.1rem); }
+    .sec-sub { color: var(--text-secondary); font-size: 0.98rem; margin-top: 8px; }
+
+    /* ===== TWO-UP ===== */
+    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .card h3 { font-size: 1.15rem; margin-bottom: 10px; }
+    .card p { color: var(--text-secondary); font-size: 1rem; }
+    .card.use { border-left: 3px solid var(--positive); }
+    .card.avoid { border-left: 3px solid var(--negative); }
+    .tag {
+      display: inline-block; font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 999px; margin-bottom: 12px;
+    }
+    .tag.ok { color: var(--positive); border: 1px solid var(--positive); }
+    .tag.no { color: var(--negative); border: 1px solid var(--negative); }
+
+    /* ===== INVOKE TABLE ===== */
+    .table-wrap { overflow-x: auto; border-radius: 8px; }
+    table { border-collapse: collapse; width: 100%; min-width: 480px; }
+    th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    thead th {
+      font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--text-secondary); font-weight: 600;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    td.cmd {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.92rem; color: var(--doc-accent); white-space: nowrap; font-weight: 500;
+    }
+    td.desc { color: var(--text-secondary); }
+
+    /* ===== TIMELINE ===== */
+    .expand-bar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+    .btn-ghost {
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+      font-family: inherit; font-size: 0.88rem; font-weight: 500;
+      padding: 9px 16px; border-radius: 8px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-ghost:hover { background: var(--surface-hover); border-color: var(--doc-accent); }
+
+    .timeline { position: relative; padding-left: 0; }
+    .timeline::before {
+      content: ""; position: absolute; left: 21px; top: 12px; bottom: 12px;
+      width: 2px; background: var(--border);
+    }
+    .step { position: relative; padding-left: 60px; margin-bottom: 14px; }
+    .step-dot {
+      position: absolute; left: 0; top: 12px;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--surface); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-weight: 700; font-size: 1rem; color: var(--text-secondary);
+      transition: border-color 0.2s, color 0.2s;
+      z-index: 1;
+    }
+    .step details[open] + .step-dot,
+    .step:hover .step-dot { border-color: var(--doc-accent); color: var(--doc-accent); }
+    .step.gated .step-dot { border-color: var(--warning); color: var(--warning); }
+
+    .step details {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .step details:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .step.gated details { border-left: 3px solid var(--warning); }
+    .step summary {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 18px 20px; font-weight: 600; font-size: 1.06rem;
+    }
+    .step summary:focus-visible { outline: 2px solid var(--doc-accent); outline-offset: 2px; border-radius: 8px; }
+    .chev {
+      margin-left: auto; color: var(--text-secondary);
+      transition: transform 0.25s ease; flex-shrink: 0;
+    }
+    .step details[open] .chev { transform: rotate(180deg); }
+    .step-body { padding: 0 20px 20px; }
+    .step-body ul { list-style: none; }
+    .step-body li {
+      position: relative; padding-left: 18px; margin-bottom: 9px;
+      color: var(--text-secondary); font-size: 1rem; line-height: 1.65;
+    }
+    .step-body li::before {
+      content: ""; position: absolute; left: 0; top: 11px;
+      width: 6px; height: 6px; border-radius: 50%; background: var(--doc-accent);
+    }
+    .step.gated .step-body li::before { background: var(--warning); }
+    .step-body pre {
+      margin-top: 14px; padding: 14px 16px; border-radius: 8px;
+      background: var(--bg); border: 1px solid var(--border);
+      overflow-x: auto; font-size: 0.9rem; color: var(--text); line-height: 1.6;
+    }
+
+    .badge-gate {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em;
+      color: var(--warning); border: 1px solid var(--warning);
+      background: transparent; border-radius: 999px; padding: 3px 10px;
+      white-space: nowrap;
+    }
+    .badge-gate::before {
+      content: ""; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--warning); flex-shrink: 0;
+    }
+
+    /* ===== NOTES ===== */
+    .notes { display: grid; gap: 14px; }
+    .note {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--doc-accent);
+      border-radius: 8px; padding: 18px 20px;
+      transition: box-shadow 0.2s ease;
+    }
+    .note:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .note.warn { border-left-color: var(--warning); }
+    .note p { color: var(--text-secondary); font-size: 1rem; }
+    .note p strong { color: var(--text); font-weight: 600; }
+
+    footer.page-foot {
+      margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border);
+      color: var(--text-secondary); font-size: 0.86rem;
+      display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+
+    @media (max-width: 520px) {
+      .container { padding: 48px 18px; }
+      .step { padding-left: 0; }
+      .timeline::before { display: none; }
+      .step-dot { position: static; margin-bottom: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">Skip to content</a>
+
+  <!-- MENU -->
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Dark</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Download PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Print / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+    <div class="container">
+
+      <!-- ===== HERO ===== -->
+      <header class="hero">
+        <p class="eyebrow animate">packaging</p>
+        <h1 class="animate delay-1">rename-repo</h1>
+        <div class="hero-rule animate delay-2"></div>
+        <p class="lead animate delay-3">
+          <strong>산출물</strong> — 새 이름으로 바뀐 GitHub 저장소, 갱신된 로컬
+          <code class="inl">origin</code> URL, 그리고 옛 이름을 하드코딩하고 있던 모든 파일을 고친 커밋 1건.
+        </p>
+      </header>
+
+      <!-- ===== 언제 쓰는가 ===== -->
+      <section data-reveal aria-labelledby="sec-when">
+        <div class="sec-head">
+          <span class="sec-num">01</span>
+          <h2 id="sec-when">언제 쓰고, 언제 안 쓰는가</h2>
+        </div>
+
+        <div class="grid2">
+          <article class="card use">
+            <span class="tag ok">쓴다</span>
+            <h3>이름만 컨벤션을 벗어난 repo</h3>
+            <p>
+              repo 는 이미 있고 <strong>이름만</strong> 팀 컨벤션
+              <code class="inl">claude-plugin-&lt;domain&gt;</code> 에서 벗어난 경우에 쓴다.
+            </p>
+          </article>
+
+          <article class="card avoid">
+            <span class="tag no">쓰지 않는다</span>
+            <h3>repo 가 없거나, 배치가 문제일 때</h3>
+            <p>
+              repo 자체가 없으면 <code class="inl">create</code>, 이름이 아니라
+              <strong>디렉터리 배치</strong>가 문제라면 <code class="inl">structure-check</code> /
+              <code class="inl">structure-refactor</code> 다.
+            </p>
+          </article>
+        </div>
+
+        <div class="note" style="margin-top:20px;">
+          <p>
+            이 스킬이 고치는 것은 <strong>이름과 그 이름을 참조하는 문자열뿐</strong>이다.
+            레이아웃은 건드리지 않는다.
+          </p>
+        </div>
+      </section>
+
+      <!-- ===== 동작 단계 ===== -->
+      <section data-reveal aria-labelledby="sec-steps">
+        <div class="sec-head">
+          <span class="sec-num">02</span>
+          <h2 id="sec-steps">동작 단계</h2>
+        </div>
+        <p class="sec-sub" style="margin-top:-14px;margin-bottom:22px;">
+          단계 0 부터 5 까지 순서대로 진행한다. 각 단계를 눌러 상세를 펼칠 수 있고,
+          <span style="color:var(--warning);font-weight:600;">확인 필수</span> 표시가 붙은 단계는
+          사용자 확인 없이는 실행되지 않는다.
+        </p>
+
+        <div class="expand-bar">
+          <button class="btn-ghost" id="expandBtn" onclick="toggleAllSteps()" aria-expanded="false">모든 단계 펼치기</button>
+        </div>
+
+        <ol class="timeline" style="list-style:none;">
+
+          <li class="step">
+            <div class="step-dot" aria-hidden="true">0</div>
+            <details>
+              <summary>
+                <span>클론 · 인증 · 브랜치 사전 점검</span>
+                <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4,6 8,10 12,6"/></svg>
+              </summary>
+              <div class="step-body">
+                <ul>
+                  <li><code class="inl">git remote -v</code> 로 클론 확인</li>
+                  <li>remote URL 을 호스트 독립 패턴으로 파싱해 <code class="inl">owner/repo</code> 추출</li>
+                  <li><code class="inl">gh auth status</code></li>
+                  <li>기본 브랜치면 거부</li>
+                </ul>
+              </div>
+            </details>
+          </li>
+
+          <li class="step">
+            <div class="step-dot" aria-hidden="true">1</div>
+            <details>
+              <summary>
+                <span>새 이름 결정</span>
+                <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4,6 8,10 12,6"/></svg>
+              </summary>
+              <div class="step-body">
+                <ul>
+                  <li>인자를 쓰거나, plugin 구성을 보고 <code class="inl">claude-plugin-&lt;domain&gt;</code> 후보 1-2개 제안</li>
+                  <li>사용자가 고를 때까지 rename 하지 않음</li>
+                </ul>
+              </div>
+            </details>
+          </li>
+
+          <li class="step gated">
+            <div class="step-dot" aria-hidden="true">2</div>
+            <details>
+              <summary>
+                <span>repo rename 실행</span>
+                <span class="badge-gate">확인 필수</span>
+                <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4,6 8,10 12,6"/></svg>
+              </summary>
+              <div class="step-body">
+                <ul>
+                  <li><strong style="color:var(--warning);">파괴적, 확인 필수</strong></li>
+                </ul>
+                <pre>gh repo rename &lt;new&gt; --repo &lt;org&gt;/&lt;OLD&gt; --yes</pre>
+              </div>
+            </details>
+          </li>
+
+          <li class="step">
+            <div class="step-dot" aria-hidden="true">3</div>
+            <details>
+              <summary>
+                <span>origin URL 갱신 후 검증</span>
+                <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4,6 8,10 12,6"/></svg>
+              </summary>
+              <div class="step-body">
+                <ul>
+                  <li><code class="inl">git remote set-url origin &lt;new URL&gt;</code></li>
+                  <li><code class="inl">git ls-remote</code> 로 검증</li>
+                </ul>
+              </div>
+            </details>
+          </li>
+
+          <li class="step">
+            <div class="step-dot" aria-hidden="true">4</div>
+            <details>
+              <summary>
+                <span>하드코딩된 옛 이름 교체</span>
+                <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4,6 8,10 12,6"/></svg>
+              </summary>
+              <div class="step-body">
+                <ul>
+                  <li><code class="inl">git grep -n "&lt;OLD_REPO&gt;"</code> 로 참조를 찾는다</li>
+                  <li><code class="inl">marketplace.json</code> 의 <code class="inl">name</code></li>
+                  <li><code class="inl">plugin.json</code> 의 <code class="inl">homepage</code> / <code class="inl">repository</code></li>
+                  <li>README 제목과 설치 명령을 교체</li>
+                  <li>끝나고 0건인지 재확인</li>
+                </ul>
+              </div>
+            </details>
+          </li>
+
+          <li class="step gated">
+            <div class="step-dot" aria-hidden="true">5</div>
+            <details>
+              <summary>
+                <span>커밋, 그리고 push</span>
+                <span class="badge-gate">확인 필수</span>
+                <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4,6 8,10 12,6"/></svg>
+              </summary>
+              <div class="step-body">
+                <ul>
+                  <li>Conventional Commits 스타일로 커밋</li>
+                  <li><strong style="color:var(--warning);">push 는 별도 확인 후</strong></li>
+                </ul>
+              </div>
+            </details>
+          </li>
+
+        </ol>
+      </section>
+
+      <!-- ===== 호출 형식 ===== -->
+      <section data-reveal aria-labelledby="sec-invoke">
+        <div class="sec-head">
+          <span class="sec-num">03</span>
+          <h2 id="sec-invoke">호출 형식</h2>
+        </div>
+
+        <div class="card" style="padding:8px 8px 4px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">명령</th><th scope="col">동작</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="cmd">/packaging:rename-repo &lt;new-name&gt;</td>
+                  <td class="desc">새 이름을 명시해 rename</td>
+                </tr>
+                <tr>
+                  <td class="cmd">/packaging:rename-repo</td>
+                  <td class="desc">이름을 1-2개 제안받고 고르기</td>
+                </tr>
+                <tr>
+                  <td class="cmd">/packaging:rename-repo help</td>
+                  <td class="desc">사용법 출력</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="note warn" style="margin-top:20px;">
+          <p>
+            <code class="inl">&lt;new-name&gt;</code> 은 <code class="inl">claude-plugin-</code>
+            prefix 를 포함한 <strong>소문자 + 하이픈</strong> 형태여야 한다.
+            대문자나 언더스코어는 <code class="inl">gh repo rename</code> 을 깨거나 컨벤션을 위반한다.
+          </p>
+        </div>
+      </section>
+
+      <!-- ===== 주의사항 ===== -->
+      <section data-reveal aria-labelledby="sec-notes">
+        <div class="sec-head">
+          <span class="sec-num">04</span>
+          <h2 id="sec-notes">주의사항 / 제약</h2>
+        </div>
+
+        <div class="notes">
+          <div class="note warn">
+            <p><strong>기본 브랜치에서 동작하지 않는다.</strong> 작업 브랜치를 먼저 따야 한다.</p>
+          </div>
+          <div class="note warn">
+            <p>rename(2단계)과 push(5단계)는 각각 <strong>명시적 사용자 확인</strong>이 필요하다.</p>
+          </div>
+          <div class="note">
+            <p>
+              <code class="inl">gh auth login</code> 같은 대화형 로그인은 대신 실행하지 않는다 —
+              사용자에게 안내만 한다.
+            </p>
+          </div>
+          <div class="note">
+            <p>
+              github.com 과 사내 GHES 양쪽에서 동작한다. <code class="inl">github.com</code> 을
+              하드코딩하지 않고 remote URL 에서 호스트를 판별한다. GHES 에서
+              <code class="inl">gh</code> 가 실패하면 웹 UI 경로를 안내한다.
+            </p>
+          </div>
+          <div class="note">
+            <p>
+              <code class="inl">source</code> 가 <code class="inl">./plugins/...</code> 같은
+              <strong>상대경로인 필드는 건드리지 않는다</strong> — repo 이름과 무관하기 때문이다.
+            </p>
+          </div>
+          <div class="note">
+            <p>
+              <code class="inl">marketplace.json</code> 의 <code class="inl">name</code> 은
+              새 repo 이름과 <strong>1:1 로 일치</strong>해야 한다.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="page-foot">
+        <span>packaging / skill-guides / rename-repo</span>
+        <span>산출물 — 새 이름의 저장소, 갱신된 origin, 참조를 고친 커밋 1건</span>
+      </footer>
+
+    </div>
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme (class-based, OS detection on first visit) ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      document.getElementById('themeIcon').textContent = t === 'dark' ? '🌙' : '☀️';
+      document.getElementById('themeLabel').textContent = t === 'dark' ? 'Dark' : 'Light';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Step timeline: expand / collapse all ===
+    var stepDetails = document.querySelectorAll('.timeline details');
+    var expandBtn = document.getElementById('expandBtn');
+    function syncExpandBtn() {
+      var openCount = 0;
+      stepDetails.forEach(function(d) { if (d.open) openCount++; });
+      var allOpen = openCount === stepDetails.length;
+      expandBtn.textContent = allOpen ? '모든 단계 접기' : '모든 단계 펼치기';
+      expandBtn.setAttribute('aria-expanded', allOpen ? 'true' : 'false');
+    }
+    function toggleAllSteps() {
+      var openCount = 0;
+      stepDetails.forEach(function(d) { if (d.open) openCount++; });
+      var expand = openCount < stepDetails.length;
+      stepDetails.forEach(function(d) { d.open = expand; });
+      syncExpandBtn();
+    }
+    stepDetails.forEach(function(d) { d.addEventListener('toggle', syncExpandBtn); });
+    syncExpandBtn();
+
+    // Open every step before printing so nothing is lost on paper
+    window.addEventListener('beforeprint', function() {
+      stepDetails.forEach(function(d) { d.open = true; });
+    });
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, { quality: 1, pixelRatio: 2, filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); } });
+        var a = document.createElement('a'); a.href = url;
+        a.download = document.title.replace(/\s+/g, '-').toLowerCase() + '.png'; a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+  </script>
+</body>
+</html>

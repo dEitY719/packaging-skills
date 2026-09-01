@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ko" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>structure-check — packaging</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { interpolate-size: allow-keywords; }
+
+    /* ===== THEMES (class-based ONLY — no @media prefers-color-scheme) ===== */
+    html.theme-dark {
+      --bg: #0A0A0A; --surface: #141414; --surface-hover: #1C1C1C;
+      --border: rgba(255,255,255,0.04);
+      --text: #EDEDED; --text-secondary: #888;
+      --accent: #3b82f6; --accent-secondary: #8b5cf6;
+      --positive: #10b981; --negative: #f43f5e; --warning: #f59e0b;
+    }
+    html.theme-light {
+      --bg: #FAFAF9; --surface: #FFFFFF; --surface-hover: #F5F5F4;
+      --border: rgba(0,0,0,0.06);
+      --text: #0f172a; --text-secondary: #64748b;
+      --accent: #2563eb; --accent-secondary: #7c3aed;
+      --positive: #059669; --negative: #e11d48; --warning: #d97706;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.01em; font-feature-settings: 'cv11', 'ss01';
+      transition: background 0.3s, color 0.3s;
+      scrollbar-gutter: stable;
+    }
+    h1,h2,h3,h4,h5,h6 {
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+    h1 { font-weight: 700; }
+    h2 { font-weight: 600; }
+    body, p, li, td, th, span, label { font-weight: 400; }
+    p,li,td,th,span,label { color: var(--text); }
+    .text-secondary { color: var(--text-secondary); }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px;
+      transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+    /* ===== ANIMATIONS (CSS-first — always reliable) ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .animate { animation: fadeInUp 0.6s ease-out both; }
+    .animate.delay-1 { animation-delay: 0.1s; }
+    .animate.delay-2 { animation-delay: 0.2s; }
+    .animate.delay-3 { animation-delay: 0.3s; }
+    .animate.delay-4 { animation-delay: 0.4s; }
+    .animate.delay-5 { animation-delay: 0.5s; }
+    .animate.delay-6 { animation-delay: 0.6s; }
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      body { background: white !important; color: black !important; }
+      .viz-menu, .reveal { display: revert; opacity: 1 !important; transform: none !important; }
+      .card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+      * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .tab-panel { display: block !important; }
+      .tabs { display: none; }
+    }
+    @page { margin: 1in; @bottom-center { content: "Page " counter(page); font-size: 9pt; color: #666; } }
+
+    /* ===== MENU ===== */
+    .viz-menu { position: fixed; top: 16px; right: 16px; z-index: 9999; }
+    .viz-menu-toggle {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(12px); transition: all 0.2s;
+    }
+    .viz-menu-toggle:hover { background: var(--surface-hover); }
+    .viz-menu-dropdown {
+      position: absolute; top: 52px; right: 0; min-width: 200px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px;
+      opacity: 0; visibility: hidden; transform: translateY(-8px);
+      transition: all 0.2s; backdrop-filter: blur(16px);
+    }
+    .viz-menu-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+    .viz-menu-dropdown button {
+      width: 100%; padding: 10px 14px; border: none; border-radius: 8px;
+      background: transparent; color: var(--text); font-size: 14px;
+      font-family: inherit; cursor: pointer; text-align: left;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+    }
+    .viz-menu-dropdown button:hover { background: var(--surface-hover); }
+
+    /* ===== SKIP TO CONTENT (accessibility) ===== */
+    .skip-to-content {
+      position: absolute; top: -40px; left: 6px; background: var(--accent);
+      color: white; padding: 8px 12px; text-decoration: none;
+      border-radius: 4px; opacity: 0; pointer-events: none;
+      transition: all 0.2s; z-index: 10000;
+    }
+    .skip-to-content:focus { top: 6px; opacity: 1; pointer-events: auto; }
+
+    /* ===== DETAILS ACCORDION ===== */
+    details { overflow: hidden; }
+    details summary { cursor: pointer; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    ::details-content {
+      transition: block-size 0.3s ease, opacity 0.3s ease;
+      block-size: 0; opacity: 0; overflow: hidden;
+    }
+    details[open]::details-content { block-size: auto; opacity: 1; }
+
+    /* ===== POPOVER ===== */
+    [popover] {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2); color: var(--text);
+    }
+    [popover]::backdrop { background: rgba(0,0,0,0.3); }
+
+    /* ===== DOC SHELL ===== */
+    body { --doc-accent: var(--accent); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 64px 24px; }
+
+    header.hero { margin-bottom: 72px; }
+    .eyebrow {
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.24em;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+    header.hero h1 {
+      font-family: 'SFMono-Regular', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-weight: 700;
+      font-size: clamp(2.6rem, 8vw, 3.6rem);
+      letter-spacing: -0.04em;
+      margin-bottom: 20px;
+      word-break: break-word;
+    }
+    .hero-rule {
+      width: 96px; height: 4px; border-radius: 2px;
+      background: var(--doc-accent);
+      margin-bottom: 26px;
+    }
+    .lead {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 720px;
+      line-height: 1.75;
+    }
+    .lead strong { color: var(--text); font-weight: 600; }
+
+    section { margin-bottom: 64px; }
+    section > h2 {
+      font-size: clamp(1.6rem, 4vw, 2rem);
+      margin-bottom: 8px;
+      display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    }
+    .sec-num {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--doc-accent);
+      letter-spacing: 0.1em;
+    }
+    .sec-sub { color: var(--text-secondary); font-size: 1rem; margin-bottom: 28px; }
+
+    /* ===== TABLES ===== */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+    table { border-collapse: collapse; width: 100%; min-width: 480px; font-size: 0.95rem; }
+    th, td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    thead th {
+      font-weight: 600; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--text-secondary);
+      background: var(--surface-hover);
+      white-space: nowrap;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.15s; }
+    tbody tr:hover { background: var(--surface-hover); }
+
+    code, .mono {
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.88em;
+    }
+    td code, li code, p code, summary code {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 5px; padding: 1px 6px;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--doc-accent);
+      border-radius: 8px;
+      padding: 20px 22px;
+      overflow-x: auto;
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: var(--text);
+      white-space: pre;
+    }
+
+    /* ===== LEGEND ===== */
+    .legend {
+      display: grid; gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .legend-item {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 18px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      border-left: 4px solid var(--st);
+      transition: box-shadow 0.2s ease;
+    }
+    .legend-item:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .legend-key {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-weight: 700; font-size: 0.95rem;
+      color: var(--st); white-space: nowrap;
+    }
+    .legend-text { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.55; }
+    .st-pass { --st: var(--positive); }
+    .st-warn { --st: var(--warning); }
+    .st-fail { --st: var(--negative); }
+    .st-na   { --st: var(--text-secondary); }
+
+    /* ===== TABS ===== */
+    .tabs { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+    .tab-btn {
+      font-family: inherit; font-size: 0.92rem; font-weight: 600;
+      padding: 10px 20px; border-radius: 999px; cursor: pointer;
+      background: var(--surface); color: var(--text-secondary);
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .tab-btn[aria-selected="true"] {
+      background: var(--doc-accent); color: #fff; border-color: transparent;
+    }
+    .tab-panel { display: none; animation: fadeIn 0.35s ease-out both; }
+    .tab-panel.active { display: block; }
+
+    .item-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 4px solid var(--st);
+      transition: box-shadow 0.2s ease;
+    }
+    .item-row:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .item-row summary {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 18px 22px;
+    }
+    .item-code {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-weight: 700; font-size: 0.95rem; color: var(--text);
+      min-width: 82px;
+    }
+    .item-title { flex: 1; min-width: 160px; color: var(--text); font-size: 0.98rem; }
+    .badge {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+      padding: 4px 10px; border-radius: 999px;
+      color: var(--st); background: color-mix(in srgb, var(--st) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--st) 35%, transparent);
+      white-space: nowrap;
+    }
+    .item-body { padding: 0 22px 20px 22px; color: var(--text-secondary); font-size: 0.94rem; line-height: 1.75; }
+    .item-body ul { margin: 10px 0 0 18px; }
+    .item-body li { color: var(--text-secondary); margin-bottom: 6px; }
+    .chev { color: var(--text-secondary); font-size: 0.8rem; transition: transform 0.2s; }
+    details[open] .chev { transform: rotate(90deg); }
+
+    /* ===== STEPS ===== */
+    .steps { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+    .step { position: relative; }
+    .step-n {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+      color: var(--doc-accent); margin-bottom: 10px;
+    }
+    .step p { font-size: 0.93rem; color: var(--text-secondary); line-height: 1.7; }
+
+    /* ===== PRIORITY LADDER ===== */
+    .ladder { display: grid; gap: 10px; }
+    .rung {
+      display: flex; gap: 16px; align-items: flex-start;
+      padding: 16px 20px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      transition: box-shadow 0.2s ease, background 0.2s ease;
+    }
+    .rung:hover { background: var(--surface-hover); }
+    .rung-rank {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-weight: 700; font-size: 0.8rem;
+      color: #fff; background: var(--doc-accent);
+      border-radius: 6px; padding: 3px 9px; white-space: nowrap;
+      opacity: var(--rank-op, 1);
+    }
+    .rung:nth-child(2) .rung-rank { --rank-op: 0.82; }
+    .rung:nth-child(3) .rung-rank { --rank-op: 0.64; }
+    .rung:nth-child(4) .rung-rank { --rank-op: 0.46; }
+    .rung-text { font-size: 0.94rem; color: var(--text); line-height: 1.65; }
+    .rung-text span.text-secondary { display: block; font-size: 0.87rem; margin-top: 4px; }
+
+    /* ===== NOTES ===== */
+    .notes { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .note h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 10px; }
+    .note p { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.72; }
+
+    .verdict-rule {
+      margin-top: 18px; padding: 18px 22px;
+      border-radius: 8px; background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 0.95rem; line-height: 1.8;
+    }
+    .verdict-rule b { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; }
+    .v-fail { color: var(--negative); }
+    .v-warn { color: var(--warning); }
+    .v-pass { color: var(--positive); }
+    .v-na { color: var(--text-secondary); }
+
+    footer.doc-foot {
+      border-top: 1px solid var(--border);
+      padding-top: 24px; margin-top: 8px;
+      color: var(--text-secondary); font-size: 0.88rem;
+      display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    footer.doc-foot a { color: var(--doc-accent); text-decoration: none; }
+    footer.doc-foot a:hover { text-decoration: underline; }
+
+    @media (max-width: 560px) {
+      .container { padding: 44px 16px; }
+      section { margin-bottom: 48px; }
+      .item-row summary { padding: 16px; gap: 10px; }
+      .item-body { padding: 0 16px 18px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">Skip to content</a>
+
+  <!-- MENU -->
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Dark</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Download PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Print / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+    <div class="container">
+
+      <header class="hero">
+        <p class="eyebrow animate">packaging</p>
+        <h1 class="animate delay-1">structure-check</h1>
+        <div class="hero-rule animate delay-2"></div>
+        <p class="lead animate delay-3">
+          <strong>산출물</strong> — repo 하나의 디렉터리 구조를 필수 10항목(M1-M10) / 권장 8항목(R1-R8)으로
+          채점한 PASS·WARN·FAIL·N/A 리포트 1장. 파일은 하나도 바뀌지 않는다.
+        </p>
+      </header>
+
+      <section data-reveal>
+        <h2><span class="sec-num">01</span>언제 쓰고, 언제 안 쓰는가</h2>
+        <p class="sec-sub">
+          플러그인 마켓플레이스 repo 의 <strong>배치</strong>가 표준에 맞는지 알고 싶을 때 쓴다.
+          읽기 전용이므로 먼저 이걸 돌리고, 나온 지적을 <code>structure-refactor</code> 가 고친다.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <caption class="text-secondary" style="text-align:left;padding:14px 18px 0;font-size:0.85rem;">경계가 헷갈리는 이웃 스킬</caption>
+            <thead>
+              <tr><th scope="col">검사 대상</th><th scope="col">쓸 스킬</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>디렉터리 구조 / 매니페스트 배치</td><td><code>structure-check</code> (이 스킬)</td></tr>
+              <tr><td><code>SKILL.md</code> 의 <strong>내용</strong> 품질</td><td><code>skill:check</code></td></tr>
+              <tr><td>셸 스크립트 품질</td><td><code>sh:check</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">02</span>호출 형식</h2>
+        <p class="sec-sub">인자는 모두 선택이다.</p>
+        <pre>/packaging:structure-check [repo-path] [--single|--mono]
+/packaging:structure-check help</pre>
+        <div class="card" style="margin-top:18px;">
+          <ul style="margin-left:18px;">
+            <li style="margin-bottom:10px;"><code>[repo-path]</code> — 생략하면 현재 디렉터리.</li>
+            <li><code>--single</code> / <code>--mono</code> — 레이아웃 모드 자동 감지를 무시하고 강제한다.
+              상호 배타적이며 둘 다 주면 마지막 것이 이긴다. 잘못 준 override 는 조용히 넘어가지 않고
+              평범한 <span class="v-fail"><b>M2 FAIL</b></span> 로 드러난다.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">03</span>채점 항목</h2>
+        <p class="sec-sub">필수 항목은 위반하면 FAIL, 권장 항목은 위반하면 WARN 이다. 각 그룹을 눌러 내용을 펼친다.</p>
+
+        <div class="tabs" role="tablist" aria-label="채점 항목 그룹">
+          <button class="tab-btn" id="tab-must" role="tab" aria-selected="true" aria-controls="panel-must" onclick="showTab('must')">필수 · M1-M10 · FAIL</button>
+          <button class="tab-btn" id="tab-rec" role="tab" aria-selected="false" aria-controls="panel-rec" onclick="showTab('rec')">권장 · R1-R8 · WARN</button>
+        </div>
+
+        <div class="tab-panel active" id="panel-must" role="tabpanel" aria-labelledby="tab-must">
+          <details class="item-row st-fail" name="must" open>
+            <summary>
+              <span class="item-code">M1-M6</span>
+              <span class="item-title">매니페스트 · 문서 기본 골격</span>
+              <span class="badge">FAIL</span>
+              <span class="chev">&#9654;</span>
+            </summary>
+            <div class="item-body">
+              <ul>
+                <li><code>marketplace.json</code> 유효성</li>
+                <li>plugin root 존재</li>
+                <li><code>plugin.json</code> 유효성</li>
+                <li><code>SKILL.md</code> frontmatter</li>
+                <li><code>docs/skill-guides/</code> + <code>docs/skill-output/</code></li>
+                <li><code>README.md</code></li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="item-row st-fail" name="must">
+            <summary>
+              <span class="item-code">M7-M9</span>
+              <span class="item-title"><code>plugins[].source</code> 설치 무결성</span>
+              <span class="badge">FAIL</span>
+              <span class="chev">&#9654;</span>
+            </summary>
+            <div class="item-body">
+              각 원소가 자기 source 를 갖는지, shape 이 유효한지, mono 로 선언된 디렉터리가 실재하는지.
+            </div>
+          </details>
+
+          <details class="item-row st-fail" name="must">
+            <summary>
+              <span class="item-code">M10</span>
+              <span class="item-title">스키마 화이트리스트</span>
+              <span class="badge">FAIL</span>
+              <span class="chev">&#9654;</span>
+            </summary>
+            <div class="item-body">
+              <code>plugin.json</code> 최상위 필드가 알려진 스키마 화이트리스트 안에 있는지.
+            </div>
+          </details>
+        </div>
+
+        <div class="tab-panel" id="panel-rec" role="tabpanel" aria-labelledby="tab-rec">
+          <details class="item-row st-warn" name="rec" open>
+            <summary>
+              <span class="item-code">R1-R8</span>
+              <span class="item-title">문서 · 링크 · 메타데이터 위생</span>
+              <span class="badge">WARN</span>
+              <span class="chev">&#9654;</span>
+            </summary>
+            <div class="item-body">
+              <ul>
+                <li>스킬별 guide/usage 문서</li>
+                <li>README 의 Simple 휴리스틱과 스킬별 링크</li>
+                <li>명명 일관성</li>
+                <li><code>$schema</code></li>
+                <li>리스팅 메타데이터</li>
+                <li>add URL 힌트</li>
+              </ul>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">04</span>판정 규칙</h2>
+        <p class="sec-sub">FAIL 하나라도 있으면 FAIL, 없고 WARN 이 있으면 WARN, 전부 PASS/N/A 면 PASS.</p>
+        <div class="legend">
+          <div class="legend-item st-pass">
+            <span class="legend-key">PASS</span>
+            <span class="legend-text">항목이 기준을 충족한다.</span>
+          </div>
+          <div class="legend-item st-warn">
+            <span class="legend-key">WARN</span>
+            <span class="legend-text">권장 항목(R1-R8) 위반. 판정을 FAIL 로 내리지는 않는다.</span>
+          </div>
+          <div class="legend-item st-fail">
+            <span class="legend-key">FAIL</span>
+            <span class="legend-text">필수 항목(M1-M10) 위반. 하나라도 있으면 전체 판정이 FAIL.</span>
+          </div>
+          <div class="legend-item st-na">
+            <span class="legend-key">N/A</span>
+            <span class="legend-text">대상 자체가 없어 채점할 수 없다. FAIL 이 아니다.</span>
+          </div>
+        </div>
+        <p class="verdict-rule">
+          <span class="v-fail"><b>FAIL</b></span> 하나라도 있으면 <b class="v-fail">FAIL</b> ·
+          없고 <span class="v-warn"><b>WARN</b></span> 이 있으면 <b class="v-warn">WARN</b> ·
+          전부 <span class="v-pass"><b>PASS</b></span>/<span class="v-na"><b>N/A</b></span> 면 <b class="v-pass">PASS</b>.
+        </p>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">05</span>동작 단계</h2>
+        <p class="sec-sub">네 단계로 끝난다.</p>
+        <div class="steps">
+          <article class="card step">
+            <div class="step-n">STEP 1</div>
+            <p>인자 파싱, repo 경로 확인, <code>.git</code> 유무 확인(없어도 감사는 진행)</p>
+          </article>
+          <article class="card step">
+            <div class="step-n">STEP 2</div>
+            <p>레이아웃 모드 감지 → plugin root 와 스킬 목록을 <strong>스캔으로</strong> 발견</p>
+          </article>
+          <article class="card step">
+            <div class="step-n">STEP 3</div>
+            <p>M1-M10 / R1-R8 채점</p>
+          </article>
+          <article class="card step">
+            <div class="step-n">STEP 4</div>
+            <p><code>[필수]</code> / <code>[권장]</code> 블록과 요약 판정 출력</p>
+          </article>
+        </div>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">06</span>모드 감지 우선순위</h2>
+        <p class="sec-sub">위에서부터 먼저 결정된 것이 이긴다.</p>
+        <div class="ladder">
+          <div class="rung">
+            <span class="rung-rank">1</span>
+            <span class="rung-text">플래그<span class="text-secondary"><code>--single</code> / <code>--mono</code> 로 강제한 값</span></span>
+          </div>
+          <div class="rung">
+            <span class="rung-rank">2</span>
+            <span class="rung-text"><code>marketplace.json</code> 의 <code>plugins[].source</code><span class="text-secondary"><code>"./"</code> 는 single, <code>"./plugins/.."</code> 는 mono</span></span>
+          </div>
+          <div class="rung">
+            <span class="rung-rank">3</span>
+            <span class="rung-text">파일시스템<span class="text-secondary">실제 디렉터리 배치로 추론</span></span>
+          </div>
+          <div class="rung">
+            <span class="rung-rank">4</span>
+            <span class="rung-text">그래도 모호하면 <code>mono</code><span class="text-secondary">헤더에 <code>추정</code> 표시</span></span>
+          </div>
+        </div>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">07</span>주의사항 / 제약</h2>
+        <p class="sec-sub">이 스킬이 보장하는 것과 보장하지 않는 것.</p>
+        <div class="notes">
+          <article class="card note">
+            <h3>읽기 전용이다</h3>
+            <p>파일을 만들거나 옮기거나 고치지 않는다.</p>
+          </article>
+          <article class="card note">
+            <h3>N/A 는 FAIL 이 아니다</h3>
+            <p>대상 자체가 없으면(스킬 0개 등) 의존 항목은 N/A 이고, "없다"는 사실은 M2 가 FAIL 하나로만 센다 — 이중 계상하지 않는다.</p>
+          </article>
+          <article class="card note">
+            <h3>repo 에 종속되지 않는다</h3>
+            <p>스펙은 스킬 안에 임베드돼 있고, plugin/스킬 이름은 하드코딩 없이 매번 스캔해서 찾는다.</p>
+          </article>
+          <article class="card note">
+            <h3>PASS 가 install/runtime 성공을 보장하지 않는다</h3>
+            <p>구조만 본다. 실제로 <code>/plugin install</code> 이 실패하거나 세션에 스킬이 안 뜨면 marketplace source 필드와 <code>SKILL.md</code> frontmatter 를 따로 확인해야 한다.</p>
+          </article>
+        </div>
+      </section>
+
+      <footer class="doc-foot">
+        <span>packaging · structure-check</span>
+        <span><a href="../skill-output/structure-check-usage.html">사용 결과 보기</a></span>
+      </footer>
+
+    </div>
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme (class-based, OS detection on first visit) ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      document.getElementById('themeIcon').textContent = t === 'dark' ? '🌙' : '☀️';
+      document.getElementById('themeLabel').textContent = t === 'dark' ? 'Dark' : 'Light';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count), prefix = el.dataset.prefix || '', suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1200;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1), eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) { if (e.isIntersecting) { animateCounters(); cObs.disconnect(); } });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, { quality: 1, pixelRatio: 2, filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); } });
+        var a = document.createElement('a'); a.href = url;
+        a.download = document.title.replace(/\s+/g, '-').toLowerCase() + '.png'; a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === Tabs: 필수 / 권장 ===
+    var tabIds = ['must', 'rec'];
+    function showTab(name) {
+      tabIds.forEach(function(id) {
+        var panel = document.getElementById('panel-' + id);
+        var btn = document.getElementById('tab-' + id);
+        var on = (id === name);
+        if (panel) panel.classList.toggle('active', on);
+        if (btn) btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+    }
+    showTab('must');
+  </script>
+</body>
+</html>

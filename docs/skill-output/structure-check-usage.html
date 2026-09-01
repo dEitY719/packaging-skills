@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ko" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>structure-check 사용 결과 — packaging</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { interpolate-size: allow-keywords; }
+
+    /* ===== THEMES (class-based ONLY — no @media prefers-color-scheme) ===== */
+    html.theme-dark {
+      --bg: #0A0A0A; --surface: #141414; --surface-hover: #1C1C1C;
+      --border: rgba(255,255,255,0.04);
+      --text: #EDEDED; --text-secondary: #888;
+      --accent: #3b82f6; --accent-secondary: #8b5cf6;
+      --positive: #10b981; --negative: #f43f5e; --warning: #f59e0b;
+    }
+    html.theme-light {
+      --bg: #FAFAF9; --surface: #FFFFFF; --surface-hover: #F5F5F4;
+      --border: rgba(0,0,0,0.06);
+      --text: #0f172a; --text-secondary: #64748b;
+      --accent: #2563eb; --accent-secondary: #7c3aed;
+      --positive: #059669; --negative: #e11d48; --warning: #d97706;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.01em; font-feature-settings: 'cv11', 'ss01';
+      transition: background 0.3s, color 0.3s;
+      scrollbar-gutter: stable;
+    }
+    h1,h2,h3,h4,h5,h6 {
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+    h1 { font-weight: 700; }
+    h2 { font-weight: 600; }
+    body, p, li, td, th, span, label { font-weight: 400; }
+    p,li,td,th,span,label { color: var(--text); }
+    .text-secondary { color: var(--text-secondary); }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px;
+      transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+    /* ===== ANIMATIONS (CSS-first — always reliable) ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .animate { animation: fadeInUp 0.6s ease-out both; }
+    .animate.delay-1 { animation-delay: 0.1s; }
+    .animate.delay-2 { animation-delay: 0.2s; }
+    .animate.delay-3 { animation-delay: 0.3s; }
+    .animate.delay-4 { animation-delay: 0.4s; }
+    .animate.delay-5 { animation-delay: 0.5s; }
+    .animate.delay-6 { animation-delay: 0.6s; }
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      body { background: white !important; color: black !important; }
+      .viz-menu, .reveal { display: revert; opacity: 1 !important; transform: none !important; }
+      .card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+      * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .filters { display: none; }
+      .chip.dimmed { opacity: 1 !important; }
+    }
+    @page { margin: 1in; @bottom-center { content: "Page " counter(page); font-size: 9pt; color: #666; } }
+
+    /* ===== MENU ===== */
+    .viz-menu { position: fixed; top: 16px; right: 16px; z-index: 9999; }
+    .viz-menu-toggle {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(12px); transition: all 0.2s;
+    }
+    .viz-menu-toggle:hover { background: var(--surface-hover); }
+    .viz-menu-dropdown {
+      position: absolute; top: 52px; right: 0; min-width: 200px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px;
+      opacity: 0; visibility: hidden; transform: translateY(-8px);
+      transition: all 0.2s; backdrop-filter: blur(16px);
+    }
+    .viz-menu-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+    .viz-menu-dropdown button {
+      width: 100%; padding: 10px 14px; border: none; border-radius: 8px;
+      background: transparent; color: var(--text); font-size: 14px;
+      font-family: inherit; cursor: pointer; text-align: left;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+    }
+    .viz-menu-dropdown button:hover { background: var(--surface-hover); }
+
+    /* ===== SKIP TO CONTENT (accessibility) ===== */
+    .skip-to-content {
+      position: absolute; top: -40px; left: 6px; background: var(--accent);
+      color: white; padding: 8px 12px; text-decoration: none;
+      border-radius: 4px; opacity: 0; pointer-events: none;
+      transition: all 0.2s; z-index: 10000;
+    }
+    .skip-to-content:focus { top: 6px; opacity: 1; pointer-events: auto; }
+
+    /* ===== DETAILS ACCORDION ===== */
+    details { overflow: hidden; }
+    details summary { cursor: pointer; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    ::details-content {
+      transition: block-size 0.3s ease, opacity 0.3s ease;
+      block-size: 0; opacity: 0; overflow: hidden;
+    }
+    details[open]::details-content { block-size: auto; opacity: 1; }
+
+    /* ===== POPOVER ===== */
+    [popover] {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2); color: var(--text);
+    }
+    [popover]::backdrop { background: rgba(0,0,0,0.3); }
+
+    /* ===== DOC SHELL ===== */
+    body { --doc-accent: var(--accent-secondary); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 64px 24px; }
+
+    header.hero { margin-bottom: 72px; }
+    .eyebrow {
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.24em;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+    header.hero h1 {
+      font-family: 'SFMono-Regular', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-weight: 700;
+      font-size: clamp(2.6rem, 8vw, 3.6rem);
+      letter-spacing: -0.04em;
+      margin-bottom: 20px;
+      word-break: break-word;
+    }
+    header.hero h1 .h1-suffix {
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+      font-size: 0.34em; font-weight: 600;
+      color: var(--doc-accent);
+      letter-spacing: 0.02em;
+      display: inline-block; vertical-align: middle;
+      margin-left: 12px;
+      padding: 5px 12px; border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--doc-accent) 40%, transparent);
+      background: color-mix(in srgb, var(--doc-accent) 12%, transparent);
+    }
+    .hero-rule {
+      width: 96px; height: 4px; border-radius: 2px;
+      background: var(--doc-accent);
+      margin-bottom: 26px;
+    }
+    .lead {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 720px;
+      line-height: 1.75;
+    }
+    .lead strong { color: var(--text); font-weight: 600; }
+
+    section { margin-bottom: 64px; }
+    section > h2 {
+      font-size: clamp(1.6rem, 4vw, 2rem);
+      margin-bottom: 8px;
+      display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    }
+    .sec-num {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--doc-accent);
+      letter-spacing: 0.1em;
+    }
+    .sec-sub { color: var(--text-secondary); font-size: 1rem; margin-bottom: 28px; }
+
+    code, .mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 0.88em; }
+    p code, li code, td code {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 5px; padding: 1px 6px;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--doc-accent);
+      border-radius: 8px;
+      padding: 20px 22px;
+      overflow-x: auto;
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: var(--text);
+      white-space: pre;
+    }
+
+    /* ===== PIPELINE ===== */
+    .pipeline {
+      display: flex; align-items: stretch; gap: 0;
+      flex-wrap: wrap;
+    }
+    .pipe-node {
+      flex: 1 1 240px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px 22px;
+      transition: box-shadow 0.2s ease;
+    }
+    .pipe-node:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .pipe-node.mid { border-color: color-mix(in srgb, var(--doc-accent) 45%, transparent); }
+    .pipe-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;
+    }
+    .pipe-value {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.98rem; font-weight: 600; color: var(--text);
+      word-break: break-word;
+    }
+    .pipe-node.mid .pipe-value { color: var(--doc-accent); }
+    .pipe-arrow {
+      flex: 0 0 46px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--doc-accent); font-size: 1.15rem; font-weight: 700;
+    }
+    @media (max-width: 720px) {
+      .pipeline { flex-direction: column; }
+      .pipe-arrow { flex: 0 0 34px; transform: rotate(90deg); }
+    }
+
+    /* ===== VERDICT ===== */
+    .verdict-wrap { display: grid; gap: 16px; grid-template-columns: minmax(240px, 1fr) 2fr; align-items: stretch; }
+    @media (max-width: 800px) { .verdict-wrap { grid-template-columns: 1fr; } }
+    .verdict-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 4px solid var(--negative);
+      border-radius: 10px; padding: 26px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .verdict-label { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; }
+    .verdict-value {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: clamp(2.4rem, 9vw, 3.2rem); font-weight: 800;
+      color: var(--negative); letter-spacing: -0.03em; line-height: 1;
+    }
+    .stat-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .stat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 22px;
+      border-top: 3px solid var(--st);
+      transition: box-shadow 0.2s ease;
+    }
+    .stat:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .stat-num {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 2.4rem; font-weight: 800; color: var(--st); line-height: 1;
+    }
+    .stat-name { margin-top: 8px; font-size: 0.9rem; color: var(--text-secondary); }
+
+    .st-pass { --st: var(--positive); }
+    .st-warn { --st: var(--warning); }
+    .st-fail { --st: var(--negative); }
+    .st-na   { --st: var(--text-secondary); }
+
+    /* ===== CHIPS ===== */
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+    .filter-btn {
+      font-family: inherit; font-size: 0.85rem; font-weight: 600;
+      padding: 8px 16px; border-radius: 999px; cursor: pointer;
+      background: var(--surface); color: var(--text-secondary);
+      border: 1px solid var(--border); transition: all 0.2s;
+    }
+    .filter-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .filter-btn[aria-pressed="true"] { background: var(--doc-accent); color: #fff; border-color: transparent; }
+
+    .chip-group { margin-bottom: 26px; }
+    .chip-group h3 {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em;
+      color: var(--text-secondary); margin-bottom: 14px; text-transform: uppercase;
+    }
+    .chips { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+    .chip {
+      background: var(--surface);
+      border: 1px solid color-mix(in srgb, var(--st) 32%, transparent);
+      border-left: 4px solid var(--st);
+      border-radius: 8px; padding: 12px 14px;
+      transition: opacity 0.25s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .chip:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .chip.dimmed { opacity: 0.18; }
+    .chip-id {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.9rem; font-weight: 700; color: var(--text);
+    }
+    .chip-st {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;
+      color: var(--st); margin-top: 4px; display: block;
+    }
+
+    /* ===== FINDINGS ===== */
+    .findings { display: grid; gap: 12px; }
+    .finding {
+      display: flex; gap: 16px; align-items: flex-start;
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 4px solid var(--st);
+      border-radius: 8px; padding: 16px 20px;
+      transition: box-shadow 0.2s ease;
+    }
+    .finding:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .finding-tag {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.78rem; font-weight: 700; color: var(--st);
+      min-width: 92px; white-space: nowrap; padding-top: 2px;
+    }
+    .finding-text { font-size: 0.94rem; color: var(--text); line-height: 1.65; }
+
+    .kv { display: grid; gap: 12px; }
+    .kv-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; }
+    .kv-key {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--doc-accent); min-width: 96px;
+    }
+    .kv-val { flex: 1; min-width: 220px; font-size: 0.95rem; color: var(--text); line-height: 1.7; }
+
+    .readonly-banner {
+      margin-top: 20px; padding: 16px 20px;
+      border-radius: 8px; background: var(--surface);
+      border: 1px dashed color-mix(in srgb, var(--positive) 45%, transparent);
+      color: var(--text); font-size: 0.95rem;
+    }
+    .readonly-banner b { color: var(--positive); }
+
+    footer.doc-foot {
+      border-top: 1px solid var(--border);
+      padding-top: 24px; margin-top: 8px;
+      color: var(--text-secondary); font-size: 0.88rem;
+      display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    footer.doc-foot a { color: var(--doc-accent); text-decoration: none; font-weight: 600; }
+    footer.doc-foot a:hover { text-decoration: underline; }
+
+    @media (max-width: 560px) {
+      .container { padding: 44px 16px; }
+      section { margin-bottom: 48px; }
+      .chips { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">Skip to content</a>
+
+  <!-- MENU -->
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Dark</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Download PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Print / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+    <div class="container">
+
+      <header class="hero">
+        <p class="eyebrow animate">packaging</p>
+        <h1 class="animate delay-1">structure-check<span class="h1-suffix">사용 결과</span></h1>
+        <div class="hero-rule animate delay-2"></div>
+        <p class="lead animate delay-3">
+          <strong>한 줄 요약</strong> — repo 경로 하나를 받아 M1-M10 / R1-R8 채점 리포트를 생성합니다.
+        </p>
+      </header>
+
+      <section data-reveal aria-label="파이프라인">
+        <div class="pipeline">
+          <div class="pipe-node">
+            <div class="pipe-label">입력</div>
+            <div class="pipe-value">repo 경로</div>
+          </div>
+          <div class="pipe-arrow" aria-hidden="true">&#9654;</div>
+          <div class="pipe-node mid">
+            <div class="pipe-label">스킬</div>
+            <div class="pipe-value">/packaging:structure-check</div>
+          </div>
+          <div class="pipe-arrow" aria-hidden="true">&#9654;</div>
+          <div class="pipe-node">
+            <div class="pipe-label">출력</div>
+            <div class="pipe-value">PASS/WARN/FAIL 리포트</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">01</span>실행한 명령</h2>
+        <p class="sec-sub">이번 실행은 인자 없이 돌렸다.</p>
+        <pre>범용:  /packaging:structure-check [repo-path] [--single|--mono]
+이번:  /packaging:structure-check          (인자 없음 = 현재 디렉터리)</pre>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">02</span>입력</h2>
+        <p class="sec-sub">이 repo 자신 (<code>packaging-skills</code>) — 실행 시점에 <code>docs/</code> 디렉터리가 아직 없던 상태.</p>
+        <div class="card">
+          <div class="kv">
+            <div class="kv-row">
+              <span class="kv-key">대상</span>
+              <span class="kv-val">이 repo 자신 (<code>packaging-skills</code>) — 실행 시점에 <code>docs/</code> 디렉터리가 아직 없던 상태.</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">모드</span>
+              <span class="kv-val"><code>marketplace.json</code> 의 <code>plugins[0].source == "./"</code> 로 <strong>single</strong> 감지</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">plugin root</span>
+              <span class="kv-val">repo 루트 1개</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">스킬</span>
+              <span class="kv-val">스캔으로 4개 발견</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">03</span>결과</h2>
+        <p class="sec-sub">판정 <strong>FAIL</strong> — 필수 1, 권장 6, N/A 1.</p>
+
+        <div class="verdict-wrap">
+          <div class="verdict-box">
+            <div class="verdict-label">판정</div>
+            <div class="verdict-value">FAIL</div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat st-fail">
+              <div class="stat-num" data-count="1">1</div>
+              <div class="stat-name">필수 FAIL</div>
+            </div>
+            <div class="stat st-warn">
+              <div class="stat-num" data-count="6">6</div>
+              <div class="stat-name">권장 WARN</div>
+            </div>
+            <div class="stat st-na">
+              <div class="stat-num" data-count="1">1</div>
+              <div class="stat-name">N/A</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">04</span>항목별 채점</h2>
+        <p class="sec-sub">상태 버튼을 눌러 해당 결과의 항목만 남긴다.</p>
+
+        <div class="filters" role="group" aria-label="채점 결과 필터">
+          <button class="filter-btn" id="f-ALL" aria-pressed="true" onclick="filterChips('ALL')">전체 18</button>
+          <button class="filter-btn" id="f-PASS" aria-pressed="false" onclick="filterChips('PASS')">PASS</button>
+          <button class="filter-btn" id="f-WARN" aria-pressed="false" onclick="filterChips('WARN')">WARN</button>
+          <button class="filter-btn" id="f-FAIL" aria-pressed="false" onclick="filterChips('FAIL')">FAIL</button>
+          <button class="filter-btn" id="f-NA" aria-pressed="false" onclick="filterChips('NA')">N/A</button>
+        </div>
+
+        <div class="chip-group">
+          <h3>[필수] M1-M10</h3>
+          <div class="chips">
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">M1</span><span class="chip-st">PASS</span></div>
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">M2</span><span class="chip-st">PASS</span></div>
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">M3</span><span class="chip-st">PASS</span></div>
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">M4</span><span class="chip-st">PASS</span></div>
+            <div class="chip st-fail" data-status="FAIL"><span class="chip-id">M5</span><span class="chip-st">FAIL</span></div>
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">M6</span><span class="chip-st">PASS</span></div>
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">M7</span><span class="chip-st">PASS</span></div>
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">M8</span><span class="chip-st">PASS</span></div>
+            <div class="chip st-na" data-status="NA"><span class="chip-id">M9</span><span class="chip-st">N/A</span></div>
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">M10</span><span class="chip-st">PASS</span></div>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <h3>[권장] R1-R8</h3>
+          <div class="chips">
+            <div class="chip st-warn" data-status="WARN"><span class="chip-id">R1</span><span class="chip-st">WARN</span></div>
+            <div class="chip st-warn" data-status="WARN"><span class="chip-id">R2</span><span class="chip-st">WARN</span></div>
+            <div class="chip st-warn" data-status="WARN"><span class="chip-id">R3</span><span class="chip-st">WARN</span></div>
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">R4</span><span class="chip-st">PASS</span></div>
+            <div class="chip st-warn" data-status="WARN"><span class="chip-id">R5</span><span class="chip-st">WARN</span></div>
+            <div class="chip st-warn" data-status="WARN"><span class="chip-id">R6</span><span class="chip-st">WARN</span></div>
+            <div class="chip st-warn" data-status="WARN"><span class="chip-id">R7</span><span class="chip-st">WARN</span></div>
+            <div class="chip st-pass" data-status="PASS"><span class="chip-id">R8</span><span class="chip-st">PASS</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section data-reveal>
+        <h2><span class="sec-num">05</span>지적 사항</h2>
+        <p class="sec-sub">FAIL 하나에서 WARN 넷이 파생됐다.</p>
+        <div class="findings">
+          <div class="finding st-fail">
+            <span class="finding-tag">M5 FAIL</span>
+            <span class="finding-text"><code>docs/skill-guides/</code>, <code>docs/skill-output/</code> 부재 (<code>docs/</code> 자체가 없음)</span>
+          </div>
+          <div class="finding st-warn">
+            <span class="finding-tag">R1/R2/R3/R5</span>
+            <span class="finding-text">전부 M5 에서 파생된 WARN</span>
+          </div>
+          <div class="finding st-warn">
+            <span class="finding-tag">R6</span>
+            <span class="finding-text"><code>marketplace.json</code> 에 <code>$schema</code> 없음</span>
+          </div>
+          <div class="finding st-warn">
+            <span class="finding-tag">R7</span>
+            <span class="finding-text"><code>plugins[0]</code> 에 <code>homepage</code> 없음</span>
+          </div>
+          <div class="finding st-pass">
+            <span class="finding-tag">설치 필수</span>
+            <span class="finding-text">설치 필수 항목(M1-M4, M7-M10)은 전부 PASS</span>
+          </div>
+        </div>
+        <p class="readonly-banner"><b>파일은 하나도 변경되지 않았다</b> (읽기 전용 스킬).</p>
+      </section>
+
+      <footer class="doc-foot">
+        <span>packaging · structure-check 사용 결과</span>
+        <span>스킬 설명서: <a href="../skill-guides/structure-check.html">structure-check.html</a></span>
+      </footer>
+
+    </div>
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme (class-based, OS detection on first visit) ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      document.getElementById('themeIcon').textContent = t === 'dark' ? '🌙' : '☀️';
+      document.getElementById('themeLabel').textContent = t === 'dark' ? 'Dark' : 'Light';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count), prefix = el.dataset.prefix || '', suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1200;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1), eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) { if (e.isIntersecting) { animateCounters(); cObs.disconnect(); } });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, { quality: 1, pixelRatio: 2, filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); } });
+        var a = document.createElement('a'); a.href = url;
+        a.download = document.title.replace(/\s+/g, '-').toLowerCase() + '.png'; a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === Chip status filter ===
+    var filterKeys = ['ALL', 'PASS', 'WARN', 'FAIL', 'NA'];
+    var activeFilter = 'ALL';
+    function filterChips(key) {
+      activeFilter = key;
+      filterKeys.forEach(function(k) {
+        var btn = document.getElementById('f-' + k);
+        if (btn) btn.setAttribute('aria-pressed', k === key ? 'true' : 'false');
+      });
+      document.querySelectorAll('.chip').forEach(function(chip) {
+        var match = (key === 'ALL') || (chip.getAttribute('data-status') === key);
+        chip.classList.toggle('dimmed', !match);
+      });
+    }
+    filterChips('ALL');
+  </script>
+</body>
+</html>

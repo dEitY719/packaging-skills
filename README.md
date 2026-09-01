@@ -14,6 +14,15 @@ coding-agent harnesses.
 | `structure-check` | `/packaging:structure-check` | Audits a repo's directory layout against the standard. Read-only — it reports, it never edits. |
 | `structure-refactor` | `/packaging:structure-refactor` | Applies the fixes `structure-check` found. Prints a plan and stops unless you pass `--apply`. |
 
+### Visual guides and worked examples (GitHub Pages)
+
+Each page is generated from a Markdown source under [`docs/skill-guides/`](docs/skill-guides) and [`docs/skill-output/`](docs/skill-output).
+
+- `create` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/create.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/create-usage.html) (skill source tree to repo creation plan)
+- `rename-repo` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/rename-repo.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/rename-repo-usage.html) (git remote to rename proposal)
+- `structure-check` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/structure-check.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/structure-check-usage.html) (repo path to PASS/WARN/FAIL report)
+- `structure-refactor` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/structure-refactor.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/structure-refactor-usage.html) (repo path to dry-run change plan)
+
 ## Install
 
 ### Claude Code

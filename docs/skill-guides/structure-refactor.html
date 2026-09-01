@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ko" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>structure-refactor — packaging</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { interpolate-size: allow-keywords; }
+
+    /* ===== THEMES (class-based ONLY — no @media prefers-color-scheme) ===== */
+    html.theme-dark {
+      --bg: #0A0A0A; --surface: #141414; --surface-hover: #1C1C1C;
+      --border: rgba(255,255,255,0.04);
+      --text: #EDEDED; --text-secondary: #888;
+      --accent: #3b82f6; --accent-secondary: #8b5cf6;
+      --positive: #10b981; --negative: #f43f5e; --warning: #f59e0b;
+    }
+    html.theme-light {
+      --bg: #FAFAF9; --surface: #FFFFFF; --surface-hover: #F5F5F4;
+      --border: rgba(0,0,0,0.06);
+      --text: #0f172a; --text-secondary: #64748b;
+      --accent: #2563eb; --accent-secondary: #7c3aed;
+      --positive: #059669; --negative: #e11d48; --warning: #d97706;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.01em; font-feature-settings: 'cv11', 'ss01';
+      transition: background 0.3s, color 0.3s;
+      scrollbar-gutter: stable;
+      overflow-x: hidden;
+    }
+    h1,h2,h3,h4,h5,h6 {
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+    h1 { font-weight: 700; }
+    h2 { font-weight: 600; }
+    body, p, li, td, th, span, label { font-weight: 400; }
+    p,li,td,th,span,label { color: var(--text); }
+    .text-secondary { color: var(--text-secondary); }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px;
+      transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+    /* ===== ANIMATIONS (CSS-first — always reliable) ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .animate { animation: fadeInUp 0.6s ease-out both; }
+    .animate.delay-1 { animation-delay: 0.1s; }
+    .animate.delay-2 { animation-delay: 0.2s; }
+    .animate.delay-3 { animation-delay: 0.3s; }
+    .animate.delay-4 { animation-delay: 0.4s; }
+    .animate.delay-5 { animation-delay: 0.5s; }
+    .animate.delay-6 { animation-delay: 0.6s; }
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      body { background: white !important; color: black !important; }
+      .viz-menu, .reveal { display: revert; opacity: 1 !important; transform: none !important; }
+      .card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+      * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+    @page { margin: 1in; @bottom-center { content: "Page " counter(page); font-size: 9pt; color: #666; } }
+
+    /* ===== MENU ===== */
+    .viz-menu { position: fixed; top: 16px; right: 16px; z-index: 9999; }
+    .viz-menu-toggle {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(12px); transition: all 0.2s;
+    }
+    .viz-menu-toggle:hover { background: var(--surface-hover); }
+    .viz-menu-dropdown {
+      position: absolute; top: 52px; right: 0; min-width: 200px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px;
+      opacity: 0; visibility: hidden; transform: translateY(-8px);
+      transition: all 0.2s; backdrop-filter: blur(16px);
+    }
+    .viz-menu-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+    .viz-menu-dropdown button {
+      width: 100%; padding: 10px 14px; border: none; border-radius: 8px;
+      background: transparent; color: var(--text); font-size: 14px;
+      font-family: inherit; cursor: pointer; text-align: left;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+    }
+    .viz-menu-dropdown button:hover { background: var(--surface-hover); }
+
+    /* ===== SKIP TO CONTENT (accessibility) ===== */
+    .skip-to-content {
+      position: absolute; top: -40px; left: 6px; background: var(--accent);
+      color: white; padding: 8px 12px; text-decoration: none;
+      border-radius: 4px; opacity: 0; pointer-events: none;
+      transition: all 0.2s; z-index: 10000;
+    }
+    .skip-to-content:focus { top: 6px; opacity: 1; pointer-events: auto; }
+
+    /* ===== DETAILS ACCORDION ===== */
+    details { overflow: hidden; }
+    details summary { cursor: pointer; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    ::details-content {
+      transition: block-size 0.3s ease, opacity 0.3s ease;
+      block-size: 0; opacity: 0; overflow: hidden;
+    }
+    details[open]::details-content { block-size: auto; opacity: 1; }
+
+    /* ===== POPOVER ===== */
+    [popover] {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2); color: var(--text);
+    }
+    [popover]::backdrop { background: rgba(0,0,0,0.3); }
+
+    /* ===== ADD YOUR STYLES BELOW ===== */
+    main#main-content { --doc-accent: var(--accent); }
+
+    .shell { max-width: 1100px; margin: 0 auto; padding: 64px 24px; }
+
+    .mono {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+    }
+
+    /* Hero */
+    header.hero { margin-bottom: 72px; }
+    .eyebrow {
+      color: var(--text-secondary); text-transform: uppercase;
+      letter-spacing: 0.22em; font-size: 0.8125rem; font-weight: 600;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+    }
+    header.hero h1 {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+      font-weight: 700; font-size: clamp(2.6rem, 8vw, 4rem);
+      margin: 14px 0 0; word-break: break-word;
+    }
+    .hero-rule {
+      width: 96px; height: 4px; border-radius: 2px;
+      background: var(--doc-accent); margin: 22px 0 24px;
+    }
+    .lead { font-size: 1.125rem; color: var(--text-secondary); max-width: 62ch; }
+    .lead code { color: var(--text); }
+
+    section { margin-bottom: 64px; }
+    section > h2 {
+      font-size: clamp(2rem, 4vw, 2.25rem); margin-bottom: 8px;
+    }
+    .sec-kicker {
+      color: var(--text-secondary); font-size: 0.9375rem; margin-bottom: 28px;
+      max-width: 68ch;
+    }
+    .sec-num {
+      display: inline-block; font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.8125rem; font-weight: 700; color: var(--doc-accent);
+      letter-spacing: 0.12em; margin-bottom: 10px;
+    }
+
+    /* Code blocks */
+    pre.code {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--doc-accent);
+      border-radius: 8px; padding: 20px 22px; overflow-x: auto;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+      font-size: 0.9375rem; line-height: 1.75; color: var(--text);
+      white-space: pre; tab-size: 2;
+    }
+    code.inline {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.9em; background: var(--surface-hover);
+      border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px;
+    }
+
+    /* Split hero: dry-run vs apply */
+    .split {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      align-items: stretch;
+    }
+    .state {
+      position: relative; padding: 28px; border-radius: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: 4px solid var(--state-color);
+      transition: box-shadow 0.2s ease;
+    }
+    .state:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .state--dry { --state-color: var(--doc-accent); }
+    .state--apply { --state-color: var(--warning); }
+    .state-badge {
+      display: inline-block; font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.8125rem; font-weight: 700; padding: 5px 10px; border-radius: 6px;
+      color: var(--state-color); border: 1px solid var(--state-color);
+      letter-spacing: 0.02em;
+    }
+    .state h3 { font-size: 1.5rem; margin: 16px 0 10px; }
+    .state p { color: var(--text-secondary); font-size: 1rem; }
+    .state .verdict {
+      margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--border);
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 1rem; font-weight: 700; color: var(--state-color);
+    }
+
+    /* Flag table */
+    .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+    table { border-collapse: collapse; width: 100%; min-width: 520px; background: var(--surface); }
+    th, td { text-align: left; padding: 15px 18px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 1rem; }
+    thead th {
+      font-weight: 600; color: var(--text-secondary); font-size: 0.8125rem;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      background: var(--surface-hover);
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-hover); }
+    td.flag {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+      color: var(--doc-accent); font-weight: 600; white-space: nowrap;
+    }
+
+    /* Steps */
+    .steps { display: grid; gap: 14px; }
+    .step {
+      display: grid; grid-template-columns: 52px 1fr; gap: 18px; align-items: start;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px 22px;
+      transition: box-shadow 0.2s ease;
+    }
+    .step:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .step-n {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-weight: 700; font-size: 1.0625rem;
+      color: var(--doc-accent); border: 1px solid var(--doc-accent);
+    }
+    .step p { font-size: 1rem; }
+
+    /* Chain */
+    .chain-toolbar {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      margin-bottom: 22px;
+    }
+    .seg {
+      display: inline-flex; padding: 4px; gap: 4px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    }
+    .seg button {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.875rem; font-weight: 600;
+      padding: 9px 16px; border-radius: 7px; border: none;
+      background: transparent; color: var(--text-secondary); cursor: pointer;
+      transition: background 0.18s, color 0.18s;
+    }
+    .seg button:hover { background: var(--surface-hover); color: var(--text); }
+    .seg button[aria-pressed="true"] { background: var(--surface-hover); color: var(--text); }
+    .seg button#btnDry[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--doc-accent); color: var(--doc-accent); }
+    .seg button#btnApply[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--warning); color: var(--warning); }
+
+    .chain-state {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.875rem; font-weight: 700; padding: 8px 14px; border-radius: 8px;
+      border: 1px dashed var(--chain-color, var(--doc-accent)); color: var(--chain-color, var(--doc-accent));
+    }
+
+    .chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+    .node {
+      flex: 1 1 170px; min-width: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: 3px solid var(--chain-color, var(--doc-accent));
+      border-radius: 8px; padding: 16px 18px;
+      transition: box-shadow 0.2s ease, opacity 0.3s ease, border-color 0.3s ease;
+      animation: fadeInUp 0.45s ease-out both;
+    }
+    .node:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .node .n-idx {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em;
+      color: var(--chain-color, var(--doc-accent));
+    }
+    .node .n-title {
+      display: block; margin-top: 8px; font-weight: 600; font-size: 1rem;
+      overflow-wrap: anywhere;
+    }
+    .node .n-sub { display: block; margin-top: 6px; color: var(--text-secondary); font-size: 0.875rem; overflow-wrap: anywhere; }
+    .node.node--op { border-style: dashed; }
+    .chain-arrow {
+      align-self: center; color: var(--text-secondary);
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace; font-size: 1.125rem;
+    }
+    .chain-empty {
+      width: 100%; text-align: center; padding: 44px 20px; border-radius: 10px;
+      border: 1px dashed var(--doc-accent); background: var(--surface);
+      animation: fadeIn 0.4s ease-out both;
+    }
+    .chain-empty .big {
+      display: block;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 700; color: var(--doc-accent);
+    }
+    .chain-empty .small { display: block; margin-top: 10px; color: var(--text-secondary); }
+    .chain-note { margin-top: 18px; color: var(--text-secondary); font-size: 0.9375rem; }
+
+    /* Caveat cards */
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+    .card h3 { font-size: 1.1875rem; margin-bottom: 10px; }
+    .card p { color: var(--text-secondary); font-size: 1rem; }
+    .card .tag {
+      display: inline-block; margin-bottom: 12px; font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      color: var(--doc-accent);
+    }
+    .card.warn { border-left: 3px solid var(--warning); }
+    .card.warn .tag { color: var(--warning); }
+
+    /* Scope cards */
+    .scope-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+
+    footer.page-foot {
+      border-top: 1px solid var(--border); padding-top: 28px; margin-top: 8px;
+      color: var(--text-secondary); font-size: 0.9375rem;
+    }
+
+    @media (max-width: 720px) {
+      .shell { padding: 44px 18px; }
+      .split { grid-template-columns: 1fr; }
+      .chain-arrow { display: none; }
+      .step { grid-template-columns: 44px 1fr; gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:10000;padding:8px 16px;background:var(--accent);color:white;text-decoration:none;border-radius:4px;" onfocus="this.style.cssText='position:fixed;left:16px;top:16px;z-index:10000;padding:8px 16px;background:var(--accent);color:white;text-decoration:none;border-radius:4px;'" onblur="this.style.cssText='position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;'">Skip to content</a>
+
+  <!-- MENU -->
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Dark</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Download PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Print / PDF</span></button>
+    </div>
+  </div>
+
+  <!-- SKIP TO CONTENT (accessibility) -->
+  <a href="#main-content" class="skip-to-content">Skip to content</a>
+
+  <main id="main-content" role="main">
+    <div class="shell">
+
+      <header class="hero">
+        <div class="eyebrow animate">packaging</div>
+        <h1 class="animate delay-1">structure-refactor</h1>
+        <div class="hero-rule animate delay-2"></div>
+        <p class="lead animate delay-3">
+          <strong>산출물</strong> — 현재 구조에서 표준 구조로 가는 순서 있는 변경 계획서.
+          <code class="inline">--apply</code> 를 줬을 때만 그 계획이 실제 파일 생성 /
+          <code class="inline">git mv</code> 이동 / 매니페스트 수정으로 집행되고,
+          마지막에 적용 건수 요약 리포트가 나온다.
+        </p>
+      </header>
+
+      <!-- 1. dry-run vs apply -->
+      <section data-reveal aria-labelledby="h-safety">
+        <div class="sec-num">01 / SAFETY MODEL</div>
+        <h2 id="h-safety">두 개의 상태</h2>
+        <p class="sec-kicker">이 스킬의 정체성은 여기서 갈린다. 같은 계획서를 만들지만, 쓰기는 한쪽에서만 일어난다.</p>
+        <div class="split">
+          <article class="state state--dry">
+            <span class="state-badge">dry-run (기본값)</span>
+            <h3>아무것도 쓰지 않는다</h3>
+            <p>계획만 찍고 파일을 건드리지 않는다. <code class="inline">--apply</code> 없이는 파일이 절대 바뀌지 않는다.</p>
+            <div class="verdict">파일 변경 0건</div>
+          </article>
+          <article class="state state--apply">
+            <span class="state-badge">--apply</span>
+            <h3>계획을 실제로 집행한다</h3>
+            <p>파일 생성, <code class="inline">git mv</code> 이동, 매니페스트 수정으로 계획이 순서대로 집행된다.</p>
+            <div class="verdict">집행 + 적용 건수 요약 리포트</div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 2. 언제 쓰고 언제 안 쓰는가 -->
+      <section data-reveal aria-labelledby="h-when">
+        <div class="sec-num">02 / SCOPE</div>
+        <h2 id="h-when">언제 쓰고, 언제 안 쓰는가</h2>
+        <p class="sec-kicker">check 는 감사만 하고, 이 스킬이 편집한다.</p>
+        <div class="scope-row">
+          <article class="card">
+            <span class="tag">쓴다</span>
+            <h3>structure-check 가 찾아낸 것을 고칠 때</h3>
+            <p>감사는 <code class="inline">structure-check</code> 가, 편집은 이 스킬이 맡는다.</p>
+          </article>
+          <article class="card">
+            <span class="tag">안 쓴다</span>
+            <h3>repo 를 처음부터 만들 때</h3>
+            <p>그건 <code class="inline">create</code> 다.</p>
+          </article>
+          <article class="card">
+            <span class="tag">안 쓴다</span>
+            <h3>이름을 바꿀 때</h3>
+            <p>그건 <code class="inline">rename-repo</code> 다.</p>
+          </article>
+        </div>
+        <div class="card warn" style="margin-top:18px;">
+          <span class="tag">변환 가드</span>
+          <h3>single ↔ mono 변환은 하지 않는다</h3>
+          <p>감지된 현재 레이아웃과 다른 모드를 강제하면 <code class="inline">[convert]</code> 경고 한 줄만 찍고,
+          <code class="inline">--apply</code> 라도 아무것도 쓰지 않고 멈춘다.</p>
+        </div>
+      </section>
+
+      <!-- 3. 호출 형식 -->
+      <section data-reveal aria-labelledby="h-usage">
+        <div class="sec-num">03 / INVOCATION</div>
+        <h2 id="h-usage">호출 형식</h2>
+        <p class="sec-kicker">플래그로 집행 여부와 범위, 목표 레이아웃 모드를 정한다.</p>
+        <pre class="code">/packaging:structure-refactor [repo-path] [--apply] [--mp|--op] [--single|--mono]
+/packaging:structure-refactor help</pre>
+
+        <div class="table-wrap" style="margin-top:22px;">
+          <table>
+            <caption class="text-secondary" style="text-align:left;padding:14px 18px 0;font-size:0.875rem;">플래그 목록</caption>
+            <thead>
+              <tr><th scope="col">플래그</th><th scope="col">의미</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="flag">--apply</td>
+                <td>계획을 실제로 집행한다. 없으면 <strong>dry-run</strong> — 계획만 찍고 아무것도 쓰지 않는다</td>
+              </tr>
+              <tr>
+                <td class="flag">--mandatory / --mp</td>
+                <td>범위 = 필수 M1-M10 만 (기본값)</td>
+              </tr>
+              <tr>
+                <td class="flag">--recommended / --op</td>
+                <td>범위 = M1-M10 + 권장 R1-R5. R6-R8 은 감사 전용이라 절대 자동 적용되지 않는다</td>
+              </tr>
+              <tr>
+                <td class="flag">--single / --mono</td>
+                <td><strong>목표</strong> 레이아웃 모드 강제. 상호 배타적, 마지막 것이 이김</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="chain-note"><code class="inline">--mp</code> 와 <code class="inline">--op</code> 를 같이 주면 오류로 중단한다.</p>
+      </section>
+
+      <!-- 4. 동작 단계 -->
+      <section data-reveal aria-labelledby="h-steps">
+        <div class="sec-num">04 / PIPELINE</div>
+        <h2 id="h-steps">동작 단계</h2>
+        <p class="sec-kicker">인자 파싱에서 요약 리포트까지 다섯 단계.</p>
+        <div class="steps">
+          <article class="step">
+            <div class="step-n" aria-hidden="true">1</div>
+            <p>인자 파싱, 경로 확인. git repo 가 아니면 경고(이동은 <code class="inline">mv</code> 로 대체),
+            dirty tree 면 dry-run 계획을 보여주고 명시적 <code class="inline">--apply</code> 를 요구</p>
+          </article>
+          <article class="step">
+            <div class="step-n" aria-hidden="true">2</div>
+            <p>모드 감지 → 변환 가드 → plugin root 집합 계산 → 스킬 발견 → 현재↔목표 diff 산출</p>
+          </article>
+          <article class="step">
+            <div class="step-n" aria-hidden="true">3</div>
+            <p>검사 ID 가 붙은 순서 있는 변경 목록 작성. 이미 맞는 항목은 줄을 만들지 않는다</p>
+          </article>
+          <article class="step">
+            <div class="step-n" aria-hidden="true">4</div>
+            <p>dry-run 이면 출력만, <code class="inline">--apply</code> 면 순서대로 집행</p>
+          </article>
+          <article class="step">
+            <div class="step-n" aria-hidden="true">5</div>
+            <p><code class="inline">[OK]</code> / <code class="inline">[FAIL]</code> 과
+            <code class="inline">key=value</code> 요약, 그리고 다음 행동 힌트</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 5. 집행 순서 -->
+      <section data-reveal aria-labelledby="h-chain">
+        <div class="sec-num">05 / EXECUTION ORDER</div>
+        <h2 id="h-chain">집행 순서</h2>
+        <p class="sec-kicker">4단계에서 무엇이 실제로 일어나는지 — 모드를 바꿔 비교해 보라.</p>
+
+        <div class="chain-toolbar">
+          <div class="seg" role="group" aria-label="집행 모드 선택">
+            <button type="button" id="btnDry" aria-pressed="true" onclick="setChainMode('dry')">dry-run (기본값)</button>
+            <button type="button" id="btnApply" aria-pressed="false" onclick="setChainMode('apply')">--apply</button>
+          </div>
+          <span class="chain-state" id="chainState">쓰기 없음</span>
+        </div>
+
+        <div class="chain" id="chainHost" aria-live="polite"></div>
+        <p class="chain-note" id="chainNote"></p>
+      </section>
+
+      <!-- 6. 주의사항 -->
+      <section data-reveal aria-labelledby="h-caveats">
+        <div class="sec-num">06 / CAVEATS</div>
+        <h2 id="h-caveats">주의사항 / 제약</h2>
+        <p class="sec-kicker">안전장치와 한계.</p>
+        <div class="grid-2">
+          <article class="card warn">
+            <span class="tag">기본값</span>
+            <h3>기본값이 dry-run 이다</h3>
+            <p><code class="inline">--apply</code> 없이는 파일이 절대 바뀌지 않는다.</p>
+          </article>
+          <article class="card">
+            <span class="tag">멱등성</span>
+            <h3>멱등하다</h3>
+            <p>이미 표준을 만족하는 repo 를 돌리면 <code class="inline">총 0 변경</code> 이 나온다.
+            스켈레톤은 기존 파일을 덮어쓰지 않고, 링크 보강은 중복을 만들지 않으며, Pages 가 이미 켜져 있으면 건너뛴다.</p>
+          </article>
+          <article class="card">
+            <span class="tag">히스토리</span>
+            <h3>git mv 로 이동한다</h3>
+            <p>git repo 안에서는 이동에 <code class="inline">git mv</code> 를 써서 히스토리를 보존한다.</p>
+          </article>
+          <article class="card">
+            <span class="tag">범위 밖</span>
+            <h3>single↔mono 변환은 범위 밖</h3>
+            <p>유효한 single repo 를 강제로 mono 로 재배치해 업스트림 호환을 깨는 사고를 막는 안전장치다.</p>
+          </article>
+          <article class="card">
+            <span class="tag">soft-fail</span>
+            <h3>Pages 활성화와 R5 링크 보강</h3>
+            <p>토큰 스코프가 없거나 호스트에 못 닿으면 경고만 하고 계속 진행한다.</p>
+          </article>
+          <article class="card">
+            <span class="tag">산출물 품질</span>
+            <h3>R1 은 실제 내용, R2 는 stub</h3>
+            <p>R1 가이드는 실제 내용이지만 R2 usage 는 stub 수준이다.
+            <code class="inline">/devx:excalidraw-diagram</code> 은 이 스킬이 호출하지 않는다.</p>
+          </article>
+        </div>
+      </section>
+
+      <footer class="page-foot" data-reveal>
+        <p class="text-secondary">packaging · structure-refactor · 스킬 설명서</p>
+      </footer>
+
+    </div>
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme (class-based, OS detection on first visit) ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      document.getElementById('themeIcon').textContent = t === 'dark' ? '🌙' : '☀️';
+      document.getElementById('themeLabel').textContent = t === 'dark' ? 'Dark' : 'Light';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('reveal'));
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count), prefix = el.dataset.prefix || '', suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1200;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1), eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) { if (e.isIntersecting) { animateCounters(); cObs.disconnect(); } });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, { quality: 1, pixelRatio: 2, filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); } });
+        var a = document.createElement('a'); a.href = url;
+        a.download = document.title.replace(/\s+/g, '-').toLowerCase() + '.png'; a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === 집행 순서 chain: dry-run vs --apply ===
+    var CHAIN_CORE = [
+      { idx: '01', title: 'mkdir', sub: '디렉터리 생성' },
+      { idx: '02', title: '이동', sub: 'git repo 안에서는 git mv' },
+      { idx: '03', title: '스켈레톤', sub: '기존 파일은 덮어쓰지 않음' },
+      { idx: '04', title: 'M7 plugins[].source 주입', sub: '매니페스트 수정' },
+      { idx: '05', title: 'M10 미지원 plugin.json 필드 제거', sub: '.bak 백업' }
+    ];
+    var CHAIN_OP = [
+      { idx: 'R1', title: '가이드 생성', sub: '/devx:visualize 위임' },
+      { idx: 'R2', title: 'usage stub', sub: 'stub 수준' },
+      { idx: 'Pages', title: 'GitHub Pages 활성화', sub: 'soft-fail' },
+      { idx: 'R4', title: '명명 교정', sub: '' },
+      { idx: 'R5', title: 'README 링크 보강', sub: '중복을 만들지 않음, soft-fail' }
+    ];
+    var chainHost = document.getElementById('chainHost');
+    var chainState = document.getElementById('chainState');
+    var chainNote = document.getElementById('chainNote');
+    var btnDry = document.getElementById('btnDry');
+    var btnApply = document.getElementById('btnApply');
+
+    function nodeHtml(item, isOp, delay) {
+      return '<div class="node' + (isOp ? ' node--op' : '') + '" style="animation-delay:' + delay + 'ms">' +
+        '<span class="n-idx">' + item.idx + '</span>' +
+        '<span class="n-title">' + item.title + '</span>' +
+        (item.sub ? '<span class="n-sub">' + item.sub + '</span>' : '') +
+      '</div>';
+    }
+
+    function setChainMode(mode) {
+      var isApply = mode === 'apply';
+      btnDry.setAttribute('aria-pressed', isApply ? 'false' : 'true');
+      btnApply.setAttribute('aria-pressed', isApply ? 'true' : 'false');
+
+      if (!isApply) {
+        chainHost.style.setProperty('--chain-color', 'var(--doc-accent)');
+        chainState.style.setProperty('--chain-color', 'var(--doc-accent)');
+        chainState.textContent = '쓰기 없음';
+        chainHost.innerHTML =
+          '<div class="chain-empty">' +
+            '<span class="big">dry-run: 0건 집행</span>' +
+            '<span class="small">계획만 찍고 아무것도 쓰지 않는다.</span>' +
+          '</div>';
+        chainNote.textContent = '이 목록은 계획서로만 출력된다. 실제로 집행하려면 --apply 를 준다.';
+        return;
+      }
+
+      chainHost.style.setProperty('--chain-color', 'var(--warning)');
+      chainState.style.setProperty('--chain-color', 'var(--warning)');
+      chainState.textContent = '순서대로 집행';
+      var html = '';
+      var d = 0;
+      CHAIN_CORE.forEach(function(item, i) {
+        if (i > 0) html += '<span class="chain-arrow" aria-hidden="true">&rarr;</span>';
+        html += nodeHtml(item, false, d); d += 60;
+      });
+      CHAIN_OP.forEach(function(item) {
+        html += '<span class="chain-arrow" aria-hidden="true">&rarr;</span>';
+        html += nodeHtml(item, true, d); d += 60;
+      });
+      chainHost.innerHTML = html;
+      chainNote.textContent = '점선 노드는 --op 일 때만 더해지는 권장 항목이다.';
+    }
+
+    setChainMode('dry');
+  </script>
+</body>
+</html>

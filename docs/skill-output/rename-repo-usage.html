@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>rename-repo 사용 결과 — packaging</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { interpolate-size: allow-keywords; }
+
+    /* ===== THEMES (class-based ONLY — no @media prefers-color-scheme) ===== */
+    html.theme-dark {
+      --bg: #0A0A0A; --surface: #141414; --surface-hover: #1C1C1C;
+      --border: rgba(255,255,255,0.04);
+      --text: #EDEDED; --text-secondary: #888;
+      --accent: #3b82f6; --accent-secondary: #8b5cf6;
+      --positive: #10b981; --negative: #f43f5e; --warning: #f59e0b;
+    }
+    html.theme-light {
+      --bg: #FAFAF9; --surface: #FFFFFF; --surface-hover: #F5F5F4;
+      --border: rgba(0,0,0,0.06);
+      --text: #0f172a; --text-secondary: #64748b;
+      --accent: #2563eb; --accent-secondary: #7c3aed;
+      --positive: #059669; --negative: #e11d48; --warning: #d97706;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.01em; font-feature-settings: 'cv11', 'ss01';
+      transition: background 0.3s, color 0.3s;
+      scrollbar-gutter: stable;
+    }
+    h1,h2,h3,h4,h5,h6 {
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+    h1 { font-weight: 700; }
+    h2 { font-weight: 600; }
+    body, p, li, td, th, span, label { font-weight: 400; }
+    p,li,td,th,span,label { color: var(--text); }
+    .text-secondary { color: var(--text-secondary); }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px;
+      transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+    /* ===== ANIMATIONS (CSS-first — always reliable) ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .animate { animation: fadeInUp 0.6s ease-out both; }
+    .animate.delay-1 { animation-delay: 0.1s; }
+    .animate.delay-2 { animation-delay: 0.2s; }
+    .animate.delay-3 { animation-delay: 0.3s; }
+    .animate.delay-4 { animation-delay: 0.4s; }
+    .animate.delay-5 { animation-delay: 0.5s; }
+    .animate.delay-6 { animation-delay: 0.6s; }
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      body { background: white !important; color: black !important; }
+      .viz-menu, .reveal { display: revert; opacity: 1 !important; transform: none !important; }
+      .card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+      * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .viz-menu, .copy-btn { display: none !important; }
+    }
+    @page { margin: 1in; @bottom-center { content: "Page " counter(page); font-size: 9pt; color: #666; } }
+
+    /* ===== MENU ===== */
+    .viz-menu { position: fixed; top: 16px; right: 16px; z-index: 9999; }
+    .viz-menu-toggle {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(12px); transition: all 0.2s;
+    }
+    .viz-menu-toggle:hover { background: var(--surface-hover); }
+    .viz-menu-dropdown {
+      position: absolute; top: 52px; right: 0; min-width: 200px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px;
+      opacity: 0; visibility: hidden; transform: translateY(-8px);
+      transition: all 0.2s; backdrop-filter: blur(16px);
+    }
+    .viz-menu-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+    .viz-menu-dropdown button {
+      width: 100%; padding: 10px 14px; border: none; border-radius: 8px;
+      background: transparent; color: var(--text); font-size: 14px;
+      font-family: inherit; cursor: pointer; text-align: left;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+    }
+    .viz-menu-dropdown button:hover { background: var(--surface-hover); }
+
+    /* ===== SKIP TO CONTENT (accessibility) ===== */
+    .skip-to-content {
+      position: absolute; top: -40px; left: 6px; background: var(--accent);
+      color: white; padding: 8px 12px; text-decoration: none;
+      border-radius: 4px; opacity: 0; pointer-events: none;
+      transition: all 0.2s; z-index: 10000;
+    }
+    .skip-to-content:focus { top: 6px; opacity: 1; pointer-events: auto; }
+
+    /* ===== DETAILS ACCORDION ===== */
+    details { overflow: hidden; }
+    details summary { cursor: pointer; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    ::details-content {
+      transition: block-size 0.3s ease, opacity 0.3s ease;
+      block-size: 0; opacity: 0; overflow: hidden;
+    }
+    details[open]::details-content { block-size: auto; opacity: 1; }
+
+    /* ===== POPOVER ===== */
+    [popover] {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2); color: var(--text);
+    }
+    [popover]::backdrop { background: rgba(0,0,0,0.3); }
+
+    /* ===== PAGE SHELL ===== */
+    body { --doc-accent: var(--accent-secondary); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 64px 24px; }
+
+    code, .mono, pre {
+      font-family: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+    }
+    code.inl {
+      font-size: 0.88em; padding: 2px 6px; border-radius: 5px;
+      background: var(--surface-hover); border: 1px solid var(--border);
+      color: var(--text); word-break: break-all;
+    }
+
+    /* ===== HERO ===== */
+    header.hero { padding-bottom: 24px; }
+    .eyebrow {
+      font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.24em; color: var(--text-secondary);
+      font-variant-caps: all-small-caps;
+    }
+    .hero h1 {
+      font-family: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+      font-size: clamp(2.2rem, 7vw, 3.8rem); font-weight: 700;
+      margin: 14px 0 0; letter-spacing: -0.04em; word-break: break-word;
+    }
+    .hero h1 .suffix {
+      font-family: 'Inter', 'Noto Sans KR', sans-serif; font-weight: 600;
+      color: var(--text-secondary); font-size: 0.5em; letter-spacing: -0.02em;
+      display: block; margin-top: 10px;
+    }
+    .hero-rule {
+      width: 92px; height: 4px; border-radius: 2px;
+      background: var(--doc-accent); margin: 22px 0 26px;
+    }
+    .lead {
+      font-size: 1.15rem; max-width: 68ch; color: var(--text-secondary); line-height: 1.7;
+    }
+    .lead strong { color: var(--text); font-weight: 600; }
+
+    /* ===== PIPELINE STRIP ===== */
+    .pipeline {
+      display: flex; align-items: stretch; gap: 0;
+      margin-top: 44px; flex-wrap: nowrap;
+    }
+    .pnode {
+      flex: 1 1 0; min-width: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 18px 16px;
+      text-align: left; cursor: pointer; font-family: inherit;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .pnode:hover, .pnode:focus-visible {
+      border-color: var(--doc-accent);
+      box-shadow: 0 0 0 1px var(--doc-accent), 0 8px 16px rgba(0,0,0,0.10);
+      outline: none;
+    }
+    .pnode .pkicker {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--doc-accent);
+    }
+    .pnode .ptitle {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.92rem; font-weight: 600; color: var(--text);
+      line-height: 1.45; word-break: break-word;
+    }
+    .pnode.terminal { border-left: 3px solid var(--warning); }
+    .pnode.terminal .pkicker { color: var(--warning); }
+    .parrow {
+      flex: 0 0 42px; display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary);
+    }
+    .parrow svg { display: block; }
+    @media (max-width: 720px) {
+      .pipeline { flex-direction: column; }
+      .parrow { flex: 0 0 34px; height: 34px; transform: rotate(90deg); }
+    }
+
+    /* ===== SECTIONS ===== */
+    section { margin-top: 64px; scroll-margin-top: 24px; }
+    .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
+    .sec-num {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.82rem; font-weight: 700; color: var(--doc-accent);
+      border: 1px solid var(--doc-accent); border-radius: 6px;
+      padding: 2px 8px; letter-spacing: 0.06em;
+    }
+    section h2 { font-size: clamp(1.6rem, 4vw, 2.1rem); }
+    @keyframes flashRing {
+      0% { box-shadow: 0 0 0 0 var(--doc-accent); }
+      100% { box-shadow: 0 0 0 14px transparent; }
+    }
+    section.flash > .sec-head .sec-num { animation: flashRing 0.9s ease-out; border-radius: 6px; }
+
+    /* ===== CODE BLOCK ===== */
+    .codeblock { position: relative; }
+    .codeblock pre {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--doc-accent);
+      border-radius: 8px; padding: 20px 22px; overflow-x: auto;
+      font-size: 0.94rem; line-height: 1.8; color: var(--text);
+      white-space: pre; tab-size: 2;
+    }
+    .copy-btn {
+      position: absolute; top: 10px; right: 10px;
+      background: var(--surface-hover); border: 1px solid var(--border);
+      color: var(--text-secondary); font-family: inherit; font-size: 0.76rem;
+      font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .copy-btn:hover { color: var(--doc-accent); border-color: var(--doc-accent); }
+    .copy-btn.done { color: var(--positive); border-color: var(--positive); }
+
+    /* ===== INPUT LIST ===== */
+    .io-list { display: grid; gap: 14px; }
+    .io-row {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 20px;
+      display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px;
+      transition: box-shadow 0.2s ease;
+    }
+    .io-row:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .io-key {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.88rem; color: var(--doc-accent); font-weight: 600; word-break: break-all;
+    }
+    .io-val { color: var(--text-secondary); font-size: 1rem; word-break: break-all; }
+    .io-val code { font-size: 0.9em; }
+    .io-arrow { color: var(--text-secondary); font-family: monospace; }
+
+    /* ===== RESULT ===== */
+    .status-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .status {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px;
+      transition: box-shadow 0.2s ease;
+    }
+    .status:hover { box-shadow: 0 0 0 1px var(--border), 0 8px 16px rgba(0,0,0,0.08); }
+    .status.pass { border-left: 3px solid var(--positive); }
+    .status.info { border-left: 3px solid var(--doc-accent); }
+    .status.halt { border-left: 3px solid var(--warning); }
+    .status .slabel {
+      font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace;
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; margin-bottom: 10px; display: block;
+    }
+    .status.pass .slabel { color: var(--positive); }
+    .status.info .slabel { color: var(--doc-accent); }
+    .status.halt .slabel { color: var(--warning); }
+    .status p { color: var(--text-secondary); font-size: 0.98rem; }
+    .status p code { font-size: 0.9em; }
+
+    .halt-banner {
+      margin-top: 24px;
+      background: var(--surface); border: 1px solid var(--warning);
+      border-radius: 10px; padding: 24px;
+      display: flex; gap: 18px; align-items: flex-start;
+    }
+    .halt-banner .hicon {
+      flex: 0 0 auto; color: var(--warning); margin-top: 2px;
+    }
+    .halt-banner h3 { font-size: 1.1rem; color: var(--warning); margin-bottom: 8px; }
+    .halt-banner p { color: var(--text-secondary); font-size: 1rem; }
+    .halt-banner p strong { color: var(--text); font-weight: 700; }
+
+    .cand-title { font-size: 1rem; font-weight: 600; margin: 26px 0 12px; }
+
+    a.doclink {
+      color: var(--doc-accent); text-decoration: none;
+      border-bottom: 1px solid var(--doc-accent); font-weight: 500;
+    }
+    a.doclink:hover { opacity: 0.8; }
+
+    footer.page-foot {
+      margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border);
+      color: var(--text-secondary); font-size: 0.86rem;
+      display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+
+    @media (max-width: 520px) {
+      .container { padding: 48px 18px; }
+      .codeblock pre { font-size: 0.82rem; padding: 18px 16px; }
+      .copy-btn { position: static; margin-bottom: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">Skip to content</a>
+
+  <!-- MENU -->
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Dark</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Download PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Print / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+    <div class="container">
+
+      <!-- ===== HERO ===== -->
+      <header class="hero">
+        <p class="eyebrow animate">packaging</p>
+        <h1 class="animate delay-1">rename-repo<span class="suffix">사용 결과</span></h1>
+        <div class="hero-rule animate delay-2"></div>
+        <p class="lead animate delay-3">
+          <strong>한 줄 요약</strong> — 현재 클론의 remote 와 plugin 구성을 읽어 컨벤션에 맞는
+          새 repo 이름 후보를 제안합니다.
+        </p>
+
+        <!-- ===== PIPELINE STRIP ===== -->
+        <nav class="pipeline animate delay-4" aria-label="실행 파이프라인">
+          <button type="button" class="pnode" onclick="jumpTo('sec-input')" aria-label="입력 단계로 이동">
+            <span class="pkicker">입력</span>
+            <span class="ptitle">git remote + marketplace.json</span>
+          </button>
+
+          <div class="parrow" aria-hidden="true">
+            <svg width="34" height="16" viewBox="0 0 34 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="1" y1="8" x2="27" y2="8"/>
+              <polyline points="22,3 27,8 22,13"/>
+            </svg>
+          </div>
+
+          <button type="button" class="pnode" onclick="jumpTo('sec-cmd')" aria-label="실행한 명령 단계로 이동">
+            <span class="pkicker">실행</span>
+            <span class="ptitle">/packaging:rename-repo</span>
+          </button>
+
+          <div class="parrow" aria-hidden="true">
+            <svg width="34" height="16" viewBox="0 0 34 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="1" y1="8" x2="27" y2="8"/>
+              <polyline points="22,3 27,8 22,13"/>
+            </svg>
+          </div>
+
+          <button type="button" class="pnode terminal" onclick="jumpTo('sec-result')" aria-label="결과 단계로 이동">
+            <span class="pkicker">결과</span>
+            <span class="ptitle">이름 후보 + 확인 게이트</span>
+          </button>
+        </nav>
+      </header>
+
+      <!-- ===== 1. 실행한 명령 ===== -->
+      <section id="sec-cmd" data-reveal aria-labelledby="h-cmd">
+        <div class="sec-head">
+          <span class="sec-num">01</span>
+          <h2 id="h-cmd">실행한 명령</h2>
+        </div>
+
+        <div class="codeblock">
+          <button class="copy-btn" onclick="copyBlock(this)" aria-label="명령 복사">복사</button>
+          <pre id="cmd-block">범용:  /packaging:rename-repo [&lt;new-name&gt;]
+이번:  /packaging:rename-repo          (인자 없음 = 제안 모드)</pre>
+        </div>
+      </section>
+
+      <!-- ===== 2. 입력 ===== -->
+      <section id="sec-input" data-reveal aria-labelledby="h-input">
+        <div class="sec-head">
+          <span class="sec-num">02</span>
+          <h2 id="h-input">입력</h2>
+        </div>
+
+        <div class="io-list">
+          <div class="io-row">
+            <span class="io-key">git remote get-url origin</span>
+            <span class="io-val"><span class="io-arrow">-&gt;</span> <code class="inl">git@github.com:dEitY719/packaging-skills.git</code></span>
+          </div>
+          <div class="io-row">
+            <span class="io-key">.claude-plugin/marketplace.json</span>
+            <span class="io-val">
+              <span class="io-arrow">-&gt;</span> <code class="inl">name: packaging-skills</code>,
+              <code class="inl">plugins[]</code> 1개 (<code class="inl">packaging</code>)
+            </span>
+          </div>
+          <div class="io-row">
+            <span class="io-key">현재 브랜치</span>
+            <span class="io-val">
+              <code class="inl">wt/feat/1</code> (기본 브랜치 <code class="inl">origin/main</code> 아님)
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 3. 결과 ===== -->
+      <section id="sec-result" data-reveal aria-labelledby="h-result">
+        <div class="sec-head">
+          <span class="sec-num">03</span>
+          <h2 id="h-result">결과</h2>
+        </div>
+
+        <div class="status-row">
+          <article class="status pass">
+            <span class="slabel">Step 0 — 통과</span>
+            <p>
+              호스트 <code class="inl">github.com</code>,
+              <code class="inl">gh auth status</code> 는
+              <code class="inl">Logged in to github.com account dEitY719</code>,
+              기본 브랜치 아님.
+            </p>
+          </article>
+
+          <article class="status info">
+            <span class="slabel">Step 1 — 후보 제안</span>
+            <p>
+              도메인 1개(<code class="inl">packaging</code>)를 근거로 후보 2건을 제안했다.
+            </p>
+          </article>
+
+          <article class="status halt">
+            <span class="slabel">Step 2 — 정지</span>
+            <p>
+              파괴적이라 확인 게이트에서 정지.
+            </p>
+          </article>
+        </div>
+
+        <h3 class="cand-title">제안된 이름 후보</h3>
+        <div class="codeblock">
+          <button class="copy-btn" onclick="copyBlock(this)" aria-label="후보 복사">복사</button>
+          <pre id="cand-block">1) claude-plugin-packaging        (plugin key 그대로)
+2) claude-plugin-skill-packaging  (도메인을 더 명시)</pre>
+        </div>
+
+        <div class="halt-banner">
+          <span class="hicon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><line x1="12" y1="7.5" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/>
+            </svg>
+          </span>
+          <div>
+            <h3>확인 게이트에서 정지 — 바뀐 것은 없다</h3>
+            <p>
+              Step 2 는 파괴적이라 확인 게이트에서 정지.
+              <strong><code class="inl">gh repo rename</code> 은 호출되지 않았고 remote URL 과 파일은
+              하나도 바뀌지 않았다.</strong>
+            </p>
+          </div>
+        </div>
+
+        <p style="margin-top:28px;color:var(--text-secondary);">
+          스킬 설명서: <a class="doclink" href="../skill-guides/rename-repo.html">rename-repo.html</a>
+        </p>
+      </section>
+
+      <footer class="page-foot">
+        <span>packaging / skill-output / rename-repo-usage</span>
+        <span>제안 모드 실행 기록 — rename 미실행</span>
+      </footer>
+
+    </div>
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown') || document.getElementById('vizMenu');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme (class-based, OS detection on first visit) ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      document.getElementById('themeIcon').textContent = t === 'dark' ? '🌙' : '☀️';
+      document.getElementById('themeLabel').textContent = t === 'dark' ? 'Dark' : 'Light';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Pipeline nodes jump to the matching section and flag it ===
+    function jumpTo(id) {
+      var target = document.getElementById(id);
+      if (!target) return;
+      target.classList.add('visible');
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelectorAll('section.flash').forEach(function(s) { s.classList.remove('flash'); });
+      void target.offsetWidth;
+      target.classList.add('flash');
+      setTimeout(function() { target.classList.remove('flash'); }, 1000);
+    }
+
+    // === Copy a command block ===
+    function copyBlock(btn) {
+      var pre = btn.parentElement.querySelector('pre');
+      if (!pre) return;
+      var text = pre.textContent;
+      var done = function() {
+        btn.textContent = '복사됨';
+        btn.classList.add('done');
+        setTimeout(function() { btn.textContent = '복사'; btn.classList.remove('done'); }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function() { fallbackCopy(text, done); });
+      } else {
+        fallbackCopy(text, done);
+      }
+    }
+    function fallbackCopy(text, done) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { console.error('Copy failed:', e); }
+      document.body.removeChild(ta);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, { quality: 1, pixelRatio: 2, filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); } });
+        var a = document.createElement('a'); a.href = url;
+        a.download = document.title.replace(/\s+/g, '-').toLowerCase() + '.png'; a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+  </script>
+</body>
+</html>
