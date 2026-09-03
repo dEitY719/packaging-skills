@@ -1,4 +1,4 @@
-# packaging:create — Manifest, LICENSE & .gitignore Templates
+# packaging:plugin-create — Manifest, LICENSE & .gitignore Templates
 
 These are written in Step 5 (`mono` golden layout). `<plugin-name>` is the
 repo name (`claude-plugin-harness`); `<plugin>` is the plugin key

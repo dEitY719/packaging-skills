@@ -11,7 +11,7 @@ bundles four skills used to build and maintain *other* skill marketplace repos:
 
 | Skill | Role |
 |-------|------|
-| `create` | Scaffold a new marketplace repo end to end. New repos only. |
+| `plugin-create` | Scaffold a new marketplace repo end to end. New repos only. |
 | `rename-repo` | Rename an existing repo to convention, fixing every hardcoded reference. |
 | `structure-check` | Audit a repo's layout. Read-only. |
 | `structure-refactor` | Apply the fixes. Dry-run unless `--apply`. |
@@ -55,7 +55,7 @@ manifests under a `plugins/` directory.**
   `references/` file to read and when. Detail lives in `references/`. Do not
   inline a reference file back into `SKILL.md`.
 - **Honour each skill's safety contract.** `structure-check` is read-only.
-  `structure-refactor` is dry-run unless `--apply`. `create` and `rename-repo`
+  `structure-refactor` is dry-run unless `--apply`. `plugin-create` and `rename-repo`
   both push to a remote and must confirm with the user first.
 
 ## Version bumps

@@ -1,17 +1,17 @@
-# create 사용 결과
+# plugin-create 사용 결과
 
 > **한 줄 요약** — 스킬 원본 디렉터리와 새 repo 이름을 받아 골든 `mono` 구조의
 > 마켓플레이스 repo 생성 계획을 산출합니다.
 
 ```
-스킬 원본 (skills/)  ──▶  /packaging:create --dry-run  ──▶  [PLAN] 블록
+스킬 원본 (skills/)  ──▶  /packaging:plugin-create --dry-run  ──▶  [PLAN] 블록
 ```
 
 ## 1. 실행한 명령
 
 ```
-범용:  /packaging:create <plugin-name> [skill ...] --src <path> --dest <path> [--dry-run]
-이번:  /packaging:create claude-plugin-demo structure-check \
+범용:  /packaging:plugin-create <plugin-name> [skill ...] --src <path> --dest <path> [--dry-run]
+이번:  /packaging:plugin-create claude-plugin-demo structure-check \
          --src skills --dest <scratchpad> --owner dEitY719 --host github.com --dry-run
 ```
 
@@ -25,7 +25,7 @@
 Step 2 에서 `[PLAN]` 이 출력되고 `--dry-run` 이라 그 자리에서 정지했다.
 
 ```
-[PLAN] packaging:create
+[PLAN] packaging:plugin-create
   Plugin name : claude-plugin-demo
   Plugin key  : demo
   Destination : <scratchpad>/claude-plugin-demo/
@@ -37,4 +37,4 @@ Step 2 에서 `[PLAN]` 이 출력되고 `--dry-run` 이라 그 자리에서 정�
 
 디렉터리는 생성되지 않았고 `gh repo create` 와 push 는 호출되지 않았다.
 
-스킬 설명서: [create.html](../skill-guides/create.html)
+스킬 설명서: [plugin-create.html](../skill-guides/plugin-create.html)

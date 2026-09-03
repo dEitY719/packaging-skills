@@ -22,7 +22,7 @@
   "interface": {
     "displayName": "Packaging",
     "shortDescription": "Create, rename, audit, and refactor agent skill marketplace repos",
-    "longDescription": "Packaging bundles the four skills used to build and maintain skill marketplace repos: create, rename-repo, structure-check, and structure-refactor.",
+    "longDescription": "Packaging bundles the four skills used to build and maintain skill marketplace repos: plugin-create, rename-repo, structure-check, and structure-refactor.",
     "developerName": "dEitY719",
     "capabilities": [
       "Interactive",

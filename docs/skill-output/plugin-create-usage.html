@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>create 사용 결과 — packaging</title>
+  <title>plugin-create 사용 결과 — packaging</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -363,7 +363,7 @@
 
       <header class="hero">
         <p class="eyebrow animate">packaging</p>
-        <h1 class="animate delay-1">create <span class="suffix">사용 결과</span></h1>
+        <h1 class="animate delay-1">plugin-create <span class="suffix">사용 결과</span></h1>
         <div class="hero-rule animate delay-2"></div>
         <p class="lead animate delay-3">
           <strong>한 줄 요약</strong> — 스킬 원본 디렉터리와 새 repo 이름을 받아 골든
@@ -386,7 +386,7 @@
 
           <button type="button" class="pnode" onclick="jumpTo('sec-cmd')" aria-label="실행한 명령 섹션으로 이동">
             <span class="plabel">실행</span>
-            <span class="ptext">/packaging:create --dry-run</span>
+            <span class="ptext">/packaging:plugin-create --dry-run</span>
             <span class="phint">1. 실행한 명령 보기</span>
           </button>
 
@@ -418,8 +418,8 @@
             <span class="term-title">command</span>
             <button type="button" class="copy-btn" onclick="copyBlock('cmdBlock', this)" aria-label="명령 복사">복사</button>
           </div>
-<pre id="cmdBlock">범용:  /packaging:create &lt;plugin-name&gt; [skill ...] --src &lt;path&gt; --dest &lt;path&gt; [--dry-run]
-이번:  /packaging:create claude-plugin-demo structure-check \
+<pre id="cmdBlock">범용:  /packaging:plugin-create &lt;plugin-name&gt; [skill ...] --src &lt;path&gt; --dest &lt;path&gt; [--dry-run]
+이번:  /packaging:plugin-create claude-plugin-demo structure-check \
          --src skills --dest &lt;scratchpad&gt; --owner dEitY719 --host github.com --dry-run</pre>
         </div>
       </section>
@@ -458,10 +458,10 @@
         <div class="term accent">
           <div class="term-bar">
             <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
-            <span class="term-title">[PLAN] packaging:create</span>
+            <span class="term-title">[PLAN] packaging:plugin-create</span>
             <button type="button" class="copy-btn" onclick="copyBlock('planBlock', this)" aria-label="PLAN 출력 복사">복사</button>
           </div>
-<pre id="planBlock">[PLAN] packaging:create
+<pre id="planBlock">[PLAN] packaging:plugin-create
   Plugin name : claude-plugin-demo
   Plugin key  : demo
   Destination : &lt;scratchpad&gt;/claude-plugin-demo/
@@ -475,15 +475,15 @@
           <strong>디렉터리는 생성되지 않았고</strong> <code>gh repo create</code> 와 push 는 호출되지 않았다.
         </div>
 
-        <a class="guide-link" href="../skill-guides/create.html">
+        <a class="guide-link" href="../skill-guides/plugin-create.html">
           <span class="gl-label">스킬 설명서</span>
-          <span class="gl-target">create.html</span>
+          <span class="gl-target">plugin-create.html</span>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
         </a>
       </section>
 
       <footer class="page-foot">
-        <span>packaging / create</span>
+        <span>packaging / plugin-create</span>
         <span>skill output</span>
       </footer>
 

@@ -93,4 +93,4 @@ web UI (Settings → Repository name).
 
 ## Related Skills
 
-`packaging:structure-check` (audits the layout) · `packaging:structure-refactor` (fixes the layout) · `packaging:create` (builds a new repo from scratch). This skill renames.
+`packaging:structure-check` (audits the layout) · `packaging:structure-refactor` (fixes the layout) · `packaging:plugin-create` (builds a new repo from scratch). This skill renames.

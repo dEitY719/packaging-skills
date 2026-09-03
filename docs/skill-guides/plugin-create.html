@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>create — packaging skill guide</title>
+  <title>plugin-create — packaging skill guide</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -359,7 +359,7 @@
 
       <header class="hero">
         <p class="eyebrow animate">packaging</p>
-        <h1 class="animate delay-1">create</h1>
+        <h1 class="animate delay-1">plugin-create</h1>
         <div class="hero-rule animate delay-2"></div>
         <p class="lead animate delay-3">
           <strong>산출물</strong> — <code>claude-plugin-&lt;domain&gt;</code> 형태의 마켓플레이스 repo 한 벌.
@@ -384,7 +384,7 @@
             <tbody>
               <tr>
                 <td>repo 가 아직 <strong>없다</strong>. 흩어진 스킬을 묶어 새로 만든다</td>
-                <td class="pick"><span class="skill-tag is-this">create</span></td>
+                <td class="pick"><span class="skill-tag is-this">plugin-create</span></td>
               </tr>
               <tr>
                 <td>repo 는 있는데 <strong>이름</strong>이 컨벤션에 안 맞는다</td>
@@ -403,7 +403,7 @@
         </div>
 
         <div class="note">
-          <strong>create 는 신규 repo 전용이다.</strong> 대상 디렉터리가 이미 존재하면 덮어쓰지 않고 중단한다 — 멱등하지 않다.
+          <strong>plugin-create 는 신규 repo 전용이다.</strong> 대상 디렉터리가 이미 존재하면 덮어쓰지 않고 중단한다 — 멱등하지 않다.
         </div>
       </section>
 
@@ -415,9 +415,9 @@
         </div>
         <p class="sec-sub">인자 하나(<code>&lt;plugin-name&gt;</code>)만 필수이고, 나머지는 모두 기본값이 있다.</p>
 
-<pre class="code">/packaging:create &lt;plugin-name&gt; [skill ...] [--src &lt;path&gt;] [--dest &lt;path&gt;]
+<pre class="code">/packaging:plugin-create &lt;plugin-name&gt; [skill ...] [--src &lt;path&gt;] [--dest &lt;path&gt;]
                   [--host &lt;host&gt;] [--owner &lt;owner&gt;] [--plugin &lt;name&gt;] [--dry-run]
-/packaging:create help</pre>
+/packaging:plugin-create help</pre>
 
         <div class="table-wrap" style="margin-top:20px;">
           <table>
@@ -634,7 +634,7 @@
       </section>
 
       <footer class="page-foot">
-        <span>packaging / create</span>
+        <span>packaging / plugin-create</span>
         <span>skill guide</span>
       </footer>
 

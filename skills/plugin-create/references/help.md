@@ -1,9 +1,9 @@
-/packaging:create — Create a new claude-plugin marketplace repo from scratch
+/packaging:plugin-create — Create a new claude-plugin marketplace repo from scratch
 
 Usage:
-  /packaging:create <plugin-name> [skill ...] [--src <path>] [--dest <path>]
+  /packaging:plugin-create <plugin-name> [skill ...] [--src <path>] [--dest <path>]
                         [--host <ghes-host>] [--owner <owner>] [--plugin <name>] [--dry-run]
-  /packaging:create help
+  /packaging:plugin-create help
 
 Arguments:
   <plugin-name>   Repo name in `claude-plugin-<domain>` form (required).
@@ -24,7 +24,7 @@ Flags:
   -h | --help     Print this help and stop. No filesystem or network calls.
 
 Plan output (Step 2, always printed):
-  [PLAN] packaging:create
+  [PLAN] packaging:plugin-create
     Plugin name : claude-plugin-harness
     Plugin key  : harness
     Destination : ~/para/project/claude-plugin-harness/
@@ -49,7 +49,7 @@ Behavior (mono golden layout):
   9. packaging:structure-check → confirm M1-M10 PASS.
 
 Completion report (Step 9):
-  [OK] packaging:create
+  [OK] packaging:plugin-create
     Repo  : https://<host>/<owner>/<plugin-name>
     Skills: N copied
     Check : M1-M10 PASS
@@ -63,10 +63,10 @@ Safety:
   - gh auth status is checked before any gh call; never git push --force.
 
 Examples:
-  /packaging:create claude-plugin-harness skill-check skill-create
-  /packaging:create harness skill-check --dry-run
-  /packaging:create claude-plugin-visuals devx-visualize --owner acme --host github.com
-  /packaging:create help
+  /packaging:plugin-create claude-plugin-harness skill-check skill-create
+  /packaging:plugin-create harness skill-check --dry-run
+  /packaging:plugin-create claude-plugin-visuals devx-visualize --owner acme --host github.com
+  /packaging:plugin-create help
 
 Sister skills:
   /packaging:structure-check     — read-only audit (run after create)

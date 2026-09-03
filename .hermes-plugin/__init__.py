@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 
 # Sentinel skill used to recognise a correctly laid out skills/ tree.
-_SENTINEL = ("create", "SKILL.md")
+_SENTINEL = ("plugin-create", "SKILL.md")
 
 
 def _skills_dir() -> str:

@@ -80,4 +80,4 @@ the "structure-check PASS ≠ install/runtime 성공" disclaimer (report-templat
 
 ## Related Skills
 
-`packaging:structure-refactor` (fixes what this finds) · `packaging:rename-repo` (renames the repo to the team convention) · `packaging:create` (builds a new repo from scratch).
+`packaging:structure-refactor` (fixes what this finds) · `packaging:rename-repo` (renames the repo to the team convention) · `packaging:plugin-create` (builds a new repo from scratch).

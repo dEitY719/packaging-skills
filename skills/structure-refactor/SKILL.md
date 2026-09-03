@@ -90,4 +90,4 @@ the single↔mono conversion guard, soft-fail behaviors).
 
 ## Related Skills
 
-`packaging:structure-check` (audits what this fixes) · `packaging:rename-repo` (renames the repo to the team convention) · `packaging:create` (builds a new repo from scratch).
+`packaging:structure-check` (audits what this fixes) · `packaging:rename-repo` (renames the repo to the team convention) · `packaging:plugin-create` (builds a new repo from scratch).

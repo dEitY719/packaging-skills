@@ -7,7 +7,7 @@
 ## 언제 쓰고, 언제 안 쓰는가
 
 `structure-check` 가 찾아낸 것을 **고칠 때** 쓴다. check 는 감사만 하고, 이
-스킬이 편집한다. 반대로 repo 를 처음부터 만드는 건 `create`, 이름을 바꾸는 건
+스킬이 편집한다. 반대로 repo 를 처음부터 만드는 건 `plugin-create`, 이름을 바꾸는 건
 `rename-repo` 다.
 
 single 레이아웃과 mono 레이아웃 사이의 **변환은 하지 않는다**. 감지된 현재

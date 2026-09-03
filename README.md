@@ -9,7 +9,7 @@ coding-agent harnesses.
 
 | Skill | Invoke | What it does |
 |-------|--------|--------------|
-| `create` | `/packaging:create <name>` | Scaffolds a new marketplace repo from scratch: structure, manifests, copy-only skill import, `git init`, repo create, push. New repos only. |
+| `plugin-create` | `/packaging:plugin-create <name>` | Scaffolds a new marketplace repo from scratch: structure, manifests, copy-only skill import, `git init`, repo create, push. New repos only. |
 | `rename-repo` | `/packaging:rename-repo <name>` | Renames an existing plugin repo to the team convention and fixes every hardcoded reference. Rename and push each need confirmation. |
 | `structure-check` | `/packaging:structure-check` | Audits a repo's directory layout against the standard. Read-only — it reports, it never edits. |
 | `structure-refactor` | `/packaging:structure-refactor` | Applies the fixes `structure-check` found. Prints a plan and stops unless you pass `--apply`. |
@@ -18,7 +18,7 @@ coding-agent harnesses.
 
 Each page is generated from a Markdown source under [`docs/skill-guides/`](docs/skill-guides) and [`docs/skill-output/`](docs/skill-output).
 
-- `create` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/create.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/create-usage.html) (skill source tree to repo creation plan)
+- `plugin-create` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/plugin-create.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/plugin-create-usage.html) (skill source tree to repo creation plan)
 - `rename-repo` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/rename-repo.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/rename-repo-usage.html) (git remote to rename proposal)
 - `structure-check` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/structure-check.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/structure-check-usage.html) (repo path to PASS/WARN/FAIL report)
 - `structure-refactor` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/structure-refactor.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/structure-refactor-usage.html) (repo path to dry-run change plan)
@@ -66,7 +66,7 @@ Manifests live at the repo root and all point at one flat `skills/` directory:
 
 ```
 .
-├── skills/{create,rename-repo,structure-check,structure-refactor}/
+├── skills/{plugin-create,rename-repo,structure-check,structure-refactor}/
 │   ├── SKILL.md
 │   └── references/
 ├── .claude-plugin/{marketplace,plugin}.json   Claude Code

@@ -6,7 +6,7 @@
 ## 언제 쓰고, 언제 안 쓰는가
 
 repo 는 이미 있고 **이름만** 팀 컨벤션 `claude-plugin-<domain>` 에서 벗어난
-경우에 쓴다. repo 자체가 없으면 `create`, 이름이 아니라 **디렉터리 배치**가
+경우에 쓴다. repo 자체가 없으면 `plugin-create`, 이름이 아니라 **디렉터리 배치**가
 문제라면 `structure-check` / `structure-refactor` 다.
 
 이 스킬이 고치는 것은 이름과 그 이름을 참조하는 문자열뿐이다. 레이아웃은

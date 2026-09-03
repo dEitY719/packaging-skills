@@ -1,4 +1,4 @@
-# packaging:create — README Template
+# packaging:plugin-create — README Template
 
 Written in Step 5 at `<dest>/<plugin-name>/README.md`. Placeholders:
 `<plugin-name>` = repo name, `<plugin>` = plugin key, `<owner>`/`<host>`

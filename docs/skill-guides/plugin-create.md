@@ -1,4 +1,4 @@
-# create
+# plugin-create
 
 **산출물** — `claude-plugin-<domain>` 형태의 마켓플레이스 repo 한 벌. 골든
 `mono` 디렉터리 구조, 매니페스트(`marketplace.json` / `plugin.json`), README,
@@ -8,20 +8,20 @@ LICENSE, `.gitignore`, 그리고 초기 커밋이 올라간 GitHub 원격 저장
 
 | 상황 | 쓸 스킬 |
 |---|---|
-| repo 가 아직 **없다**. 흩어진 스킬을 묶어 새로 만든다 | `create` |
+| repo 가 아직 **없다**. 흩어진 스킬을 묶어 새로 만든다 | `plugin-create` |
 | repo 는 있는데 **이름**이 컨벤션에 안 맞는다 | `rename-repo` |
 | repo 는 있는데 **구조**가 표준에서 벗어났는지 알고 싶다 | `structure-check` |
 | 그 구조를 실제로 **고친다** | `structure-refactor` |
 
-`create` 는 신규 repo 전용이다. 대상 디렉터리가 이미 존재하면 덮어쓰지 않고
+`plugin-create` 는 신규 repo 전용이다. 대상 디렉터리가 이미 존재하면 덮어쓰지 않고
 중단한다 — 멱등하지 않다.
 
 ## 호출 형식
 
 ```
-/packaging:create <plugin-name> [skill ...] [--src <path>] [--dest <path>]
+/packaging:plugin-create <plugin-name> [skill ...] [--src <path>] [--dest <path>]
                   [--host <host>] [--owner <owner>] [--plugin <name>] [--dry-run]
-/packaging:create help
+/packaging:plugin-create help
 ```
 
 | 인자 / 플래그 | 의미 | 기본값 |
