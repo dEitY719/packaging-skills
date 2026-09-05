@@ -179,10 +179,11 @@ from the directory basename → **WARN**. SSOT:
 → "Exception: marketplace repos use the bare form"; its test for *is this a
 marketplace repo* — a root holding `.claude-plugin/plugin.json` — is the
 plugin-root discovery M3/M4 already performs (above), so no new detection is
-needed. As stated here R4 is exactly the CI gate in
+needed. R4 is a local preview of the CI gate in
 `harness-skills/.github/workflows/skill-check.yml` ("Skill frontmatter name
-matches its directory") — a local preview of it, so the two stay in sync by
-construction.
+matches its directory"), but strictly weaker: R4 WARNs on any repo, whereas the
+gate hard-fails the build and only in repos that call that reusable workflow.
+Nothing keeps the two in step — passing R4 is not proof of passing the gate.
 
 **R5 per-skill README link rule** — for each discovered skill `<s>`,
 `README.md` must contain **both**:
