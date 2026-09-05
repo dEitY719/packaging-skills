@@ -3,10 +3,10 @@
 - Dry-run is the default — only `--apply` writes. Never auto-apply on a
   dirty tree.
 - Idempotent: an already-standard repo (within scope) is a no-op.
-- R1 guides under `--op` are real content — delegate to `/devx:visualize`
+- R1 guides under `--op` are real content — delegate to `/visuals:visualize`
   (skip if the guide already exists; idempotent). R2 usage samples stay
-  placeholder stubs (TODO pointing at `/devx:visualize`). Never call
-  `/devx:excalidraw-diagram` here.
+  placeholder stubs (TODO pointing at `/visuals:visualize`). Never call
+  `/visuals:excalidraw-diagram` here.
 - GitHub Pages activation and R5 link backfill are soft-fail: a missing
   token scope or an unreachable host warns and continues — it never aborts
   the run.

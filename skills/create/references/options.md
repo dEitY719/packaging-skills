@@ -7,10 +7,10 @@ flags below. (The same surface, with examples, is in `help.md`.)
 |--------|-------------|---------|
 | `<plugin-name>` | repo name in `claude-plugin-<domain>` form (required) | — |
 | `[skill ...]` | skill directory names to copy (space-separated) | inferred from chat, else ask |
-| `--src <path>` | skill source directory | `~/dotfiles/claude/skills/` |
+| `--src <path>` | skill source directory (**required** — no default) | — |
 | `--dest <path>` | repo creation location | `~/para/project/` |
-| `--host <host>` | GitHub host | `github.samsungds.net` |
-| `--owner <owner>` | GitHub owner | `byoungwoo-yoon` |
+| `--host <host>` | GitHub host | `github.com` |
+| `--owner <owner>` | GitHub owner | `dEitY719` |
 | `--plugin <name>` | plugin key (inner name) | domain part of name |
 | `--dry-run` | plan only — no writes/repo/commit | off |
 | `-h`/`--help` | print help, stop | — |
@@ -19,7 +19,7 @@ flags below. (The same surface, with examples, is in `help.md`.)
 
 - Prepend `claude-plugin-` if the prefix is missing (tell the user).
 - Enforce lowercase-hyphen naming (GitHub repo naming rules).
-- Abort if `--src` is missing.
+- Abort if `--src` is missing — it has no default, so it must always be given.
 - Abort if `<dest>/<plugin-name>` already exists — no overwrite, NOT idempotent.
 - `[skill ...]`: infer from the conversation when omitted; if not inferable,
   ask the user (never guess).

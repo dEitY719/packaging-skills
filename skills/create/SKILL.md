@@ -5,6 +5,7 @@ description: >-
   manifests, copy-only skill import, git init, repo create, push. Use for
   "새 플러그인 만들어", "스킬 묶어서 플러그인으로", "claude-plugin 신규 생성",
   "/packaging:create <name>". New repos only.
+license: MIT
 compatibility:
   tools: Read, Write, Edit, Bash, Glob
 metadata:

@@ -26,7 +26,7 @@ the team standard (`anthropics/claude-code` bundles 13 plugins this way).
 A **plugin root** is the directory holding the plugin manifest
 (`.claude-plugin/plugin.json`) and `skills/`. Defining M3/M4/R1/R2/R4/R5
 over the *plugin-root set* makes them mode-agnostic — only "how the
-plugin-root set is computed" differs between modes (Approach C, #914).
+plugin-root set is computed" differs between modes (Approach C, dEitY719/dotfiles#914).
 
 ### Golden layout — mono
 
@@ -91,7 +91,7 @@ M4 → missing or frontmatter lacks `name`/`description`; M5 → either dir
 missing; M6 → missing; M7-M9 → see "marketplace source integrity" below;
 M10 → see "plugin.json known fields" below.
 
-## marketplace `plugins[].source` integrity (M7-M9, #1084)
+## marketplace `plugins[].source` integrity (M7-M9, dEitY719/dotfiles#1084)
 
 Claude Code (observed on 2.1.198) does **not** inherit a marketplace top-level
 `source` into a plugin at install time — each `plugins[]` element must carry
@@ -106,7 +106,7 @@ when M1 passes (marketplace parses) and ≥1 plugin is listed; otherwise **N/A**
 - A bare **string** element (`"./plugins/foo"`, `"./"`) **is** the source
   (shorthand) → satisfied.
 - An **object** element MUST carry its own `source` key → missing it is the
-  #61 shape → **FAIL**.
+  claude-plugin-jira#61 shape → **FAIL**.
 
 **M8 — each resolved source has a valid shape** (mono/single common). Valid:
 - local path string: `"."` / `"./"` / `"plugins/<name>"` / `"./plugins/<name>"`;
@@ -116,7 +116,7 @@ when M1 passes (marketplace parses) and ≥1 plugin is listed; otherwise **N/A**
   no `url` field) → **FAIL**. Elements with no resolvable source are M7's
   concern and are skipped here (never a double FAIL). The mode-shape combination
   itself is **not** a FAIL — a mono repo may legitimately use remote URL sources
-  — so M8 never re-flags a valid remote setup (#63 misdiagnosis guard).
+  — so M8 never re-flags a valid remote setup (claude-plugin-jira#63 misdiagnosis guard).
 
 **M9 — mono only: each declared local plugin dir exists.** For every source of
 the form `./plugins/<name>` (or `plugins/<name>`), `plugins/<name>/` must exist
@@ -125,7 +125,7 @@ on disk. A declared-but-absent directory (typo/misconfig) → **FAIL**. Remote
 whose sources are all remote → **N/A**. In `single` mode M9 is **N/A** (no
 `plugins/` layout).
 
-## plugin.json known fields (M10, #1084)
+## plugin.json known fields (M10, dEitY719/dotfiles#1084)
 
 M7-M9 catch marketplace-level source problems; **M10 catches the plugin.json
 level.** A third real case (claude-plugin-jira#65) installed cleanly but Claude
@@ -211,7 +211,7 @@ they are exempt. **N/A** when the marketplace is unreadable.
 
 **R8 add-URL hint** — when `README.md` contains a `/plugin marketplace add
 <URL>` example, prefer the raw `.claude-plugin/marketplace.json` URL (no local
-clone needed — the #61 success pattern) over a `.git` clone URL. A `.git`
+clone needed — the claude-plugin-jira#61 success pattern) over a `.git` clone URL. A `.git`
 example → **WARN**; a raw-`marketplace.json` (or other) URL → **PASS**; no
 add example, or no README → **N/A** (both forms are valid — this is a nudge,
 not a hard rule).

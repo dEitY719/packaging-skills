@@ -413,9 +413,9 @@
           <span class="sec-num">02</span>
           <h2 id="sec-usage">호출 형식</h2>
         </div>
-        <p class="sec-sub">인자 하나(<code>&lt;plugin-name&gt;</code>)만 필수이고, 나머지는 모두 기본값이 있다.</p>
+        <p class="sec-sub"><code>&lt;plugin-name&gt;</code> 와 <code>--src</code> 가 필수이고, 나머지는 모두 기본값이 있다.</p>
 
-<pre class="code">/packaging:create &lt;plugin-name&gt; [skill ...] [--src &lt;path&gt;] [--dest &lt;path&gt;]
+<pre class="code">/packaging:create &lt;plugin-name&gt; [skill ...] --src &lt;path&gt; [--dest &lt;path&gt;]
                   [--host &lt;host&gt;] [--owner &lt;owner&gt;] [--plugin &lt;name&gt;] [--dry-run]
 /packaging:create help</pre>
 
@@ -437,8 +437,8 @@
               </tr>
               <tr>
                 <td><code>--src &lt;path&gt;</code></td>
-                <td>스킬 원본 디렉터리</td>
-                <td><code>~/dotfiles/claude/skills/</code></td>
+                <td>스킬 원본 디렉터리 (<strong>필수</strong> — 기본값 없음)</td>
+                <td class="dash">—</td>
               </tr>
               <tr>
                 <td><code>--dest &lt;path&gt;</code></td>
@@ -448,12 +448,12 @@
               <tr>
                 <td><code>--host &lt;host&gt;</code></td>
                 <td>GitHub 호스트 (GHES 지원)</td>
-                <td><code>github.samsungds.net</code></td>
+                <td><code>github.com</code></td>
               </tr>
               <tr>
                 <td><code>--owner &lt;owner&gt;</code></td>
                 <td>GitHub owner</td>
-                <td><code>byoungwoo-yoon</code></td>
+                <td><code>dEitY719</code></td>
               </tr>
               <tr>
                 <td><code>--plugin &lt;name&gt;</code></td>

@@ -26,7 +26,7 @@ the team standard (`anthropics/claude-code` bundles 13 plugins this way).
 A **plugin root** is the directory holding the plugin manifest
 (`.claude-plugin/plugin.json`) and `skills/`. Defining M3/M4/R1/R2/R4/R5
 over the *plugin-root set* makes them mode-agnostic — only "how the
-plugin-root set is computed" differs between modes (Approach C, #914).
+plugin-root set is computed" differs between modes (Approach C, dEitY719/dotfiles#914).
 `structure-refactor` generates its create/`git mv`/skeleton/stub actions
 over the *same plugin-root set*, so a single repo is fixed toward the
 **root** golden layout and a mono repo toward the **plugins/** layout — the
@@ -120,7 +120,7 @@ M4 → missing or frontmatter lacks `name`/`description`; M5 → either dir
 missing; M6 → missing; M7-M9 → see "marketplace source integrity" below;
 M10 → see "plugin.json known fields" below.
 
-## marketplace `plugins[].source` integrity (M7-M9, #1084)
+## marketplace `plugins[].source` integrity (M7-M9, dEitY719/dotfiles#1084)
 
 Claude Code (observed on 2.1.198) does **not** inherit a marketplace top-level
 `source` into a plugin at install time — each `plugins[]` element must carry
@@ -133,7 +133,7 @@ when M1 passes (marketplace parses) and ≥1 plugin is listed; otherwise **N/A**
 
 **M7 — each `plugins[]` element resolves to a source.** A bare **string**
 element (`"./plugins/foo"`, `"./"`) **is** the source; an **object** element
-MUST carry its own `source` key (missing it is the #61 shape → **FAIL**).
+MUST carry its own `source` key (missing it is the claude-plugin-jira#61 shape → **FAIL**).
 Refactor's `--apply` repairs an M7 FAIL by injecting a `source` (see
 `references/plan-and-report-templates.md` → "Apply rules" M7 step).
 
@@ -142,14 +142,14 @@ local path string (`"."` / `"./"` / `"plugins/<name>"` / `"./plugins/<name>"`)
 or git-URL object (`{ "source": "url", "url": "<non-empty ….git>" }`). Any
 other shape → **FAIL**. Elements with no resolvable source are M7's concern
 (skipped here). The mode-shape combination itself is never a FAIL — a mono repo
-may legitimately use remote URL sources (#63 guard).
+may legitimately use remote URL sources (claude-plugin-jira#63 guard).
 
 **M9 — mono only: each declared local plugin dir exists.** For every source of
 the form `./plugins/<name>`, `plugins/<name>/` must exist. Absent → **FAIL**.
 Remote (url-type) sources are skipped; a mono repo whose sources are all remote
 → **N/A**. In `single` mode M9 is **N/A**.
 
-## plugin.json known fields (M10, #1084)
+## plugin.json known fields (M10, dEitY719/dotfiles#1084)
 
 A third case (claude-plugin-jira#65) installed cleanly but Claude Code rejected
 the manifest at **load** (*"Validation errors: skills: Invalid input"*), so no
@@ -223,7 +223,7 @@ plugins are exempt (no field to carry `homepage`).
 
 **R8 add-URL hint** — when `README.md` shows a `/plugin marketplace add <URL>`
 example, prefer the raw `.claude-plugin/marketplace.json` URL over a `.git`
-clone (raw avoids a local clone — the #61 success pattern). A `.git` example
+clone (raw avoids a local clone — the claude-plugin-jira#61 success pattern). A `.git` example
 → **WARN**; raw/other URL → **PASS**; no example or no README → **N/A**.
 
 **Pages URL patterns** — when `structure-refactor --op` backfills R5 guide

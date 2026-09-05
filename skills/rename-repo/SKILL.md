@@ -5,6 +5,7 @@ description: >-
   (claude-plugin-<domain>) and fix every hardcoded reference. Rename and push
   need confirmation. Use for "rename this plugin repo", "이 레포 이름 바꿔",
   "/packaging:rename-repo <name>".
+license: MIT
 compatibility:
   tools: Read, Bash, Edit, Write, Grep
 metadata:

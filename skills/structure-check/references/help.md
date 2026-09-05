@@ -32,10 +32,10 @@ What it checks (read-only — never edits; paths shown for mono | single):
     M4  SKILL.md valid                          plugins/<p>/skills/<s>/ | skills/<s>/
     M5  docs/skill-guides/ + docs/skill-output/ both directories exist
     M6  README.md                              exists
-    M7  plugins[].source present                each element carries a source (#61)
+    M7  plugins[].source present                each element carries a source (claude-plugin-jira#61)
     M8  plugins[].source shape valid            local path | { source:url, url:… }
     M9  mono plugin dirs exist                  ./plugins/<name>/ present (mono only)
-    M10 plugin.json known fields only            no unsupported key e.g. skills (#65)
+    M10 plugin.json known fields only            no unsupported key e.g. skills (claude-plugin-jira#65)
 
   Recommended (R1-R8 — missing → WARN)
     R1  docs/skill-guides/<skill>.html         per-skill guide
@@ -60,8 +60,8 @@ Verdict:
   any FAIL → FAIL ; no FAIL but >=1 WARN → WARN ; all PASS/N/A → PASS
 
 Note: this audit checks STRUCTURE only. structure-check PASS != install /
-runtime success — if /plugin install fails, inspect marketplace source (#61)
-or SKILL.md frontmatter separately.
+runtime success — if /plugin install fails, inspect marketplace source
+(claude-plugin-jira#61) or SKILL.md frontmatter separately.
 
 Examples:
   /packaging:structure-check
@@ -75,5 +75,5 @@ Sister skill:
                                          (dry-run by default, --apply to write)
 
 Not this skill:
-  /skill:check   — audit a SKILL.md's content quality (Progressive Disclosure)
-  /sh:check      — audit a shell script's quality
+  /authoring:skill-check   — audit a SKILL.md's content quality (Progressive Disclosure)
+  /authoring:sh-check      — audit a shell script's quality

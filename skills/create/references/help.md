@@ -1,7 +1,7 @@
 /packaging:create — Create a new claude-plugin marketplace repo from scratch
 
 Usage:
-  /packaging:create <plugin-name> [skill ...] [--src <path>] [--dest <path>]
+  /packaging:create <plugin-name> [skill ...] --src <path> [--dest <path>]
                         [--host <ghes-host>] [--owner <owner>] [--plugin <name>] [--dry-run]
   /packaging:create help
 
@@ -14,10 +14,10 @@ Arguments:
                   asked for the list (never guessed).
 
 Flags:
-  --src <path>    Skill source directory.   default ~/dotfiles/claude/skills/
+  --src <path>    Skill source directory.   REQUIRED — no default.
   --dest <path>   Where the repo is created. default ~/para/project/
-  --host <host>   GitHub host.               default github.samsungds.net
-  --owner <owner> GitHub owner.              default byoungwoo-yoon
+  --host <host>   GitHub host.               default github.com
+  --owner <owner> GitHub owner.              default dEitY719
   --plugin <name> Plugin key (inner name).   default = domain part of
                   <plugin-name>  (claude-plugin-harness → harness)
   --dry-run       Print the plan only — no files, no repo, no commit.
@@ -29,9 +29,9 @@ Plan output (Step 2, always printed):
     Plugin key  : harness
     Destination : ~/para/project/claude-plugin-harness/
     Skills to copy (N):
-      ~/dotfiles/claude/skills/<skill>  → plugins/harness/skills/<skill>
+      <src>/<skill>                     → plugins/harness/skills/<skill>
       ...
-    GH repo     : github.samsungds.net/byoungwoo-yoon/claude-plugin-harness
+    GH repo     : github.com/dEitY719/claude-plugin-harness
     Dry-run     : off
   (--dry-run stops here.)
 
@@ -54,7 +54,7 @@ Completion report (Step 9):
     Skills: N copied
     Check : M1-M10 PASS
     Next  : /packaging:structure-check <dest>/<plugin-name>  (re-verify)
-            docs/skill-guides/ 시각 가이드 추가 → /devx:visualize
+            docs/skill-guides/ 시각 가이드 추가 → /visuals:visualize
 
 Safety:
   - Source (--src) is COPY-ONLY — never modified, moved, deleted, symlinked.
@@ -63,9 +63,9 @@ Safety:
   - gh auth status is checked before any gh call; never git push --force.
 
 Examples:
-  /packaging:create claude-plugin-harness skill-check skill-create
-  /packaging:create harness skill-check --dry-run
-  /packaging:create claude-plugin-visuals devx-visualize --owner acme --host github.com
+  /packaging:create claude-plugin-harness ai-context --src <skills-dir>
+  /packaging:create harness ai-context --src <skills-dir> --dry-run
+  /packaging:create claude-plugin-visuals visualize --src <skills-dir> --owner acme
   /packaging:create help
 
 Sister skills:
