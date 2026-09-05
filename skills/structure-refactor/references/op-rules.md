@@ -19,8 +19,10 @@ Create `docs/skill-output/<skill>-usage.md` as a placeholder stub containing
 a TODO comment pointing at `/visuals:visualize` — a Markdown body, matching
 apply rule 5 in `references/plan-and-report-templates.md`. These remain stubs
 — they are never auto-populated with real content. The spec's
-`-usage.{html,md}` tolerance is for the **audit** side only: a repo that
-publishes only a rendered `-usage.html` still passes R2/R5.
+`-usage.{html,md}` tolerance is for the **audit** side only — both the R2
+table row and the R5 link rule in `references/structure-spec.md` spell that
+extension pair out — so a repo that publishes only a rendered `-usage.html`
+still passes both.
 
 ## R4 — naming correction
 
