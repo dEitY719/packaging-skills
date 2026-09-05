@@ -57,6 +57,8 @@ Completion report (Step 9):
             docs/skill-guides/ 시각 가이드 추가 → /visuals:visualize
 
 Safety:
+  - --src is REQUIRED and has no default: a missing --src is a Step 1 HARD
+    abort with an error, never a prompt and never a guessed path.
   - Source (--src) is COPY-ONLY — never modified, moved, deleted, symlinked.
   - <dest>/<plugin-name> already exists → ABORT (no overwrite; not idempotent).
   - Remote repo creation and push are outward-facing — confirmed before each.
