@@ -50,7 +50,8 @@ Apply PASS/WARN/FAIL/N/A to each item per the scoring rules in
 [references/evaluation-rules.md](references/evaluation-rules.md). Mandatory
 items M1-M10 fail when missing — including M7-M9 marketplace `plugins[].source`
 install integrity and M10 `plugin.json` known-field schema
-(dEitY719/dotfiles#1084). Recommended items R1-R8 warn. Full item-by-item table: `references/help.md`.
+(dEitY719/dotfiles#1084). Recommended items R1-R8 warn. Full
+item-by-item table: `references/help.md`.
 
 ## Step 4: Output the Report
 

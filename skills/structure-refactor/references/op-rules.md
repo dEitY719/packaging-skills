@@ -21,17 +21,12 @@ never auto-populated with real content.
 
 ## R4 — naming correction
 
-`name:` must be the **bare** skill-directory basename (spec R4). On a mismatch
-— a colon in `name:`, or any other divergence — rewrite `name:` in `SKILL.md`
-to that basename. **Never `git mv` the directory**: the directory name is what
-the user types after `/packaging:`, so renaming it is a public API change,
-whereas `name:` is internal.
-
-**Out of scope — a directory basename that is not itself a valid bare name**
-(it contains a colon). Rewriting `name:` to that basename only reproduces the
-violation, and the only other fix is the directory rename this rule forbids.
-Leave it as R4's WARN for the developer to resolve by hand; never rename
-automatically.
+`name:` must be the **bare** skill-directory basename (spec R4). On a mismatch,
+rewrite `name:` in `SKILL.md` to that basename. **Never `git mv` the
+directory** — the directory name is the public invocation path
+(`/<plugin>:<dir>`), while `name:` is internal. Skip the skill when the
+basename itself contains a colon: rewriting to it would only reproduce the
+violation, so R4's WARN stands for a developer to resolve by hand.
 
 ## R5 — README link backfill
 

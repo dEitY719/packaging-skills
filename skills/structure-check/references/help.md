@@ -32,10 +32,10 @@ What it checks (read-only — never edits; paths shown for mono | single):
     M4  SKILL.md valid                          plugins/<p>/skills/<s>/ | skills/<s>/
     M5  docs/skill-guides/ + docs/skill-output/ both directories exist
     M6  README.md                              exists
-    M7  plugins[].source present                each element carries a source (claude-plugin-jira#61)
+    M7  plugins[].source present                each element carries one (claude-plugin-jira#61)
     M8  plugins[].source shape valid            local path | { source:url, url:… }
     M9  mono plugin dirs exist                  ./plugins/<name>/ present (mono only)
-    M10 plugin.json known fields only            no unsupported key e.g. skills (claude-plugin-jira#65)
+    M10 plugin.json known fields only           no unsupported key e.g. skills (claude-plugin-jira#65)
 
   Recommended (R1-R8 — missing → WARN)
     R1  docs/skill-guides/<skill>.html         per-skill guide

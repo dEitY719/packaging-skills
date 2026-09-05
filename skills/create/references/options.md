@@ -19,7 +19,7 @@ flags below. (The same surface, with examples, is in `help.md`.)
 
 - Prepend `claude-plugin-` if the prefix is missing (tell the user).
 - Enforce lowercase-hyphen naming (GitHub repo naming rules).
-- Abort if `--src` is missing — it has no default, so it must always be given.
+- Abort if `--src` is missing.
 - Abort if `<dest>/<plugin-name>` already exists — no overwrite, NOT idempotent.
 - `[skill ...]`: infer from the conversation when omitted; if not inferable,
   ask the user (never guess).
