@@ -16,11 +16,11 @@ Skip when the file already exists (idempotent). Never call
 ## R2 — usage sample stubs
 
 Create `docs/skill-output/<skill>-usage.md` as a placeholder stub containing
-a TODO comment pointing at `/visuals:visualize`. These remain stubs — they are
-never auto-populated with real content. Apply always writes `.md` (the stub
-body is Markdown; see `references/plan-and-report-templates.md` → apply rule
-5). The spec's `-usage.{html,md}` tolerance is for the **audit** side only, so
-a repo that publishes only a rendered `-usage.html` still passes R2/R5.
+a TODO comment pointing at `/visuals:visualize` — a Markdown body, matching
+apply rule 5 in `references/plan-and-report-templates.md`. These remain stubs
+— they are never auto-populated with real content. The spec's
+`-usage.{html,md}` tolerance is for the **audit** side only: a repo that
+publishes only a rendered `-usage.html` still passes R2/R5.
 
 ## R4 — naming correction
 
