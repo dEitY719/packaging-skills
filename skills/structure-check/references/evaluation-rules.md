@@ -68,7 +68,7 @@ own those FAILs.
 - **M9** — mono only: for each `./plugins/<name>` source, `plugins/<name>/`
   must exist on disk (declared-but-absent → FAIL). Remote url-type sources are
   skipped; `single` mode and all-remote mono repos → N/A. This never re-flags a
-  valid remote setup (the #63 misdiagnosis guard).
+  valid remote setup (the claude-plugin-jira#63 misdiagnosis guard).
 
 **plugin.json known-field whitelist (M10):** for each plugin root's
 `plugin.json`, compare its top-level `keys` against the known-field set

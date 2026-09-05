@@ -13,7 +13,7 @@ claude-plugin structure refactor — <repo-path>   (mode: mono|single[, 추정] 
   [M10] prune  plugins/visuals/.claude-plugin/plugin.json ← 미지원 필드(skills) 제거 (.bak 백업)
   [M4] git mv  visualize/SKILL.md → plugins/visuals/skills/visualize/SKILL.md
   [M5] mkdir   docs/skill-guides/, docs/skill-output/
-  [R1] visualize docs/skill-guides/visualize.html   (→ /devx:visualize, --op only)
+  [R1] visualize docs/skill-guides/visualize.html   (→ /visuals:visualize, --op only)
   [R2] stub    docs/skill-output/visualize-usage.md  (--op only)
   [Pages] enable GitHub Pages (branch=main, path=/docs) (--op only)
   [R4] rename  SKILL.md name: 교정 → visualize (bare = 디렉터리명)  (--op only)
@@ -31,7 +31,7 @@ claude-plugin structure refactor — <repo-path>   (mode: mono|single[, 추정] 
 - Verbs: `create` (new file), `mkdir` (new dir), `git mv` / `mv` (move),
   `source` (inject a missing `plugins[].source` into an existing marketplace — M7),
   `prune` (strip unknown top-level fields from an existing `plugin.json`, `.bak` kept — M10),
-  `visualize` (generate an R1 guide by delegating to `/devx:visualize`),
+  `visualize` (generate an R1 guide by delegating to `/visuals:visualize`),
   `stub` (empty placeholder), `pages` (activate GitHub Pages),
   `rename` (frontmatter `name:` fix — never a directory rename),
   `link` (append a per-skill Pages-URL guide link into README — R5).
@@ -79,7 +79,7 @@ Execute the plan in this order so later steps see earlier results:
    Fill `marketplace.json`'s plugins array from the dynamically discovered
    plugin names. Do not clobber a JSON that already parses — only create when
    missing. **plugin.json carries no `skills` array** — the runtime auto-scans
-   `skills/`, and a `skills` field fails manifest validation (M10, #1084); the
+   `skills/`, and a `skills` field fails manifest validation (M10, dEitY719/dotfiles#1084); the
    skeleton stays schema-clean so it satisfies M10 on creation.
 
    New skeletons are written source-clean: the `marketplace.json` above uses
@@ -104,22 +104,22 @@ Execute the plan in this order so later steps see earlier results:
    `plugin.json.bak` first (recoverable removal), then rewrite with
    `jq 'with_entries(select(.key as $x | $known | index($x)))'`. Idempotent: a
    no-op (and no `.bak`) when the manifest already has only known fields.
-4. **`--op` only — R1 guide (delegate to `/devx:visualize`)**: for each
+4. **`--op` only — R1 guide (delegate to `/visuals:visualize`)**: for each
    discovered skill `<s>`, if `docs/skill-guides/<s>.html` is **missing**,
-   invoke `/devx:visualize <path-to-SKILL.md>` to generate the guide at
+   invoke `/visuals:visualize <path-to-SKILL.md>` to generate the guide at
    `docs/skill-guides/<s>.html` — real content, not a stub. Skip when the
-   file already exists (idempotent). If `/devx:visualize` is unavailable or
+   file already exists (idempotent). If `/visuals:visualize` is unavailable or
    fails, warn and fall back to the R1 stub below; never abort the run.
    Fallback stub `docs/skill-guides/<s>.html`:
    ```html
    <!-- TODO: claude-plugin guide for <s> -->
-   <!-- 이 가이드는 /devx:visualize 로 채우세요 (placeholder stub). -->
+   <!-- 이 가이드는 /visuals:visualize 로 채우세요 (placeholder stub). -->
    ```
 5. **`--op` only — R2 usage stub**: empty placeholder
    `docs/skill-output/<s>-usage.md` with a TODO header (unchanged — usage
    samples stay stub level):
    ```markdown
-   <!-- TODO: <s> usage sample — fill with /devx:visualize -->
+   <!-- TODO: <s> usage sample — fill with /visuals:visualize -->
    ```
 6. **`--op` only — GitHub Pages activation**: derive `$HOST` / `$OWNER` /
    `$REPO` per "Pages host & URL derivation (`--op`)" below. Query the

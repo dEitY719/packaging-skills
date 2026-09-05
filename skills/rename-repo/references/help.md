@@ -38,5 +38,5 @@ Sister skills:
   /packaging:structure-refactor  — fix that layout toward the standard
 
 Not this skill:
-  /skill:check   — audit a SKILL.md's content quality
-  /sh:check      — audit a shell script's quality
+  /authoring:skill-check   — audit a SKILL.md's content quality
+  /authoring:sh-check      — audit a shell script's quality

@@ -118,7 +118,8 @@ jobs:
 ```
 
 To change what is checked, edit that workflow, not this repo. This resolves the
-follow-up this README previously flagged (dotfiles #1410 D-10 / #1638 NF-2).
+follow-up this README previously flagged (dEitY719/dotfiles#1410 D-10 /
+dEitY719/dotfiles#1638 NF-2).
 
 ## License
 

@@ -13,8 +13,8 @@
 | 검사 대상 | 쓸 스킬 |
 |---|---|
 | 디렉터리 구조 / 매니페스트 배치 | `structure-check` (이 스킬) |
-| `SKILL.md` 의 **내용** 품질 | `skill:check` |
-| 셸 스크립트 품질 | `sh:check` |
+| `SKILL.md` 의 **내용** 품질 | `authoring:skill-check` |
+| 셸 스크립트 품질 | `authoring:sh-check` |
 
 ## 호출 형식
 

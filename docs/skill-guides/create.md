@@ -19,7 +19,7 @@ LICENSE, `.gitignore`, 그리고 초기 커밋이 올라간 GitHub 원격 저장
 ## 호출 형식
 
 ```
-/packaging:create <plugin-name> [skill ...] [--src <path>] [--dest <path>]
+/packaging:create <plugin-name> [skill ...] --src <path> [--dest <path>]
                   [--host <host>] [--owner <owner>] [--plugin <name>] [--dry-run]
 /packaging:create help
 ```
@@ -28,10 +28,10 @@ LICENSE, `.gitignore`, 그리고 초기 커밋이 올라간 GitHub 원격 저장
 |---|---|---|
 | `<plugin-name>` | `claude-plugin-<domain>` 형식 repo 이름 (필수). prefix 없으면 자동으로 붙이고 알려 준다 | — |
 | `[skill ...]` | 복사할 스킬 디렉터리 이름들 | 대화에서 추론, 안 되면 질문 |
-| `--src <path>` | 스킬 원본 디렉터리 | `~/dotfiles/claude/skills/` |
+| `--src <path>` | 스킬 원본 디렉터리 (**필수** — 기본값 없음) | — |
 | `--dest <path>` | repo 를 만들 위치 | `~/para/project/` |
-| `--host <host>` | GitHub 호스트 (GHES 지원) | `github.samsungds.net` |
-| `--owner <owner>` | GitHub owner | `byoungwoo-yoon` |
+| `--host <host>` | GitHub 호스트 (GHES 지원) | `github.com` |
+| `--owner <owner>` | GitHub owner | `dEitY719` |
 | `--plugin <name>` | 내부 plugin key | `<plugin-name>` 의 domain 부분 |
 | `--dry-run` | 계획만 출력, 아무것도 쓰지 않음 | off |
 

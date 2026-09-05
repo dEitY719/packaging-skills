@@ -13,7 +13,7 @@ Flags:
                        (prints the plan, writes nothing).
   --mandatory | --mp   Scope = mandatory items M1-M10 only. (default scope)
   --recommended | --op Scope = M1-M10 + recommended R1-R5 fixes (R1 guides via
-                       /devx:visualize, R2 placeholder stubs, R4 naming
+                       /visuals:visualize, R2 placeholder stubs, R4 naming
                        correction, R5 README link backfill). R6-R8 are
                        audit-only WARNs (check surfaces them; refactor skips).
   --single             Force the SINGLE target layout (repo itself is one
@@ -57,24 +57,25 @@ Behavior:
                          - write minimal marketplace.json / plugin.json
                            skeletons from discovered plugin/skill names
                          - inject a missing plugins[].source into an existing
-                           marketplace (M7, #1084 install-fail fix): git URL
-                           from homepage/repository, else the mode's local path
+                           marketplace (M7, dEitY719/dotfiles#1084 install-fail
+                           fix): git URL from homepage/repository, else the
+                           mode's local path
                          - prune unknown top-level plugin.json fields (M10,
-                           #1084 load-fail fix): e.g. a schema-violating skills
-                           array; a .bak backup is kept
+                           dEitY719/dotfiles#1084 load-fail fix): e.g. a
+                           schema-violating skills array; a .bak backup is kept
                          - (--op only) generate R1 per-skill guides by
-                           delegating to /devx:visualize (real content; skipped
-                           when the file already exists), create R2 usage
+                           delegating to /visuals:visualize (real content;
+                           skipped when the file already exists), create R2 usage
                            placeholder stubs, correct R4 naming mismatches,
                            backfill missing R5 README guide+usage links, and
                            auto-activate GitHub Pages (github.com + GHE)
 
 R1 vs R2 boundary (--op):
-  R1 guides are real content — delegated to /devx:visualize and written to
+  R1 guides are real content — delegated to /visuals:visualize and written to
   docs/skill-guides/<skill>.html; idempotent (skipped when it already exists),
-  and it falls back to a TODO stub when /devx:visualize is unavailable.
+  and it falls back to a TODO stub when /visuals:visualize is unavailable.
   R2 usage samples stay placeholder stubs: an empty file with a TODO header
-  pointing at /devx:visualize for a later pass. /devx:excalidraw-diagram is
+  pointing at /visuals:visualize for a later pass. /visuals:excalidraw-diagram is
   never called by this skill.
 
 Safety:

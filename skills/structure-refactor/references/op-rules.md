@@ -9,14 +9,14 @@ auto-applied; a developer fills those. Specific behaviors when
 
 ## R1 — per-skill guide generation
 
-Delegate to `/devx:visualize <SKILL.md>` → `docs/skill-guides/<skill>.html`.
+Delegate to `/visuals:visualize <SKILL.md>` → `docs/skill-guides/<skill>.html`.
 Skip when the file already exists (idempotent). Never call
-`/devx:excalidraw-diagram` here.
+`/visuals:excalidraw-diagram` here.
 
 ## R2 — usage sample stubs
 
 Create `docs/skill-output/<skill>-usage.html` as a placeholder stub containing
-a TODO comment pointing at `/devx:visualize`. These remain stubs — they are
+a TODO comment pointing at `/visuals:visualize`. These remain stubs — they are
 never auto-populated with real content.
 
 ## R4 — naming correction

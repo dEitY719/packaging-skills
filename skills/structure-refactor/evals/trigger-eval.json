@@ -2,12 +2,12 @@
   {
     "query": "/packaging:structure-refactor ~/repos/claude-plugin-gh --apply",
     "should_trigger": true,
-    "note": "slash-literal: update if the skill is renamed (#1410)"
+    "note": "slash-literal: update if the skill is renamed (dEitY719/dotfiles#1410)"
   },
   {
     "query": "/packaging:structure-refactor 로 일단 뭐가 바뀌는지만 먼저 보여줘",
     "should_trigger": true,
-    "note": "slash-literal: update if the skill is renamed (#1410)"
+    "note": "slash-literal: update if the skill is renamed (dEitY719/dotfiles#1410)"
   },
   {
     "query": "우리 팀 플러그인 마켓플레이스 레포가 skills 폴더는 루트에도 있고 plugins/ 밑에도 하나 더 있어서 뒤죽박죽이야. 정해진 자리로 옮겨줘.",

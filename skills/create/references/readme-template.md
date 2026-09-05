@@ -9,7 +9,7 @@ recommended checks out of the box: R3 ("Simple" — at least one `docs/` link,
 a skill section), and R5 (per-skill guide **and** usage links). The
 `docs/skill-guides/<skill>.html` and `docs/skill-output/<skill>-usage.md`
 files are placeholder stubs at create time — fill them later with
-`/devx:visualize` (that satisfies R1/R2).
+`/visuals:visualize` (that satisfies R1/R2).
 
 ## Template
 
@@ -35,7 +35,7 @@ GHES(`<host>`)에서는 호스트 인증 후 동일하게 추가합니다.
 
 > 표의 각 행은 스킬 1개에 대응합니다. 가이드/사용 예시 링크는
 > `docs/skill-guides/`, `docs/skill-output/` 의 문서를 가리킵니다
-> (생성 시 placeholder, 이후 `/devx:visualize` 로 채움).
+> (생성 시 placeholder, 이후 `/visuals:visualize` 로 채움).
 
 ## 구조
 

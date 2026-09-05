@@ -34,11 +34,12 @@ claude-plugin structure check — <repo-path>
 → Fix: /packaging:structure-refactor <repo-path>  (먼저 dry-run, 이후 --apply)
 
 ※ 이 감사는 "구조" 만 검사한다. /plugin install 이 실패하거나 세션에
-   스킬이 안 뜨는 경우, marketplace source 필드 (#61 스타일) 나 SKILL.md
-   frontmatter 를 별도 확인하라. structure-check PASS ≠ install/runtime 성공.
+   스킬이 안 뜨는 경우, marketplace source 필드 (claude-plugin-jira#61
+   스타일) 나 SKILL.md frontmatter 를 별도 확인하라.
+   structure-check PASS ≠ install/runtime 성공.
 ※ plugin.json 은 최상위 필드도 스키마 검증 대상이다. skills 처럼 런타임이
    자동 스캔하는 폴더명과 이름이 같은 커스텀 필드를 넣으면 validation error
-   로 플러그인 자체가 로드 실패한다 (M10 — #65 스타일).
+   로 플러그인 자체가 로드 실패한다 (M10 — claude-plugin-jira#65 스타일).
 ```
 
 ### Example — single (repo is one plugin)
@@ -109,7 +110,7 @@ When the verdict is PASS, end with a single line and no hint:
 
 `요약: PASS — 표준 구조 준수`
 
-## Install/runtime disclaimer (always emit, #1084)
+## Install/runtime disclaimer (always emit, dEitY719/dotfiles#1084)
 
 Append this note to **every** report (PASS included) — a structure audit
 cannot prove `/plugin install` or session-load success, and a prior PASS
@@ -117,9 +118,10 @@ already misled a real diagnosis (claude-plugin-jira#63):
 
 ```
 ※ 이 감사는 "구조" 만 검사한다. /plugin install 이 실패하거나 세션에
-   스킬이 안 뜨는 경우, marketplace source 필드 (#61 스타일) 나 SKILL.md
-   frontmatter 를 별도 확인하라. structure-check PASS ≠ install/runtime 성공.
+   스킬이 안 뜨는 경우, marketplace source 필드 (claude-plugin-jira#61
+   스타일) 나 SKILL.md frontmatter 를 별도 확인하라.
+   structure-check PASS ≠ install/runtime 성공.
 ※ plugin.json 은 최상위 필드도 스키마 검증 대상이다. skills 처럼 런타임이
    자동 스캔하는 폴더명과 이름이 같은 커스텀 필드를 넣으면 validation error
-   로 플러그인 자체가 로드 실패한다 (M10 — #65 스타일).
+   로 플러그인 자체가 로드 실패한다 (M10 — claude-plugin-jira#65 스타일).
 ```

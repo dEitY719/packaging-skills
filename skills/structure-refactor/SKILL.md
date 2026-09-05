@@ -5,6 +5,7 @@ description: >-
   layout. Dry-run unless `--apply`. Use for "fix my claude-plugin repo
   structure", "/packaging:structure-refactor". Edits —
   `packaging:structure-check` only audits.
+license: MIT
 compatibility:
   tools: Read, Glob, Grep, Write, Edit, Bash
 metadata:
@@ -68,9 +69,10 @@ conversion produces only the `[convert]` warning line.
   warning and stop — even under `--apply`, write nothing.
 - **`--apply`**: execute the plan in order following the **Apply rules**
   (mkdir → move → skeleton → M7 `plugins[].source` injection → M10 unknown
-  `plugin.json` field strip with a `.bak` backup — the #1084 install/load-fail
-  fixes), fully listed in `references/plan-and-report-templates.md`; `--op`
-  adds R1-R5 (R1 guides via `/devx:visualize`, GitHub Pages auto-activation,
+  `plugin.json` field strip with a `.bak` backup — the
+  dEitY719/dotfiles#1084 install/load-fail fixes), fully listed in
+  `references/plan-and-report-templates.md`; `--op`
+  adds R1-R5 (R1 guides via `/visuals:visualize`, GitHub Pages auto-activation,
   R2 stubs) — see `references/op-rules.md`.
 
 ## Step 5: Report

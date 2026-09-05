@@ -4,7 +4,8 @@ description: >-
   Audit a claude-plugin marketplace repo's directory layout. Read-only;
   `packaging:structure-refactor` fixes. Use for "check my claude-plugin
   repo structure", "/packaging:structure-check". Not SKILL.md
-  (`skill:check`) or shell (`sh:check`).
+  (`authoring:skill-check`) or shell (`authoring:sh-check`).
+license: MIT
 compatibility:
   tools: Read, Glob, Grep, Bash
 metadata:
@@ -48,8 +49,9 @@ header and the per-skill recommended checks (R1/R2/R5).
 Apply PASS/WARN/FAIL/N/A to each item per the scoring rules in
 [references/evaluation-rules.md](references/evaluation-rules.md). Mandatory
 items M1-M10 fail when missing — including M7-M9 marketplace `plugins[].source`
-install integrity and M10 `plugin.json` known-field schema (#1084). Recommended
-items R1-R8 warn. Full item-by-item table: `references/help.md`.
+install integrity and M10 `plugin.json` known-field schema
+(dEitY719/dotfiles#1084). Recommended items R1-R8 warn. Full
+item-by-item table: `references/help.md`.
 
 ## Step 4: Output the Report
 
@@ -63,7 +65,7 @@ block (M1-M10) and a `[권장]` block (R1-R8), then the summary verdict:
 
 Emit the next-action hint **only when** there is ≥1 FAIL or WARN. Always append
 the "structure-check PASS ≠ install/runtime 성공" disclaimer (report-template.md
-→ "Install/runtime disclaimer", #1084).
+→ "Install/runtime disclaimer", dEitY719/dotfiles#1084).
 
 ## Constraints
 
@@ -71,8 +73,8 @@ the "structure-check PASS ≠ install/runtime 성공" disclaimer (report-templat
   `packaging:structure-refactor`'s job.
 - N/A is not FAIL — a missing *subject* (no skills, no plugins beyond M2)
   yields N/A for dependent checks.
-- Do not audit SKILL.md *content* (that is `skill:check`) or shell script
-  quality (that is `sh:check`) — only the directory structure.
+- Do not audit SKILL.md *content* (that is `authoring:skill-check`) or shell
+  script quality (that is `authoring:sh-check`) — only the directory structure.
 - Repo-agnostic: detect mode + discover plugin roots/skills by scan; the
   spec is embedded, not read from the target repo. A `--single`/`--mono`
   override means "score by *that* mode" — a wrong override surfaces as a

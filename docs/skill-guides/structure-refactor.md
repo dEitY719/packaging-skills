@@ -41,7 +41,7 @@ single 레이아웃과 mono 레이아웃 사이의 **변환은 하지 않는다*
 
 집행 순서: mkdir → 이동 → 스켈레톤 → M7 `plugins[].source` 주입 →
 M10 미지원 `plugin.json` 필드 제거(`.bak` 백업). `--op` 면 여기에 R1 가이드
-생성(`/devx:visualize` 위임), R2 usage stub, GitHub Pages 활성화, R4 명명 교정,
+생성(`/visuals:visualize` 위임), R2 usage stub, GitHub Pages 활성화, R4 명명 교정,
 R5 README 링크 보강이 더해진다.
 
 ## 주의사항 / 제약
@@ -55,5 +55,5 @@ R5 README 링크 보강이 더해진다.
   업스트림 호환을 깨는 사고를 막는 안전장치다.
 - Pages 활성화와 R5 링크 보강은 soft-fail 이다. 토큰 스코프가 없거나 호스트에
   못 닿으면 경고만 하고 계속 진행한다.
-- R1 가이드는 실제 내용이지만 R2 usage 는 stub 수준이다. `/devx:excalidraw-diagram`
+- R1 가이드는 실제 내용이지만 R2 usage 는 stub 수준이다. `/visuals:excalidraw-diagram`
   은 이 스킬이 호출하지 않는다.
