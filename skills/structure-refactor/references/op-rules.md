@@ -15,16 +15,21 @@ Skip when the file already exists (idempotent). Never call
 
 ## R2 — usage sample stubs
 
-Create `docs/skill-output/<skill>-usage.html` as a placeholder stub containing
-a TODO comment pointing at `/visuals:visualize`. These remain stubs — they are
-never auto-populated with real content.
+Create `docs/skill-output/<skill>-usage.md` as a placeholder stub containing
+a TODO comment pointing at `/visuals:visualize` — a Markdown body, matching
+apply rule 5 in `references/plan-and-report-templates.md`. These remain stubs
+— they are never auto-populated with real content. The spec's
+`-usage.{html,md}` tolerance is for the **audit** side only — both the R2
+table row and the R5 link rule in `references/structure-spec.md` spell that
+extension pair out — so a repo that publishes only a rendered `-usage.html`
+still passes both.
 
 ## R4 — naming correction
 
 `name:` must be the **bare** skill-directory basename (spec R4). On a mismatch
 — a colon in `name:`, or any other divergence — rewrite `name:` in `SKILL.md`
 to that basename. **Never `git mv` the directory**: the directory name is what
-the user types after `/packaging:`, so renaming it is a public API change,
+the user types after `/<plugin>:`, so renaming it is a public API change,
 whereas `name:` is internal.
 
 **Out of scope — a directory basename that is not itself a valid bare name**
