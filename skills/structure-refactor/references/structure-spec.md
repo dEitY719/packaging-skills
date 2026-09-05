@@ -187,7 +187,7 @@ with a version note on each Claude Code manifest-schema release.
 **R4 naming rule** — a marketplace repo's plugin supplies the namespace at
 invocation time, so `name:` must be the **bare** skill-directory basename:
 directory `structure-check` ↔ `name: structure-check`, invoked as
-`/packaging:structure-check`. A colon in `name:`, or a `name:` that differs
+`/<plugin>:structure-check`. A colon in `name:`, or a `name:` that differs
 from the directory basename → **WARN**. SSOT:
 `authoring-skills/skills/skill-check/references/naming-convention.md`
 → "Exception: marketplace repos use the bare form"; its test for *is this a
