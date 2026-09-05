@@ -21,10 +21,11 @@ never auto-populated with real content.
 
 ## R4 — naming correction
 
-Correct directory↔frontmatter mismatches: directory `claude-plugin-foo-bar`
-↔ frontmatter `name: claude-plugin:foo-bar` (hyphen directory form ↔
-colon-namespace frontmatter form). Mismatch → rename the directory with
-`git mv` (or `mv` outside a git repo).
+`name:` must be the **bare** skill-directory basename (spec R4). On a mismatch
+— a colon in `name:`, or any other divergence — rewrite `name:` in `SKILL.md`
+to that basename. **Never `git mv` the directory**: the directory name is what
+the user types after `/packaging:`, so renaming it is a public API change,
+whereas `name:` is internal.
 
 ## R5 — README link backfill
 

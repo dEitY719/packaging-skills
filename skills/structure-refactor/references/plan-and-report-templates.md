@@ -16,7 +16,7 @@ claude-plugin structure refactor — <repo-path>   (mode: mono|single[, 추정] 
   [R1] visualize docs/skill-guides/visualize.html   (→ /devx:visualize, --op only)
   [R2] stub    docs/skill-output/visualize-usage.md  (--op only)
   [Pages] enable GitHub Pages (branch=main, path=/docs) (--op only)
-  [R4] rename  name: 교정 → claude-plugin:visualize     (--op only)
+  [R4] rename  SKILL.md name: 교정 → visualize (bare = 디렉터리명)  (--op only)
   [R5] link    README.md ← visualize guide Pages URL 링크 추가 (--op only)
 
 총 <n> 변경  (필수 <m>, 권장 <r>)
@@ -33,7 +33,7 @@ claude-plugin structure refactor — <repo-path>   (mode: mono|single[, 추정] 
   `prune` (strip unknown top-level fields from an existing `plugin.json`, `.bak` kept — M10),
   `visualize` (generate an R1 guide by delegating to `/devx:visualize`),
   `stub` (empty placeholder), `pages` (activate GitHub Pages),
-  `rename` (frontmatter/dir naming fix),
+  `rename` (frontmatter `name:` fix — never a directory rename),
   `link` (append a per-skill Pages-URL guide link into README — R5).
 - Items already correct produce **no line** (idempotent — proof there is
   nothing to do is an empty plan + `총 0 변경`).
@@ -135,10 +135,11 @@ Execute the plan in this order so later steps see earlier results:
    ```
    Skip when Pages already responds 200 (idempotent). Soft-fail: a missing
    token scope or unreachable host warns and continues.
-7. **`--op` only — R4 naming**: when a SKILL.md `name:` colon-namespace ↔
-   directory hyphen form disagree, correct the directory name (prefer
-   `git mv`) so it matches the `name:`; never silently rewrite a correct
-   `name:`.
+7. **`--op` only — R4 naming**: when a SKILL.md `name:` is not the bare
+   directory basename — it carries a colon, or differs from the basename —
+   rewrite `name:` in that `SKILL.md` to the basename. Never `git mv` the
+   directory: the directory name is the public invocation path
+   (`/packaging:<dir>`), while `name:` is internal.
 8. **`--op` only — R5 README links**: for each skill `<s>` whose README is
    missing the guide or usage link, append into the README under that
    skill's section — **each missing link only** (check guide and usage

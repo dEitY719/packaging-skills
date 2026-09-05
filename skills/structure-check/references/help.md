@@ -41,7 +41,7 @@ What it checks (read-only — never edits; paths shown for mono | single):
     R1  docs/skill-guides/<skill>.html         per-skill guide
     R2  docs/skill-output/<skill>-usage.{html,md}  per-skill usage sample
     R3  README is "Simple"                     links into docs/, not too long
-    R4  naming consistency                     name: colon ↔ directory hyphen
+    R4  naming consistency                     name: bare, == directory basename
     R5  per-skill README guide+usage links     README links both for each skill
     R6  marketplace $schema declared           top-level "$schema" for LSP/IDE
     R7  listing metadata                       description + object plugin homepage

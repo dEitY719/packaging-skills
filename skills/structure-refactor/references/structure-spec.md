@@ -173,7 +173,7 @@ with a version note on each Claude Code manifest-schema release.
 | R1 | per-skill `docs/skill-guides/<skill>.html` | that file missing |
 | R2 | per-skill `docs/skill-output/<skill>-usage.{html,md}` | both missing |
 | R3 | README is "Simple" | heuristic violated (below) |
-| R4 | naming consistency | SKILL.md `name:` colon-namespace ↔ directory hyphen mismatch |
+| R4 | naming consistency | SKILL.md `name:` contains a colon, OR differs from the skill directory basename |
 | R5 | per-skill README guide+usage links | README missing the guide OR the usage link for a skill |
 | R6 | marketplace `$schema` declared | `marketplace.json` lacks a top-level `$schema` |
 | R7 | listing metadata | no top-level `description`, OR an object plugin lacks `homepage` |
@@ -184,10 +184,19 @@ with a version note on each Claude Code manifest-schema release.
 - body not excessively long (guide: ≤ ~200 lines excluding code blocks);
 - a skill-description section exists (mentions `plugins`/`skills`).
 
-**R4 naming rule** — directory `claude-plugin-structure-check` ↔ frontmatter
-`name: packaging:structure-check`: the colon-namespace form maps to the
-hyphen directory form. Mismatch → WARN (same rule as `devx:ai-context`
-→ `devx-ai-context`).
+**R4 naming rule** — a marketplace repo's plugin supplies the namespace at
+invocation time, so `name:` must be the **bare** skill-directory basename:
+directory `structure-check` ↔ `name: structure-check`, invoked as
+`/packaging:structure-check`. A colon in `name:`, or a `name:` that differs
+from the directory basename → **WARN**. SSOT:
+`authoring-skills/skills/skill-check/references/naming-convention.md`
+→ "Exception: marketplace repos use the bare form"; its test for *is this a
+marketplace repo* — a root holding `.claude-plugin/plugin.json` — is the
+plugin-root discovery M3/M4 already performs (above), so no new detection is
+needed. As stated here R4 is exactly the CI gate in
+`harness-skills/.github/workflows/skill-check.yml` ("Skill frontmatter name
+matches its directory") — a local preview of it, so the two stay in sync by
+construction.
 
 **R5 per-skill README link rule** — for each discovered skill `<s>`,
 `README.md` must contain **both**:

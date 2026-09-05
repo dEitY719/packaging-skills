@@ -24,7 +24,7 @@ claude-plugin structure check — <repo-path>
  WARN  R1 docs/skill-guides/visualize.html 없음
  N/A   R2 (스킬 없음 — 평가 대상 없음)
  PASS  R3 README.md 가 docs/ 로 링크 (Simple)
- PASS  R4 명명 일관성 (packaging:structure-check ↔ 디렉터리)
+ PASS  R4 명명 일관성 (name: structure-check == 디렉터리명, bare)
  WARN  R5 README 에 excalidraw-diagram usage 링크 누락
  WARN  R6 marketplace.json 에 $schema 없음
  PASS  R7 description + plugins[].homepage
