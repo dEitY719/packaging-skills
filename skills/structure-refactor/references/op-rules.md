@@ -27,6 +27,12 @@ to that basename. **Never `git mv` the directory**: the directory name is what
 the user types after `/packaging:`, so renaming it is a public API change,
 whereas `name:` is internal.
 
+**Out of scope — a directory basename that is not itself a valid bare name**
+(it contains a colon). Rewriting `name:` to that basename only reproduces the
+violation, and the only other fix is the directory rename this rule forbids.
+Leave it as R4's WARN for the developer to resolve by hand; never rename
+automatically.
+
 ## R5 — README link backfill
 
 For each discovered skill `<s>`, ensure `README.md` contains both:

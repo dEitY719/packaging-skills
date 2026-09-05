@@ -139,7 +139,10 @@ Execute the plan in this order so later steps see earlier results:
    directory basename — it carries a colon, or differs from the basename —
    rewrite `name:` in that `SKILL.md` to the basename. Never `git mv` the
    directory: the directory name is the public invocation path
-   (`/packaging:<dir>`), while `name:` is internal.
+   (`/<plugin>:<dir>`), while `name:` is internal. **Skip the skill entirely**
+   when the directory basename itself contains a colon — rewriting `name:` to
+   it would just reproduce the violation, and the only other fix is the
+   forbidden rename. Emit no plan line for it; R4's WARN stands.
 8. **`--op` only — R5 README links**: for each skill `<s>` whose README is
    missing the guide or usage link, append into the README under that
    skill's section — **each missing link only** (check guide and usage
