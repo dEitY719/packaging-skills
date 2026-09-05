@@ -190,8 +190,13 @@ directory `structure-check` ↔ `name: structure-check`, invoked as
 `/<plugin>:structure-check`. A colon in `name:`, or a `name:` that differs
 from the directory basename → **WARN**. SSOT:
 `authoring-skills/skills/skill-check/references/naming-convention.md`
-→ "Exception: marketplace repos use the bare form". CI enforces the same rule
-as a hard failure, so an R4 WARN here predicts a red check.
+→ "Exception: marketplace repos use the bare form"; its test for *is this a
+marketplace repo* — a root holding `.claude-plugin/plugin.json` — is the
+plugin-root discovery M3/M4 already performs (above), so no new detection is
+needed. As stated here R4 is exactly the CI gate in
+`harness-skills/.github/workflows/skill-check.yml` ("Skill frontmatter name
+matches its directory") — a local preview of it, so the two stay in sync by
+construction.
 
 **R5 per-skill README link rule** — for each discovered skill `<s>`,
 `README.md` must contain **both**:
