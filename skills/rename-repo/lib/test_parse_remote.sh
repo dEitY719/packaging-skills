@@ -33,13 +33,32 @@ check "https://github.com/dEitY719/claude-plugin-visuals.git" \
 check "https://github.com/dEitY719/claude-plugin-visuals" \
   github.com dEitY719 claude-plugin-visuals
 
-# git@ (SSH) form
+# git@ (SSH, scp-like) form
 check "git@github.com:dEitY719/claude-plugin-visuals.git" \
+  github.com dEitY719 claude-plugin-visuals
+
+# ssh:// URL form
+check "ssh://git@github.com/dEitY719/claude-plugin-visuals.git" \
+  github.com dEitY719 claude-plugin-visuals
+
+# trailing slash, no .git
+check "https://github.com/dEitY719/claude-plugin-visuals/" \
   github.com dEitY719 claude-plugin-visuals
 
 # GHES host, https
 check "https://github.our-company.com/team/company-skills.git" \
   github.our-company.com team company-skills
+
+# eval-safety: a crafted remote URL must never execute during eval
+# (cwd is $TMP; the injected owner segment has no "/" so it stays a single
+# path component and the payload only runs if `eval` is unsafe)
+git remote remove origin 2>/dev/null || true
+# shellcheck disable=SC2016  # deliberately literal — must NOT expand here
+git remote add origin 'https://evil.example.com/$(touch PWNED)/repo.git'
+out="$("$SCRIPT" origin)"
+eval "$out"
+[ -f "$TMP/PWNED" ] && fail "eval of parse_remote output executed injected command"
+[ "$REPO" = "repo" ] || fail "eval-safety case: REPO=$REPO want repo"
 
 # missing remote -> non-zero exit, no stdout
 git remote remove origin

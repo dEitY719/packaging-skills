@@ -31,9 +31,11 @@ its content verbatim, then stop. No git/gh calls.
 
 Confirm this directory is a clone of the target repo (`git remote -v`),
 resolve `owner/repo`/host with `eval "$(bash skills/rename-repo/lib/parse_remote.sh
-<remote>)"` (host-agnostic — never hardcode `github.com`, so GHES works too),
-confirm `gh auth status` for that host, and refuse to work on the default
-branch. Detail: `references/playbook.md` 0단계.
+<remote>)"` (host-agnostic — never hardcode `github.com`, so GHES works too;
+the script's own output is `%q`-quoted so a crafted remote URL can't inject
+into the `eval`), confirm `gh auth status --hostname "$HOST"` (not the bare
+form — it silently checks the default host instead of the parsed one), and
+refuse to work on the default branch. Detail: `references/playbook.md` 0단계.
 
 ## Step 1: Decide the New Name
 
@@ -44,9 +46,10 @@ before their choice. Detail: `references/playbook.md` 1단계.
 
 ## Step 2: Rename the Repo (DESTRUCTIVE — confirm first)
 
-`gh repo rename <new-name> --repo <org>/<OLD_REPO> --yes` (add `--hostname
-<host>` on GHES; web UI fallback if `gh` can't reach it). Detail:
-`references/playbook.md` 2단계.
+`gh repo rename <new-name> --repo <host>/<org>/<OLD_REPO> --yes` (`gh repo
+rename` has no `--hostname` flag — the host prefix goes inside `--repo`;
+web UI fallback if `gh` can't reach it). Detail: `references/playbook.md`
+2단계.
 
 ## Step 3: Update the Local Remote + Verify
 
@@ -59,8 +62,9 @@ before their choice. Detail: `references/playbook.md` 1단계.
 `git grep -Fn "<OLD_REPO>"` (literal match — repo names can contain `.`),
 fix every hit (`marketplace.json` `name`, `plugin.json`
 `homepage`/`repository`, README + skill-README install commands), skip
-relative `./plugins/...` sources, then re-grep for 0 hits. Detail:
-`references/playbook.md` 4단계.
+relative `./plugins/...` sources, then re-grep for 0 hits (`git grep` exits
+1 with no output on 0 hits — that exit code IS the pass, not a script
+failure). Detail: `references/playbook.md` 4단계.
 
 ## Step 5: Commit (push is separate — confirm first)
 
