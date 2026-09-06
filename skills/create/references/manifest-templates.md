@@ -6,6 +6,16 @@ their documentation and rationale — edit the script when a template changes.
 `CLAUDE.md` and `GEMINI.md` stay prose, written at Step 5 (split golden
 layout — see `options.md`). Placeholders:
 
+**Never interpolate `--description`/`--plugin-description` raw into a
+template.** They are free text and can legitimately contain a quote,
+backslash, or newline that would corrupt the JSON/YAML/JS output (or, worse,
+break out of a string). The script escapes both once, up front, via a
+`json_str()` (Python `json.dumps`) helper into `$DESCRIPTION_JSON` /
+`$PLUGIN_DESCRIPTION_JSON` — including the surrounding quotes — and every
+template below substitutes that variable, never the raw one. `<repo-name>`,
+`<plugin>`, `<owner>`, `<host>`, and each `<skill>` are validated instead
+(lowercase-hyphen / hostname-shaped), since they're identifiers, not text.
+
 | Placeholder | Meaning | Example |
 |---|---|---|
 | `<repo-name>` | repo name | `packaging-skills` |

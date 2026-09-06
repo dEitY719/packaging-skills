@@ -61,7 +61,41 @@ if [ "${#SKILLS[@]}" -eq 0 ]; then
   echo "missing required --skill (at least one)" >&2
   usage
 fi
+
+# Identifier-shaped inputs are validated, not escaped: every one of them is
+# interpolated unquoted-and-bare into JSON/YAML/JS/Python string literals
+# below, so a value containing a quote, backslash, or newline would corrupt
+# the generated file (or, in the .opencode/plugins/<plugin>.js identifier,
+# inject code) rather than just look wrong. Reject anything outside a safe
+# charset here, once, instead of re-deriving "is this safe to interpolate"
+# at every call site.
+validate() {
+  local label="$1" value="$2" pattern="$3"
+  if ! [[ "$value" =~ $pattern ]]; then
+    echo "invalid --$label: '$value' does not match $pattern" >&2
+    exit 1
+  fi
+}
+validate name "$NAME" '^[a-z0-9]+(-[a-z0-9]+)*$'
+validate plugin "$PLUGIN" '^[a-z0-9]+(-[a-z0-9]+)*$'
+validate owner "$OWNER" '^[A-Za-z0-9][A-Za-z0-9-]*$'
+validate host "$HOST" '^[A-Za-z0-9.-]+$'
+for s in "${SKILLS[@]}"; do
+  validate skill "$s" '^[a-z0-9]+(-[a-z0-9]+)*$'
+done
 FIRST_SKILL="$(printf '%s\n' "${SKILLS[@]}" | sort | head -n1)"
+
+# DESCRIPTION / PLUGIN_DESCRIPTION are genuine free text (a marketplace
+# one-liner) — they can't be charset-restricted like the identifiers above,
+# so they get real JSON-string escaping instead. json.dumps' escaping is
+# also valid inside a YAML double-quoted scalar (both are C-style), which is
+# why the same *_JSON variable is reused for .hermes-plugin/plugin.yaml
+# below. Each *_JSON variable already includes its own surrounding quotes.
+json_str() {
+  python3 -c 'import json, sys; sys.stdout.write(json.dumps(sys.argv[1]))' "$1"
+}
+DESCRIPTION_JSON="$(json_str "$DESCRIPTION")"
+PLUGIN_DESCRIPTION_JSON="$(json_str "$PLUGIN_DESCRIPTION")"
 
 REPO_DIR="$DEST/$NAME"
 if [ -e "$REPO_DIR" ]; then
@@ -114,12 +148,12 @@ cat >"$REPO_DIR/.claude-plugin/marketplace.json" <<EOF
 {
   "\$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "$NAME",
-  "description": "$DESCRIPTION",
+  "description": $DESCRIPTION_JSON,
   "owner": { "name": "$OWNER", "url": "https://$HOST/$OWNER" },
   "plugins": [
     {
       "name": "$PLUGIN",
-      "description": "$PLUGIN_DESCRIPTION",
+      "description": $PLUGIN_DESCRIPTION_JSON,
       "version": "0.1.0",
       "source": "./",
       "homepage": "https://$HOST/$OWNER/$NAME",
@@ -132,7 +166,7 @@ EOF
 cat >"$REPO_DIR/.claude-plugin/plugin.json" <<EOF
 {
   "name": "$PLUGIN",
-  "description": "$PLUGIN_DESCRIPTION",
+  "description": $PLUGIN_DESCRIPTION_JSON,
   "version": "0.1.0",
   "author": { "name": "$OWNER", "url": "https://$HOST/$OWNER" },
   "homepage": "https://$HOST/$OWNER/$NAME",
@@ -146,7 +180,7 @@ cat >"$REPO_DIR/.codex-plugin/plugin.json" <<EOF
 {
   "name": "$PLUGIN",
   "version": "0.1.0",
-  "description": "$PLUGIN_DESCRIPTION",
+  "description": $PLUGIN_DESCRIPTION_JSON,
   "author": { "name": "$OWNER", "url": "https://$HOST/$OWNER" },
   "homepage": "https://$HOST/$OWNER/$NAME",
   "repository": "https://$HOST/$OWNER/$NAME",
@@ -156,8 +190,8 @@ cat >"$REPO_DIR/.codex-plugin/plugin.json" <<EOF
   "hooks": {},
   "interface": {
     "displayName": "$PLUGIN_PASCAL",
-    "shortDescription": "$PLUGIN_DESCRIPTION",
-    "longDescription": "$PLUGIN_DESCRIPTION",
+    "shortDescription": $PLUGIN_DESCRIPTION_JSON,
+    "longDescription": $PLUGIN_DESCRIPTION_JSON,
     "developerName": "$OWNER",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Read", "Write"],
@@ -173,7 +207,7 @@ cat >"$REPO_DIR/.kimi-plugin/plugin.json" <<EOF
 {
   "name": "$PLUGIN",
   "version": "0.1.0",
-  "description": "$PLUGIN_DESCRIPTION",
+  "description": $PLUGIN_DESCRIPTION_JSON,
   "author": { "name": "$OWNER", "url": "https://$HOST/$OWNER" },
   "homepage": "https://$HOST/$OWNER/$NAME",
   "license": "MIT",
@@ -182,8 +216,8 @@ cat >"$REPO_DIR/.kimi-plugin/plugin.json" <<EOF
   "skillInstructions": "Kimi Code tool mapping for $PLUGIN skills:\n\n- When a skill says to ask the user, or asks for confirmation before a destructive step, call Kimi Code's \`AskUserQuestion\` tool.\n- When a skill refers to \`TodoWrite\`, use Kimi Code's \`TodoList\` tool.\n- When a skill asks to dispatch a subagent, use Kimi Code's \`Agent\` tool with \`subagent_type: \"coder\"\` for implementation and \`subagent_type: \"explore\"\` for read-only exploration; never \`general-purpose\`.\n- Use Kimi Code's \`Read\`, \`Write\`, \`Edit\`, \`Bash\`, \`Grep\`, \`Glob\` tools by their exposed names.\n- Honour each skill's safety contract: a read-only skill must never call \`Write\`, \`Edit\`, or a mutating \`Bash\` command.",
   "interface": {
     "displayName": "$PLUGIN_PASCAL",
-    "shortDescription": "$PLUGIN_DESCRIPTION",
-    "longDescription": "$PLUGIN_DESCRIPTION",
+    "shortDescription": $PLUGIN_DESCRIPTION_JSON,
+    "longDescription": $PLUGIN_DESCRIPTION_JSON,
     "developerName": "$OWNER",
     "capabilities": ["Interactive", "Read", "Write"],
     "websiteURL": "https://$HOST/$OWNER/$NAME"
@@ -194,7 +228,7 @@ EOF
 cat >"$REPO_DIR/.hermes-plugin/plugin.yaml" <<EOF
 name: $PLUGIN
 version: 0.1.0
-description: $PLUGIN_DESCRIPTION
+description: $PLUGIN_DESCRIPTION_JSON
 author: $OWNER
 EOF
 
@@ -288,7 +322,7 @@ EOF
 cat >"$REPO_DIR/gemini-extension.json" <<EOF
 {
   "name": "$PLUGIN",
-  "description": "$PLUGIN_DESCRIPTION",
+  "description": $PLUGIN_DESCRIPTION_JSON,
   "version": "0.1.0",
   "contextFileName": "GEMINI.md"
 }
@@ -298,7 +332,7 @@ cat >"$REPO_DIR/package.json" <<EOF
 {
   "name": "$NAME",
   "version": "0.1.0",
-  "description": "$PLUGIN_DESCRIPTION",
+  "description": $PLUGIN_DESCRIPTION_JSON,
   "type": "module",
   "main": ".opencode/plugins/$PLUGIN.js",
   "license": "MIT",
