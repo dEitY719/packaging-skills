@@ -39,18 +39,19 @@ Plan output (Step 2, always printed):
 Behavior (split golden layout — 1 repo = 1 plugin, dotfiles#1410 P-1):
   1. Parse & validate (naming, --src exists, dest not present, skill list).
   2. Print the plan (stop if --dry-run).
-  3. Build the structure: root manifests for all seven harnesses
+  3. Run lib/scaffold_repo.sh: root manifests for all seven harnesses
      (.claude-plugin/, .codex-plugin/, .kimi-plugin/, .hermes-plugin/,
      .opencode/, .agents/, gemini-extension.json), flat skills/,
-     docs/skill-guides/, docs/skill-output/, .github/workflows/.
-     NEVER a plugins/ directory — that is the pre-#1410 mono layout, which
-     only Claude Code can resolve and which CI rejects.
+     docs/skill-guides/, docs/skill-output/, .github/workflows/,
+     package.json, LICENSE, .gitignore. NEVER a plugins/ directory — that
+     is the pre-#1410 mono layout, which only Claude Code can resolve and
+     which CI rejects.
   4. Copy each skill into skills/ (cp -r). Source is RE-VERIFIED unchanged,
      then each COPY's frontmatter is checked (bare name = directory,
      description, license: MIT, <= 100 lines). Violations are fixed in the
      copy or abort -- never in --src.
-  5. Write manifests + CLAUDE.md (+ AGENTS.md symlink) + GEMINI.md + README
-     + LICENSE + .gitignore + CI workflows from the templates.
+  5. Write the prose docs: CLAUDE.md (+ AGENTS.md symlink), GEMINI.md,
+     README.md, naming each copied skill from its real description.
   6. git init + checkout -B main.
   7. gh repo create (after gh auth status + user confirmation).
   8. git add + commit "feat: init <repo-name>" + push (after confirmation).

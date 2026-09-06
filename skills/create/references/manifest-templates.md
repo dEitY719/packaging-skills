@@ -1,6 +1,10 @@
 # packaging:create — Manifest, CI, LICENSE & .gitignore Templates
 
-Written in Step 5 (split golden layout — see `options.md`). Placeholders:
+The mechanical templates below (every file except `CLAUDE.md`/`GEMINI.md`) are
+implemented verbatim in `lib/scaffold_repo.sh`, run at Step 3. This file is
+their documentation and rationale — edit the script when a template changes.
+`CLAUDE.md` and `GEMINI.md` stay prose, written at Step 5 (split golden
+layout — see `options.md`). Placeholders:
 
 | Placeholder | Meaning | Example |
 |---|---|---|

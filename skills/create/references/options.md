@@ -111,7 +111,7 @@ first push.
 Reference implementations to copy from when a template here is ambiguous:
 `dEitY719/packaging-skills` and `dEitY719/harness-skills`.
 
-## What CI gates (so Step 5 must get it right)
+## What CI gates (so Step 3's script must get it right)
 
 `.github/workflows/validate.yml` calls
 `dEitY719/harness-skills/.github/workflows/skill-check.yml@main`, which fails on:
