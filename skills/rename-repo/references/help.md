@@ -6,24 +6,36 @@ Usage:
   /packaging:rename-repo help         Print this usage
 
 Arguments:
-  <new-name>   Full new repo name in lowercase with hyphens, including the
-               claude-plugin- prefix (e.g. claude-plugin-visuals). Optional —
-               when omitted, the skill inspects the plugin composition and
-               proposes 1-2 names.
 
-Behavior (per-step):
-  0  Env/host check     git remote -v + gh auth status; identify github.com
-                        vs GHES; refuse the default branch
+| Option | Description | Default |
+|--------|-------------|---------|
+| `<new-name>` | new repo name, `claude-plugin-<domain>` form, lowercase + hyphens | inferred from plugin composition, user picks |
+| `-h`/`--help`/`help` | print this help and stop — no git/gh calls | — |
+
+Behavior (per-step — full detail in SKILL.md / references/playbook.md):
+  0  Env/host check     parse_remote.sh + gh auth status; refuse default branch
   1  Name decision      use the arg, or propose claude-plugin-<domain> names
   2  gh repo rename     DESTRUCTIVE — confirm first (GHES: --hostname / web UI)
   3  Remote URL update  git remote set-url origin + ls-remote verification
-  4  Reference scan/fix  git grep "<OLD>" → fix marketplace.json name,
-                        plugin.json homepage/repository, README install cmds;
-                        skip relative ./plugins/... source paths; verify 0 hits
-  5  Commit             Conventional Commits style; push only after confirm
+  4  Reference scan/fix  git grep -F "<OLD>" → fix, verify 0 hits
+  5  Commit + push      Conventional Commits; push only after confirm
+  6  Verify & report    emit the completion report below
+
+Completion report (Step 6):
+  [OK] packaging:rename-repo
+    Old   : <org>/<OLD_REPO>
+    New   : <org>/<NEW_REPO>
+    Files : <n> updated (marketplace.json, plugin.json, README.md, ...)
+    Grep  : 0 remaining hits for "<OLD_REPO>"
+    Pushed: yes | no (awaiting confirmation)
+    Next  : /packaging:structure-check .   (re-verify the renamed repo)
+
+  [FAIL] when the Step 4 re-grep is non-zero or `git ls-remote` did not
+  verify — same fields, with the non-zero grep count or the failed check
+  named in place of "0 remaining hits".
 
 Safety:
-  - Destructive steps (repo rename, push) require explicit user confirmation.
+  - Destructive/outward steps (repo rename, push) require explicit confirmation.
   - Never works on the default branch — needs a feature branch.
   - Interactive gh login (gh auth login) must be run by the user, not the skill.
   - Relative `source` paths are repo-name-independent — left untouched.

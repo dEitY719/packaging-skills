@@ -19,21 +19,22 @@ github.com / 사내 GHES 양쪽 모두 동작한다.
 
 ## 작업 절차
 
-각 단계는 실행 전에 사용자가 확인할 수 있게 명령을 먼저 보여주고,
-파괴적이거나 외부에 영향을 주는 작업(레포 rename, push) 전에는 반드시 한 번
-사용자 확인을 받는다.
+각 단계는 실행 전에 사용자가 확인할 수 있게 명령을 먼저 보여준다.
 
 ### 0단계 — 환경/호스트 확인
 
 - 지금 디렉터리가 대상 레포의 클론인지 확인: `git remote -v`.
-- `owner/repo` 는 `gh` 대신 `git remote get-url <remote>` 출력을 호스트
-  독립적 패턴(`<protocol>://<host>/<owner>/<repo>.git`)으로 파싱해서 얻는다
-  — github.com 하드코딩 금지(GHES/self-hosted 지원).
-- remote 호스트가 github.com 인지 사내 GHES(예: github.our-company.com)인지 식별.
+- `owner/repo`/host 는 `gh` 대신 `skills/rename-repo/lib/parse_remote.sh` 로
+  얻는다: `eval "$(bash skills/rename-repo/lib/parse_remote.sh origin)"` →
+  `$HOST` / `$OWNER` / `$REPO`. `https://`, `git@` 양쪽, 임의의 GHE 호스트를
+  지원한다 (github.com 하드코딩 금지).
+- `$HOST` 가 `github.com` 인지 사내 GHES(예: `github.our-company.com`) 인지로
+  이후 `gh` 호출의 `--hostname` 여부를 결정한다.
 - gh CLI 가 그 호스트로 인증돼 있는지 확인: `gh auth status`.
   - 대상 호스트가 안 보이면 `gh auth login --hostname <호스트>` 를 사용자가
     직접 실행하도록 안내 (대화형 로그인은 대신 못 함).
-- 기본 브랜치에서 직접 작업하지 말고, 필요하면 작업 브랜치를 딴다.
+- 기본 브랜치에서 직접 작업하지 않는다 — 반드시 별도 작업 브랜치를 쓴다
+  (default branch 위라면 그 자리에서 거부하고 브랜치부터 요구한다).
 
 ### 1단계 — 새 이름 결정
 
@@ -48,8 +49,9 @@ github.com / 사내 GHES 양쪽 모두 동작한다.
 
 - 사용자가 이름을 확정하면:
   `gh repo rename <새이름> --repo <org>/<OLD_REPO> --yes`.
-  - GHES 라면 gh 가 사내 호스트로 인증돼 있어야 동작. 안 되면 웹 UI 의
-    Settings → Repository name 에서 rename 하도록 안내한다.
+  - GHES 라면 `--hostname <호스트>` 를 붙인다. gh 가 사내 호스트로 인증돼
+    있어야 동작. 안 되면 웹 UI 의 Settings → Repository name 에서 rename
+    하도록 안내한다.
 
 ### 3단계 — 로컬 remote URL 갱신
 
@@ -60,14 +62,16 @@ github.com / 사내 GHES 양쪽 모두 동작한다.
 
 ### 4단계 — 하드코딩된 옛 이름/URL 전부 스캔 & 수정
 
-- 추적 파일 전체에서 옛 이름 잔재 검색: `git grep -n "<OLD_REPO>"`.
+- 추적 파일 전체에서 옛 이름 잔재 검색: `git grep -Fn "<OLD_REPO>"` (`-F` 로
+  리터럴 매치 — 레포 이름에 `.` 이 있으면 정규식 와일드카드로 오탐한다).
 - 아래 위치를 빠짐없이 점검하고 새 이름으로 교체:
   - `.claude-plugin/marketplace.json` 의 `name` → 새 레포 이름과 1:1 일치.
   - `plugins/<plugin>/.claude-plugin/plugin.json` 의 `homepage` / `repository`.
   - `README.md` 의 제목과 `/plugin marketplace add <org>/<OLD_REPO>` 설치 명령.
   - 각 skill 의 README 안의 marketplace 링크 / 설치 명령.
 - 단, `source` 가 `./plugins/...` 같은 상대경로면 레포명과 무관하니 건드리지 않는다.
-- 수정 후 `git grep -n "<OLD_REPO>"` 가 0건인지 확인.
+- 수정 후 `git grep -Fn "<OLD_REPO>"` 가 0건인지 확인 — 이 결과가 SKILL.md
+  Step 6 의 `[OK]`/`[FAIL]` 판정 근거다.
 
 ### 5단계 — 커밋
 
@@ -82,11 +86,3 @@ github.com / 사내 GHES 양쪽 모두 동작한다.
   (`/plugin marketplace add ...`) 은 반드시 새 이름으로 갱신한다.
 - 호스트가 GHES 면 URL 이 github.com 이 아니라
   `https://<GHES호스트>/<org>/<repo>` 형태인 점에 유의.
-
-## 참고: 실제 적용 사례
-
-- github.com: `dEitY719/claude-skills` → `dEitY719/claude-plugin-visuals`
-  (marketplace.json `name`, plugin.json `homepage`/`repository`, README 제목+
-  설치 명령, skill README 링크 — 4개 파일 수정 후 0건 확인 → 커밋).
-- GHES: `byoungwoo-yoon/company-skills` → `byoungwoo-yoon/claude-plugin-jira`
-  (동일 패턴, gh 사내 호스트 인증 + GHES URL 형태 유의).
