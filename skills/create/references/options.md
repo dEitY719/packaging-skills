@@ -132,3 +132,11 @@ Reference implementations to copy from when a template here is ambiguous:
   manifests, `package.json`, and every `skills/*/SKILL.md` frontmatter — all
   must read `MIT`;
 - any emoji anywhere in the repo.
+
+**What CI does not gate.** No harness-specific manifest schema is checked: for
+`.codex-plugin`, `.kimi-plugin`, `.hermes-plugin`, `.agents/` and
+`gemini-extension.json`, CI verifies presence, JSON/YAML parse, and the
+`version`/`license` agreement — nothing about whether the keys inside are the
+ones that harness actually reads. A typo in a key name is therefore a silent
+load-time failure on that harness alone. Diff a generated manifest against the
+same file in a reference repo before pushing.
