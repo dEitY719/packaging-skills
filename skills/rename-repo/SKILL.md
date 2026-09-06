@@ -20,8 +20,7 @@ metadata:
 
 Rename an existing `claude-plugin-*` marketplace repo to the team naming
 convention `claude-plugin-<domain>`, then fix every hardcoded reference.
-The full procedure (the embedded SSOT) lives in `references/playbook.md` —
-read it before executing.
+Full procedure (the embedded SSOT): `references/playbook.md`.
 
 ## Help
 
@@ -30,66 +29,56 @@ its content verbatim, then stop. No git/gh calls.
 
 ## Step 0: Environment + Host Check
 
-- Confirm the current directory is a clone of the target repo: `git remote -v`.
-- Resolve `owner/repo` by parsing `git remote get-url <remote>` with a
-  host-agnostic pattern (`<protocol>://<host>/<owner>/<repo>.git`) rather
-  than depending on `gh` — never hardcode `github.com`, so GHES/self-hosted
-  remotes work too.
-- Identify whether the remote host is `github.com` or an internal GHES
-  host (e.g. `github.our-company.com`) from the remote URL.
-- Confirm `gh` is authenticated for that host: `gh auth status`. If the
-  target host is missing, tell the user to run `gh auth login --hostname
-  <host>` themselves — interactive login cannot be done on their behalf.
-- Refuse to work on the default branch; require a feature branch.
+Confirm this directory is a clone of the target repo (`git remote -v`),
+resolve `owner/repo`/host with `eval "$(bash skills/rename-repo/lib/parse_remote.sh
+<remote>)"` (host-agnostic — never hardcode `github.com`, so GHES works too),
+confirm `gh auth status` for that host, and refuse to work on the default
+branch. Detail: `references/playbook.md` 0단계.
 
 ## Step 1: Decide the New Name
 
-- If `<new-name>` was passed as an argument, use it verbatim. It must
-  include the `claude-plugin-` prefix and follow GitHub repo naming rules
-  (lowercase + hyphens only, e.g. `claude-plugin-visuals`) — uppercase or
-  underscores can break `gh repo rename` or violate the convention.
-- If no argument, inspect the plugin composition
-  (`.claude-plugin/marketplace.json` `plugins[]` + `plugins/` dirs) and
-  propose 1-2 `claude-plugin-<domain>` names. The user picks the final
-  name. Do NOT rename before their choice.
+Use `<new-name>` verbatim if given (must carry the `claude-plugin-` prefix,
+lowercase + hyphens only). Otherwise inspect the plugin composition and
+propose 1-2 `claude-plugin-<domain>` names — the user picks; never rename
+before their choice. Detail: `references/playbook.md` 1단계.
 
 ## Step 2: Rename the Repo (DESTRUCTIVE — confirm first)
 
-After the user confirms the name:
-`gh repo rename <new-name> --repo <org>/<OLD_REPO> --yes` (add
-`--hostname <host>` on GHES). If `gh` fails on GHES, guide the user to the
-web UI (Settings → Repository name).
+`gh repo rename <new-name> --repo <org>/<OLD_REPO> --yes` (add `--hostname
+<host>` on GHES; web UI fallback if `gh` can't reach it). Detail:
+`references/playbook.md` 2단계.
 
-## Step 3: Update the Local Remote URL
+## Step 3: Update the Local Remote + Verify
 
-- `git remote set-url origin <new repo URL>`.
-- Verify: `git remote get-url origin` and
-  `git ls-remote --heads origin >/dev/null && echo REMOTE_OK`.
+`git remote set-url origin <new repo URL>`, then confirm with
+`git remote get-url origin` and `git ls-remote --heads origin`. Detail:
+`references/playbook.md` 3단계.
 
 ## Step 4: Scan + Fix Hardcoded Old Names
 
-- `git grep -n "<OLD_REPO>"` across tracked files.
-- Replace in: `marketplace.json` `name` (1:1 with the new repo name),
-  `plugins/<p>/.claude-plugin/plugin.json` `homepage`/`repository`,
-  `README.md` title + `/plugin marketplace add <org>/<OLD_REPO>` install
-  command, and each skill README's marketplace link/install command.
-- Do NOT touch fields whose `source` is a relative path (`./plugins/...`)
-  — those are repo-name-independent.
-- Confirm `git grep -n "<OLD_REPO>"` returns 0 hits afterward.
+`git grep -Fn "<OLD_REPO>"` (literal match — repo names can contain `.`),
+fix every hit (`marketplace.json` `name`, `plugin.json`
+`homepage`/`repository`, README + skill-README install commands), skip
+relative `./plugins/...` sources, then re-grep for 0 hits. Detail:
+`references/playbook.md` 4단계.
 
 ## Step 5: Commit (push is separate — confirm first)
 
-- Match the repo's existing git-log style (Conventional Commits). Title
-  e.g. `chore: rename repo to <new-name> and update references`; body
-  records the why (convention) and the changed-file list.
-- Push only after explicit user confirmation.
+Conventional-Commits style, matching this repo's git-log; push only after
+explicit confirmation. Detail: `references/playbook.md` 5단계.
+
+## Step 6: Verify & Report
+
+Confirm the Step 4 re-grep is 0 hits and Step 3's `git ls-remote` verified,
+then emit the `[OK]`/`[FAIL]` completion report from `references/help.md`.
 
 ## Constraints
 
-- Destructive actions (repo rename, push) require user confirmation first.
-- Works on both github.com and GHES — identify the host from the remote URL.
-- Never edit fields whose value is a relative `source` path.
-- Never work directly on the default branch.
+- **HARD-abort** on: Step 0 host/auth failure or default-branch refusal,
+  Step 2 `gh repo rename` failure, and any push rejection. A non-zero Step 4
+  re-grep is reported as `[FAIL]` in the Step 6 verdict, not swallowed.
+- Destructive/outward actions (repo rename, push) require confirmation first.
+- Never edit a field whose value is a relative `source` path.
 - `marketplace.json` `name` must equal the new repo name 1:1.
 
 ## Related Skills
