@@ -92,6 +92,15 @@ Same identity fields plus Codex's `skills` pointer and `interface` block.
 Kimi needs `skillInstructions` — the tool-name mapping the skills' generic
 prose resolves to on Kimi Code. Write it as one `\n`-escaped string.
 
+Load-bearing fields, in the order Kimi resolves them: `name` (must equal
+`<plugin>`), `version`, `skills` (must be `"./skills/"` — the flat tree, not a
+`plugins/` path), `license`, and `skillInstructions`. `interface` is presentation
+only. **No published JSON schema exists for this manifest**, and CI checks only
+that the file parses, is present, and agrees on `version`/`license` — so a
+misspelled key here fails silently at Kimi load time, not in CI. Diff a new
+manifest against a working one (`dEitY719/packaging-skills`,
+`dEitY719/harness-skills`) rather than trusting a green CI run.
+
 ```json
 {
   "name": "<plugin>",
