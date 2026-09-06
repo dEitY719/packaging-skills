@@ -85,4 +85,31 @@ if "$SCRIPT" --name demo-skills --plugin demo --dest "$TMP" \
   fail "should refuse an existing destination"
 fi
 
+# --- descriptions with quotes/backslashes/newlines must not corrupt output
+"$SCRIPT" \
+  --name quote-skills --plugin quote --dest "$TMP" \
+  --owner acme --host github.com \
+  --description 'She said "hi" \o/' \
+  --plugin-description $'multi\nline "desc" with a \\backslash' \
+  --skill only >/dev/null
+QREPO="$TMP/quote-skills"
+python3 - "$QREPO" <<'PY'
+import json, pathlib, sys
+repo = pathlib.Path(sys.argv[1])
+mkt = json.loads((repo / ".claude-plugin/marketplace.json").read_text())
+assert mkt["description"] == 'She said "hi" \\o/', mkt["description"]
+plugin = json.loads((repo / ".claude-plugin/plugin.json").read_text())
+assert plugin["description"] == 'multi\nline "desc" with a \\backslash', plugin["description"]
+PY
+grep -q '^description: "multi\\nline \\"desc\\" with a \\\\backslash"$' \
+  "$QREPO/.hermes-plugin/plugin.yaml" \
+  || fail "hermes plugin.yaml description not safely quoted"
+
+# --- rejects an unsafe identifier instead of emitting a broken manifest --
+if "$SCRIPT" --name 'not a repo name!' --plugin demo --dest "$TMP" \
+     --owner acme --host github.com \
+     --description x --plugin-description y --skill a >/dev/null 2>&1; then
+  fail "should reject an invalid --name"
+fi
+
 echo "OK: scaffold_repo.sh smoke test passed"

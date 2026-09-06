@@ -70,15 +70,15 @@ can't compose this.
 `git init <dest>/<repo-name>` then `git -C <dest>/<repo-name> checkout -B main`
 (`-B`, not `-b` — Git may default to `main` already, where `-b` fails).
 
-## Step 7: Create the Remote Repo
+## Step 7: Create the Remote Repo (outward-facing — confirm first)
 
-`GH_HOST=<host> gh auth status`, then `gh repo create <owner>/<repo-name>
---public --description "<desc>"`, then `git remote add origin
-git@<host>:<owner>/<repo-name>.git`. On GHES failure, use the web UI.
+After `GH_HOST=<host> gh auth status` and explicit confirmation: `gh repo create
+<owner>/<repo-name> --public --description "<desc>"`, then `git remote add
+origin git@<host>:<owner>/<repo-name>.git`. On GHES failure, use the web UI.
 
-## Step 8: Initial Commit & Push
+## Step 8: Initial Commit & Push (confirm first)
 
-`git add .` -> `git commit -m "feat: init <repo-name>"` -> `git push -u origin main`.
+`git add .` -> `git commit -m "feat: init <repo-name>"` -> after confirmation, `git push -u origin main`. **Never `git push --force`.**
 
 ## Step 9: Verify & Report
 
