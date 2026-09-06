@@ -14,7 +14,7 @@ Written in Step 5 (split golden layout — see `options.md`). Placeholders:
 Keep `.claude-plugin/marketplace.json` `name` equal to the repo name 1:1 (same
 rule as `packaging:rename-repo`), and every `name` field in a *plugin* manifest
 equal to `<plugin>`. Start every `version` at `0.1.0` — the same string in all
-six version-bearing manifests, or CI fails.
+seven version-bearing manifests, or CI fails.
 
 ## `.claude-plugin/marketplace.json`
 
@@ -268,11 +268,15 @@ only the matching skill (never all of them), the Gemini CLI tool mapping
 
 ## `CLAUDE.md` + the `AGENTS.md` symlink
 
-`CLAUDE.md` is the AI context SSOT. Create the symlink, never a second copy:
+`CLAUDE.md` is the AI context SSOT. Create the symlink, never a second copy —
+run it **from inside the repo** so the stored target is the bare relative name
+`CLAUDE.md`, which is what CI's `readlink AGENTS.md` check compares against:
 
 ```bash
-ln -s CLAUDE.md <dest>/<repo-name>/AGENTS.md
+(cd <dest>/<repo-name> && ln -s CLAUDE.md AGENTS.md)
 ```
+
+An absolute or `../`-prefixed target fails that check even when it resolves.
 
 `CLAUDE.md` states: what the repo is (one table row per skill), the split
 layout and why the manifests must not move under `plugins/`, the rules for

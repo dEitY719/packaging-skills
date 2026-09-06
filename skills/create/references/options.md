@@ -83,10 +83,10 @@ Reference implementations to copy from when a template here is ambiguous:
   equal its directory name, or which has no `description:`;
 - a `SKILL.md` over 100 lines (progressive disclosure — push detail into
   `references/`);
-- the six version-bearing manifests disagreeing on `version`
+- the seven version-bearing manifests disagreeing on `version`
   (`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`
   `plugins[0].version`, `.codex-plugin/plugin.json`, `.kimi-plugin/plugin.json`,
-  `gemini-extension.json`, `package.json`, `.hermes-plugin/plugin.yaml`);
+  `.hermes-plugin/plugin.yaml`, `gemini-extension.json`, `package.json`);
 - `license` disagreeing across `LICENSE`, the three `*-plugin/plugin.json`
   manifests, `package.json`, and every `skills/*/SKILL.md` frontmatter — all
   must read `MIT`;
