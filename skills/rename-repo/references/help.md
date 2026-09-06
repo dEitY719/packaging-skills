@@ -13,9 +13,11 @@ Arguments:
 | `-h`/`--help`/`help` | print this help and stop — no git/gh calls | — |
 
 Behavior (per-step — full detail in SKILL.md / references/playbook.md):
-  0  Env/host check     parse_remote.sh + gh auth status; refuse default branch
+  0  Env/host check     parse_remote.sh (eval-safe) + gh auth status --hostname;
+                        refuse default branch
   1  Name decision      use the arg, or propose claude-plugin-<domain> names
-  2  gh repo rename     DESTRUCTIVE — confirm first (GHES: --hostname / web UI)
+  2  gh repo rename     DESTRUCTIVE — confirm first (--repo <host>/<org>/<repo>;
+                        web UI fallback on GHES)
   3  Remote URL update  git remote set-url origin + ls-remote verification
   4  Reference scan/fix  git grep -F "<OLD>" → fix, verify 0 hits
   5  Commit + push      Conventional Commits; push only after confirm

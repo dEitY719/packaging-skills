@@ -26,11 +26,13 @@ github.com / 사내 GHES 양쪽 모두 동작한다.
 - 지금 디렉터리가 대상 레포의 클론인지 확인: `git remote -v`.
 - `owner/repo`/host 는 `gh` 대신 `skills/rename-repo/lib/parse_remote.sh` 로
   얻는다: `eval "$(bash skills/rename-repo/lib/parse_remote.sh origin)"` →
-  `$HOST` / `$OWNER` / `$REPO`. `https://`, `git@` 양쪽, 임의의 GHE 호스트를
-  지원한다 (github.com 하드코딩 금지).
-- `$HOST` 가 `github.com` 인지 사내 GHES(예: `github.our-company.com`) 인지로
-  이후 `gh` 호출의 `--hostname` 여부를 결정한다.
-- gh CLI 가 그 호스트로 인증돼 있는지 확인: `gh auth status`.
+  `$HOST` / `$OWNER` / `$REPO`. `https://`, `ssh://`, `git@` scp 형식 모두,
+  임의의 GHE 호스트를 지원한다 (github.com 하드코딩 금지). 스크립트 출력은
+  `%q` 로 이스케이프돼 있어 조작된 remote URL 이 있어도 `eval` 시 명령이
+  실행되지 않는다.
+- gh CLI 가 `$HOST` 로 인증돼 있는지 확인: `gh auth status --hostname
+  "$HOST"` (호스트를 지정하지 않으면 기본 호스트만 검사해, github.com 세션이
+  실제로는 미인증인 GHES 대상을 통과시킬 수 있다).
   - 대상 호스트가 안 보이면 `gh auth login --hostname <호스트>` 를 사용자가
     직접 실행하도록 안내 (대화형 로그인은 대신 못 함).
 - 기본 브랜치에서 직접 작업하지 않는다 — 반드시 별도 작업 브랜치를 쓴다
@@ -48,10 +50,11 @@ github.com / 사내 GHES 양쪽 모두 동작한다.
 ### 2단계 — 레포 rename (파괴적 — 확인 필수)
 
 - 사용자가 이름을 확정하면:
-  `gh repo rename <새이름> --repo <org>/<OLD_REPO> --yes`.
-  - GHES 라면 `--hostname <호스트>` 를 붙인다. gh 가 사내 호스트로 인증돼
-    있어야 동작. 안 되면 웹 UI 의 Settings → Repository name 에서 rename
-    하도록 안내한다.
+  `gh repo rename <새이름> --repo <host>/<org>/<OLD_REPO> --yes`.
+  (`gh repo rename` 에는 `--hostname` 플래그가 없다 — `--repo` 의
+  `[HOST/]OWNER/REPO` 형식 안에 호스트를 넣는다.) GHES 라면 gh 가 사내
+  호스트로 인증돼 있어야 동작. 안 되면 웹 UI 의 Settings → Repository name
+  에서 rename 하도록 안내한다.
 
 ### 3단계 — 로컬 remote URL 갱신
 
@@ -71,7 +74,9 @@ github.com / 사내 GHES 양쪽 모두 동작한다.
   - 각 skill 의 README 안의 marketplace 링크 / 설치 명령.
 - 단, `source` 가 `./plugins/...` 같은 상대경로면 레포명과 무관하니 건드리지 않는다.
 - 수정 후 `git grep -Fn "<OLD_REPO>"` 가 0건인지 확인 — 이 결과가 SKILL.md
-  Step 6 의 `[OK]`/`[FAIL]` 판정 근거다.
+  Step 6 의 `[OK]`/`[FAIL]` 판정 근거다. (`git grep` 은 매치가 0건이면 종료
+  코드 1, 출력 없음을 반환한다 — 그 1이 통과 조건이지, 스크립트 실패가
+  아니다. 매치가 있으면 종료 코드 0 + 출력이 있다.)
 
 ### 5단계 — 커밋
 
