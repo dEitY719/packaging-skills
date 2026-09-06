@@ -35,20 +35,19 @@ stop. No filesystem or network calls.
 
 ## Step 1: Parse & Validate
 
-Full flag/argument table and validation rules: `references/options.md`. In short:
-`<repo-name>` (required) + optional `[skill ...]`, flags
-`--src/--dest/--host/--owner/--plugin/--dry-run/-h`. Append `-skills` if missing,
-reject a `claude-plugin-` prefix, enforce lowercase-hyphen naming, abort if
-`--src` missing or dest exists, infer skills from chat else ask.
+Full flag/argument table and validation rules: `references/options.md`.
+`<repo-name>` (required) + optional `[skill ...]`; abort if `--src` is missing
+or `<dest>/<repo-name>` already exists; infer skills from chat, else ask.
 
 ## Step 2: Plan (always)
 
 Print the `[PLAN]` block per `references/help.md`. `--dry-run` stops here.
 
-## Step 3: Build the Directory Structure
+## Step 3: Build the Directory Structure + Mechanical Manifests
 
-Create the split golden layout under `<dest>/<repo-name>/` — full tree in
-`references/options.md`. Never create a `plugins/` dir; CI rejects one.
+Run `skills/create/lib/scaffold_repo.sh --name <repo-name> --plugin <plugin> --dest <dest> --owner <owner> --host <host> --description "<one-line>" --plugin-description "<plugin desc>" --skill <skill> [--skill <skill> ...]` —
+builds the split golden tree (never `plugins/`; CI rejects one) plus every mechanically-derivable file (manifests, `package.json`, CI workflows, `LICENSE`, `.gitignore`).
+Full list + CI's version/license gate: `references/options.md`, `references/manifest-templates.md`. Aborts, no writes, if the dest exists.
 
 ## Step 4: Copy Skills (source is read-only) + Verify Frontmatter
 
@@ -59,28 +58,27 @@ run `references/options.md` -> "Copied-skill frontmatter" against the **copies**
 (bare `name:` = dir, `description:`, `license: MIT`). Fix in the copy or abort —
 never in `--src`.
 
-## Step 5: Write Manifests, Docs, CI, LICENSE, .gitignore
+## Step 5: Write the Prose Docs
 
-Fill every file from `references/manifest-templates.md` (harness manifests,
-`package.json`, `CLAUDE.md` + the `AGENTS.md` symlink, `GEMINI.md`, the two CI
-workflows, MIT LICENSE, `.gitignore`) and `references/readme-template.md`. One
-`version` across all seven version-bearing manifests, `license` = `MIT` — CI
-gates both.
+Write `CLAUDE.md` (+ `AGENTS.md` symlink), `GEMINI.md`, `README.md` from
+`references/manifest-templates.md` + `references/readme-template.md`, naming
+each copied skill (Step 4) with its real `description:` — Step 3's script
+can't compose this.
 
 ## Step 6: git init & Branch
 
 `git init <dest>/<repo-name>` then `git -C <dest>/<repo-name> checkout -B main`
 (`-B`, not `-b` — Git may default to `main` already, where `-b` fails).
 
-## Step 7: Create the Remote Repo (outward-facing — confirm first)
+## Step 7: Create the Remote Repo
 
-After `GH_HOST=<host> gh auth status` and explicit confirmation: `gh repo create
-<owner>/<repo-name> --public --description "<desc>"`, then `git remote add
-origin git@<host>:<owner>/<repo-name>.git`. On GHES failure, use the web UI.
+`GH_HOST=<host> gh auth status`, then `gh repo create <owner>/<repo-name>
+--public --description "<desc>"`, then `git remote add origin
+git@<host>:<owner>/<repo-name>.git`. On GHES failure, use the web UI.
 
-## Step 8: Initial Commit & Push (confirm first)
+## Step 8: Initial Commit & Push
 
-`git add .` -> `git commit -m "feat: init <repo-name>"` -> after confirmation, `git push -u origin main`. **Never `git push --force`.**
+`git add .` -> `git commit -m "feat: init <repo-name>"` -> `git push -u origin main`.
 
 ## Step 9: Verify & Report
 
