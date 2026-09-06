@@ -1,7 +1,7 @@
 # packaging:create — README Template
 
-Written in Step 5 at `<dest>/<plugin-name>/README.md`. Placeholders:
-`<plugin-name>` = repo name, `<plugin>` = plugin key, `<owner>`/`<host>`
+Written in Step 5 at `<dest>/<repo-name>/README.md`. Placeholders:
+`<repo-name>` = repo name, `<plugin>` = plugin key, `<owner>`/`<host>`
 from the flags, `<skill>` rows from the discovered skill list.
 
 This template is designed to satisfy `packaging:structure-check`'s
@@ -14,18 +14,21 @@ files are placeholder stubs at create time — fill them later with
 ## Template
 
 ````markdown
-# <plugin-name>
+# <repo-name>
 
-> Claude Code 스킬 마켓플레이스 플러그인. `<plugin>` 플러그인이 아래 스킬들을 번들합니다.
+> 에이전트 스킬 마켓플레이스 repo. `<plugin>` 플러그인 하나가 아래 스킬들을 번들합니다.
 
 ## 설치
 
+Claude Code:
+
 ```
-/plugin marketplace add <owner>/<plugin-name>
-/plugin install <plugin>@<plugin-name>
+/plugin marketplace add <owner>/<repo-name>
+/plugin install <plugin>@<repo-name>
 ```
 
-GHES(`<host>`)에서는 호스트 인증 후 동일하게 추가합니다.
+다른 하네스(Codex / Kimi / Hermes / OpenCode / Antigravity / Gemini CLI)는 각자의
+플러그인 설치 경로를 씁니다. 매니페스트는 모두 repo 루트에 있습니다.
 
 ## 스킬 목록
 
@@ -39,14 +42,19 @@ GHES(`<host>`)에서는 호스트 인증 후 동일하게 추가합니다.
 
 ## 구조
 
+1 repo = 1 plugin. 매니페스트는 루트, 스킬은 평면 `skills/` 하나입니다.
+
 ```
 .
-├── .claude-plugin/marketplace.json
-├── plugins/<plugin>/
-│   ├── .claude-plugin/plugin.json
-│   └── skills/<skill>/SKILL.md
-├── docs/skill-guides/
-├── docs/skill-output/
+├── .claude-plugin/{marketplace,plugin}.json   Claude Code
+├── .codex-plugin/plugin.json                  Codex
+├── .kimi-plugin/plugin.json                   Kimi CLI
+├── .hermes-plugin/{plugin.yaml,__init__.py}   Hermes Agent
+├── .opencode/plugins/<plugin>.js              OpenCode
+├── .agents/plugins/marketplace.json           Antigravity
+├── gemini-extension.json + GEMINI.md          Gemini CLI
+├── skills/<skill>/SKILL.md                    스킬 본체
+├── docs/skill-guides/ · docs/skill-output/
 └── README.md
 ```
 
@@ -60,5 +68,7 @@ MIT © <year> <owner>
 - One table row per discovered skill — both the `skill-guides/<skill>.html`
   guide link and the `skill-output/<skill>-usage.md` usage link must be
   present (R5).
-- Keep the body "Simple" (R3): it links into `docs/`, names the
-  `plugins`/`skills`, and stays short.
+- Keep the body "Simple" (R3): it links into `docs/`, names the plugin and its
+  skills, and stays short.
+- The structure block must show the root manifests and the flat `skills/` tree.
+  Never show `plugins/<plugin>/skills/` — that is the pre-#1410 mono layout.
