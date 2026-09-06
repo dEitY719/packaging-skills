@@ -57,6 +57,47 @@ at the **repo root** and points at a single flat `./skills/` tree:
   .gitignore
 ```
 
+## Copied-skill frontmatter (Step 4)
+
+`--src` is copy-only, so a source skill that predates this convention will not
+have been fixed there — but the **copy** in the new repo must satisfy CI on its
+first push. After copying, check each
+`<dest>/<repo-name>/skills/<skill>/SKILL.md`:
+
+- YAML frontmatter exists, with `name:` **bare** (no `<plugin>:` prefix) and
+  equal to its directory name;
+- `description:` is present and non-empty (and under 1024 chars);
+- `license: MIT` is present — a skill carrying a different licence, or none,
+  fails the repo-wide licence-agreement gate;
+- the file is 100 lines or fewer.
+
+Fix violations **in the copy** and tell the user what was changed, or abort if
+the fix is not mechanical (a non-MIT licence is a decision, not a typo). Never
+edit, move or rewrite anything under `--src`.
+
+```python
+# run over <dest>/<repo-name>/skills
+import re, sys, pathlib
+fail = 0
+for md in sorted(pathlib.Path(sys.argv[1]).glob("*/SKILL.md")):
+    text = md.read_text(encoding="utf-8")
+    m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
+    if not m:
+        print(f"FAIL {md}: no frontmatter"); fail = 1; continue
+    fm = m.group(1)
+    name = re.search(r"^name:\s*(.+?)\s*$", fm, re.M)
+    if not name or ":" in name.group(1) or name.group(1).strip("\"'") != md.parent.name:
+        print(f"FAIL {md}: name must be the bare directory name"); fail = 1
+    if not re.search(r"^description:", fm, re.M):
+        print(f"FAIL {md}: no description"); fail = 1
+    lic = re.search(r"^license:\s*(\S+)", fm, re.M)
+    if not lic or lic.group(1) != "MIT":
+        print(f"FAIL {md}: license must be MIT"); fail = 1
+    if len(text.splitlines()) > 100:
+        print(f"FAIL {md}: over 100 lines"); fail = 1
+sys.exit(fail)
+```
+
 ## Why not the mono layout
 
 `plugins/<plugin>/skills/` (`marketplace.json` `source: "./plugins/<plugin>"`)

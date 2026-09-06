@@ -6,6 +6,7 @@ Written in Step 5 (split golden layout — see `options.md`). Placeholders:
 |---|---|---|
 | `<repo-name>` | repo name | `packaging-skills` |
 | `<plugin>` | plugin key = `<repo-name>` minus `-skills` | `packaging` |
+| `<Plugin>` | `<plugin>` in PascalCase, hyphens removed | `gh-flow` -> `GhFlow` |
 | `<owner>` / `<host>` | from the flags | `dEitY719` / `github.com` |
 | `<skill>` | one discovered skill directory | `structure-check` |
 | `<first-skill>` | the first skill in sorted order | `create` |
@@ -173,7 +174,9 @@ def register(ctx):
 
 ## `.opencode/plugins/<plugin>.js`
 
-The filename **must** be `<plugin>.js` — CI checks that exact path.
+The filename **must** be `<plugin>.js` — CI checks that exact path. The exported
+symbol uses `<Plugin>` (PascalCase, hyphens removed), because `<plugin>` itself
+may contain hyphens and `gh-flowPlugin` is not a valid JavaScript identifier.
 
 ```javascript
 /**
