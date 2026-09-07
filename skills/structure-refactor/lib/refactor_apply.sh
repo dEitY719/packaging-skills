@@ -140,11 +140,19 @@ SKILL_PAIRS=()
 if [ "$skills_line" != "(none)" ]; then
     read -r -a _pairs <<<"$skills_line"
     for pr in "${_pairs[@]}"; do
-        s="${pr#*:}"
+        # Split on the LAST colon, not the first: a plugin directory name
+        # containing one (unusual, but a real directory name) would
+        # otherwise get truncated at its first colon while the extra
+        # segment leaked into $s. The R4 loop below already skips any
+        # entry whose *skill* name still contains a colon (Apply rule 7 —
+        # that shape needs a human, not a guess), so this only ever
+        # improves the plugin-name case without reopening that one (agy
+        # review, PR #20 round 7).
+        s="${pr##*:}"
         if [ "$mode" = single ]; then
             SKILL_PAIRS+=(". $s")
         else
-            SKILL_PAIRS+=("plugins/${pr%%:*} $s")
+            SKILL_PAIRS+=("plugins/${pr%:*} $s")
         fi
     done
 fi
