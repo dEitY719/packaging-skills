@@ -9,21 +9,20 @@ Arguments:
                 Defaults to the current directory.
 
 Flags:
-  --apply              Execute the plan. Without it, the skill is DRY-RUN
-                       (prints the plan, writes nothing).
-  --mandatory | --mp   Scope = mandatory items M1-M10 only. (default scope)
-  --recommended | --op Scope = M1-M10 + recommended R1-R5 fixes (R1 guides via
-                       /visuals:visualize, R2 placeholder stubs, R4 naming
-                       correction, R5 README link backfill). R6-R8 are
-                       audit-only WARNs (check surfaces them; refactor skips).
-  --single             Force the SINGLE target layout (repo itself is one
-                       plugin; marketplace source "./", skills at root
-                       skills/<s>/ — no plugins/ directory is created).
-  --mono               Force the MONO target layout (repo bundles many
-                       plugins; source "./plugins/<name>", skills at
-                       plugins/<p>/skills/<s>/). --single / --mono override
-                       auto-detection (last one wins).
-  --mp and --op together → error.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `[repo-path]` | repo to fix | current directory |
+| `--apply` | execute the plan | off (dry-run) |
+| `--mandatory` / `--mp` | scope M1-M10 only | on |
+| `--recommended` / `--op` | scope M1-M10 + R1-R5 (R1 guides via `/visuals:visualize`, R2 stubs, R4 naming correction, R5 README link backfill; R6-R8 stay audit-only WARNs) | off |
+| `--single` | force the SINGLE target layout (repo itself is one plugin; marketplace source `"./"`, skills at root `skills/<s>/` — no `plugins/` dir created) | off (auto-detect) |
+| `--mono` | force the MONO target layout (repo bundles many plugins; source `"./plugins/<name>"`, skills at `plugins/<p>/skills/<s>/`) | off (auto-detect) |
+| `-h` / `--help` | print help and stop | — |
+
+`--single` / `--mono` override auto-detection (last one wins) and name the
+**target** mode — see "Layout conversion is NOT supported" below when it
+differs from the detected current one. `--mp` and `--op` together → error.
 
 Layout modes & auto-detection:
   Without a flag the CURRENT layout is detected (same priority as
