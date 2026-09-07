@@ -241,7 +241,7 @@ Planned: <n>   Applied: <n>   Skipped (already correct): <n>
 <the plan block above, with applied lines marked ✓>
 
 [OK] refactor complete   |   [FAIL] <reason>
-applied=<n> moved=<n> created=<n> sourced=<n> pruned=<n> visualized=<n> stubbed=<n> renamed=<n> pages=<activated|active|skip|n/a> linked=<n> layout=<mono|single> mode=<dry-run|apply> scope=<mp|op>
+applied=<n> moved=<n> created=<n> sourced=<n> pruned=<n> visualized=<n> stubbed=<n> renamed=<n> pages=<activated|active|warn|skip|n/a> linked=<n> layout=<mono|single> mode=<dry-run|apply> scope=<mp|op>
 ```
 
 `created`/`sourced`/`pruned`/`stubbed`/`renamed`/`linked`/`pages` come

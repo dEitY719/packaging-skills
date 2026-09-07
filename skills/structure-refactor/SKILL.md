@@ -33,11 +33,10 @@ Positional `[repo-path]` (default = current dir). Full flag table:
 - `--mandatory` / `--mp` (default scope) — M1-M10 only; `--recommended` /
   `--op` — M1-M10 + R1-R5 (R6-R8 stay audit-only WARNs, never auto-applied).
 - `--single` / `--mono` — force the **target** layout mode, overriding Step 2
-  auto-detection. Mutually exclusive, last wins. `--mp` + `--op` → error, stop.
+  auto-detection (last one wins). `--mp` + `--op` together → error, stop.
 
 Confirm the path exists. `test -d <path>/.git`: not a git repo → warn (moves
-fall back to `mv`). Dirty tree → show the dry-run plan and require an explicit
-`--apply` before writing (never auto-apply on a dirty tree).
+fall back to `mv`). Dirty tree → show the plan, require explicit `--apply`.
 
 ## Step 2: Detect Mode + Compute Plugin Roots + Evaluate Current ↔ Target
 
@@ -69,16 +68,17 @@ conversion produces only the `[convert]` warning line.
 
 - **Conversion required (forced mode ≠ detected)**: print the `[convert]`
   warning and stop — even under `--apply`, don't run the script below.
-- Otherwise, under `--op`, generate real R1 guides first: call
+- **`--apply` and `--op` together only**: before the script, call
   `/visuals:visualize <SKILL.md>` for each skill still missing
-  `docs/skill-guides/<s>.html`; on failure, warn and move on (the script's
-  fallback stub covers it next).
+  `docs/skill-guides/<s>.html` (real R1 guides); on failure, warn and move
+  on. Never in a dry run — dry-run touches nothing.
 - Run `bash skills/structure-refactor/lib/refactor_apply.sh "$REPO" --mode
-  "$MODE" --scope "$SCOPE" ${APPLY:+--apply}` (dry-run omits `--apply`). It
-  executes every mkdir/skeleton/M7-source/M10-prune/R1-fallback/R2-stub/
-  Pages/R4-rename/R5-link step — rule-by-rule detail is in
-  `references/plan-and-report-templates.md`. M2, M4, M8, M9 have no
-  auto-fix (same file explains why) and are left for a human.
+  "$MODE" --scope "$SCOPE" ${APPLY:+--apply}` (dry-run omits `--apply`,
+  which is also what keeps it from touching anything). It executes every
+  mkdir/skeleton/M7-source/M10-prune/R1-fallback/R2-stub/Pages/R4-rename/
+  R5-link step — detail in `references/plan-and-report-templates.md`. M2,
+  M4, M8, M9 have no auto-fix (same file explains why) and are left for a
+  human.
 
 ## Step 5: Report
 

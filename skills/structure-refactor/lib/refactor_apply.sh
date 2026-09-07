@@ -32,7 +32,7 @@
 #   ROOTS <root ...>            (repo-relative, or "(none)")
 #   [<ID>] <verb>  <detail>     one line per pending change, in apply order
 #   ...
-#   SUMMARY applied=<n> created=<n> sourced=<n> pruned=<n> stubbed=<n> renamed=<n> linked=<n> pages=<activated|active|skip|n/a>
+#   SUMMARY applied=<n> created=<n> sourced=<n> pruned=<n> stubbed=<n> renamed=<n> linked=<n> pages=<activated|active|warn|skip|n/a>
 #
 # `applied` is the sum of the per-category counts below — actual changes
 # made, not plan lines attempted (0 on a dry run, and a plan line whose write
@@ -309,17 +309,23 @@ for root in "${ROOTS[@]}"; do
     if [ "${unknown_n:-0}" -gt 0 ]; then
         add_plan "[M10] prune  $root/.claude-plugin/plugin.json ← 미지원 필드 제거 (.bak 백업, $unknown_n)"
         if [ "$apply" -eq 1 ]; then
-            cp "$pj" "$pj.bak"
-            tmp="$(mktemp)"
-            jq --argjson k "$KNOWN_PLUGIN_JSON_FIELDS" \
-                'with_entries(select(.key as $x | $k | index($x)))' "$pj" >"$tmp" && mv "$tmp" "$pj"
-            # Count from the post-transform file, not the pre-transform plan
-            # count — a failed `mv` must not claim fields were pruned that
-            # are still sitting in $pj.
-            unknown_after="$(jq --argjson k "$KNOWN_PLUGIN_JSON_FIELDS" \
-                '[keys[] | select(. as $x | $k | index($x) | not)] | length' "$pj" 2>/dev/null || echo "$unknown_n")"
-            pruned=$((pruned + unknown_n - unknown_after))
-            [ "${unknown_after:-0}" -eq 0 ] || echo "warn: $unknown_after unknown field(s) still in $pj — prune failed, .bak kept at $pj.bak" >&2
+            if ! cp "$pj" "$pj.bak"; then
+                # No verified backup -> do not run the destructive prune.
+                # Losing fields we promised to recover via .bak is worse
+                # than leaving this plugin.json's M10 FAIL standing.
+                echo "warn: could not create $pj.bak — skipping the M10 prune for $pj (never prune without a verified backup)" >&2
+            else
+                tmp="$(mktemp)"
+                jq --argjson k "$KNOWN_PLUGIN_JSON_FIELDS" \
+                    'with_entries(select(.key as $x | $k | index($x)))' "$pj" >"$tmp" && mv "$tmp" "$pj"
+                # Count from the post-transform file, not the pre-transform
+                # plan count — a failed `mv` must not claim fields were
+                # pruned that are still sitting in $pj.
+                unknown_after="$(jq --argjson k "$KNOWN_PLUGIN_JSON_FIELDS" \
+                    '[keys[] | select(. as $x | $k | index($x) | not)] | length' "$pj" 2>/dev/null || echo "$unknown_n")"
+                pruned=$((pruned + unknown_n - unknown_after))
+                [ "${unknown_after:-0}" -eq 0 ] || echo "warn: $unknown_after unknown field(s) still in $pj — prune failed, .bak kept at $pj.bak" >&2
+            fi
         fi
     fi
 done
