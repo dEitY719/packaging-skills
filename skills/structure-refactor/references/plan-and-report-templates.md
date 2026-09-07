@@ -274,9 +274,16 @@ A no-op run (nothing to change) still reports `[OK] refactor complete` with
 - **Never** abort the run over a soft-fail step (Pages activation, R5 link
   backfill): warn and continue.
 - **Always** prefer `git mv` over `mv` inside a git repo, to preserve
-  history.
+  history — for the one move this skill still leaves to a human (M4; Apply
+  rule 2's note), not something `lib/refactor_apply.sh` itself does today.
 - **Always** discover plugins/skills by scan (repo-agnostic) — the spec in
   `../structure-check/references/structure-spec.md` is abstract, never
   hardcoded to one repo's names.
 - **Always** treat an already-standard repo (within scope) as a no-op —
   idempotency is the skill's whole safety story, not an aspiration.
+- **Assumes** `structure-check` and `rename-repo` are installed as sibling
+  skill directories (`lib/refactor_apply.sh` shells out to
+  `../../structure-check/lib/structure_check.sh` and
+  `../../rename-repo/lib/parse_remote.sh` by relative path). True for every
+  install of this plugin today (`CLAUDE.md`: one plugin, four co-installed
+  skills) — if that ever changes, these two paths are the first thing to fix.
