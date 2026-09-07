@@ -23,10 +23,13 @@ URL="$(git remote get-url "$REMOTE" 2>/dev/null)" || {
 }
 
 # <scheme>://<host>/<owner>/<repo>[.git][/]  or  git@<host>:<owner>/<repo>[.git]
-# (POSIX ERE has no lazy quantifier, so the optional .git/trailing slash is
-# stripped afterward rather than excluded from the repo group directly.)
-if [[ "$URL" =~ ^[A-Za-z][A-Za-z0-9+.-]*://([^/]+)/([^/]+)/(.+)$ ]] ||
-   [[ "$URL" =~ ^[^@[:space:]]+@([^:]+):([^/]+)/(.+)$ ]]; then
+# The repo group is [^/]+ (no embedded slash) with one optional trailing
+# slash — exactly two path segments (owner, repo), matching how GitHub and
+# GHES repo URLs are shaped. A URL with more path segments (e.g. a GitLab
+# subgroup) fails to match at all and is reported as unrecognized, rather
+# than being silently mis-parsed by a greedy capture.
+if [[ "$URL" =~ ^[A-Za-z][A-Za-z0-9+.-]*://([^/]+)/([^/]+)/([^/]+)/?$ ]] ||
+   [[ "$URL" =~ ^[^@[:space:]]+@([^:]+):([^/]+)/([^/]+)/?$ ]]; then
   HOST="${BASH_REMATCH[1]}"
   OWNER="${BASH_REMATCH[2]}"
   REPO="${BASH_REMATCH[3]}"
@@ -34,7 +37,6 @@ else
   echo "parse_remote: unrecognized remote URL: $URL" >&2
   exit 1
 fi
-REPO="${REPO%/}"
 REPO="${REPO%.git}"
 HOST="${HOST##*@}"  # strip optional userinfo (ssh://user@host/... form)
 HOST="${HOST%%:*}"  # strip optional :port (ssh://host:2222/... form) —

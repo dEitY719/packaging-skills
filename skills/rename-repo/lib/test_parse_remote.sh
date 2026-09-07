@@ -76,4 +76,12 @@ if "$SCRIPT" origin >/dev/null 2>&1; then
   fail "expected non-zero exit for an unparseable URL"
 fi
 
+# more than two path segments (e.g. a GitLab subgroup) -> rejected, not
+# silently mis-parsed
+git remote remove origin
+git remote add origin "https://gitlab.example.com/group/subgroup/repo.git"
+if "$SCRIPT" origin >/dev/null 2>&1; then
+  fail "expected non-zero exit for a 3-segment (subgroup) path"
+fi
+
 echo "OK: parse_remote.sh"
