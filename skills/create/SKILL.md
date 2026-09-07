@@ -2,8 +2,8 @@
 name: create
 description: >-
   Create an agent skill marketplace repo from scratch — manifests for every
-  harness, flat skills/, copy-only import, git init, create, push. Use for
-  "새 플러그인 만들어", "스킬 묶어서 플러그인으로", "skills repo 신규 생성",
+  harness, flat skills/, copy-only import, git init, repo create, push. Use
+  for "새 플러그인 만들어", "스킬 묶어서 플러그인으로", "skills repo 신규 생성",
   "/packaging:create <name>". New repos only.
 license: MIT
 compatibility:
