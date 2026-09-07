@@ -257,7 +257,14 @@ fi
 # Apply rule 3b. The fix is naturally idempotent (only touches elements
 # missing `source`), so it runs unconditionally on any valid marketplace.json
 # rather than needing structure_check.sh's FAIL verdict first.
-if [ -e "$mf" ] && jq empty "$mf" >/dev/null 2>&1; then
+plugins_type="$(jq -r '(.plugins // []) | type' "$mf" 2>/dev/null || echo "")"
+# jq's `map` on a JSON *object* iterates its values and returns an *array* —
+# it silently drops the keys and changes plugins from object to array. A
+# marketplace.json with a non-array `plugins` (an object, string, whatever)
+# is M1/M3's territory, not something M7 can safely "fix" by reshaping the
+# field — skip it entirely rather than risk exactly that corruption (codex
+# review, PR #20 round 5, reproduced with `"plugins":{"slot":{"name":"x"}}`).
+if [ -e "$mf" ] && jq empty "$mf" >/dev/null 2>&1 && [ "$plugins_type" = "array" ]; then
     missing_before="$(jq '[(.plugins // [])[] | select(type=="object") | select(has("source")|not)] | length' "$mf" 2>/dev/null || echo 0)"
     if [ "${missing_before:-0}" -gt 0 ]; then
         add_plan "[M7] source  marketplace.json ← plugins[].source 주입 ($missing_before)"
@@ -379,11 +386,19 @@ if [ "$scope" = op ]; then
     # GitHub Pages activation — soft-fail: no remote, no `gh`, or a `gh`
     # error all warn (or stay n/a) and never abort the run.
     if [ "$remote_ok" -eq 1 ] && command -v gh >/dev/null 2>&1; then
-        add_plan "[Pages] enable GitHub Pages (branch=main, path=/docs) if inactive"
+        add_plan "[Pages] enable GitHub Pages (default branch, path=/docs) if inactive"
         if [ "$apply" -eq 1 ]; then
+            # Ask GitHub for the repo's actual default branch rather than
+            # assuming "main" — a repo on "master" or anything else would
+            # otherwise get a Pages activation request naming a branch that
+            # doesn't exist (agy review, PR #20 round 5). Falls back to
+            # "main" only if the lookup itself fails; either way the POST
+            # below is already soft-fail, so a wrong guess still just warns.
+            default_branch="$(gh api --hostname "$HOST" "repos/$OWNER/$REPO" --jq .default_branch 2>/dev/null)"
+            [ -n "$default_branch" ] || default_branch="main"
             if gh api --hostname "$HOST" "repos/$OWNER/$REPO/pages" >/dev/null 2>&1; then
                 pages_status="active"
-            elif echo '{"source":{"branch":"main","path":"/docs"}}' |
+            elif jq -cn --arg branch "$default_branch" '{source:{branch:$branch,path:"/docs"}}' |
                 gh api --hostname "$HOST" "repos/$OWNER/$REPO/pages" -X POST --input - >/dev/null 2>&1; then
                 pages_status="activated"
             else

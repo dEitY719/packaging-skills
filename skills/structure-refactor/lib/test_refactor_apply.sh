@@ -203,24 +203,41 @@ fakebin="$tmp/fakebin"
 mkdir -p "$fakebin"
 cat >"$fakebin/gh" <<'EOF'
 #!/usr/bin/env bash
-# fake gh: GET .../pages -> 404 (inactive) once, then succeeds after POST.
+# fake gh: default_branch lookup -> "trunk" (a non-"main" name, so the POST
+# payload can prove refactor_apply.sh actually used it, not a hardcoded
+# "main" — agy review, PR #20 round 5); GET .../pages -> 404 (inactive) once,
+# then succeeds after POST; POST captures the branch it was sent for the
+# test to inspect.
 STATE="${GH_FAKE_STATE:?}"
-if [ "$1" = "api" ] && [ "$5" != "-X" ]; then
+POST_BRANCH_FILE="${GH_FAKE_POST_BRANCH_FILE:?}"
+case "$4" in
+*/pages)
+    if [ "$5" = "-X" ] && [ "$6" = "POST" ]; then
+        jq -r '.source.branch' >"$POST_BRANCH_FILE"
+        touch "$STATE"
+        exit 0
+    fi
     # GET (no -X) — report inactive until the POST has run
     [ -f "$STATE" ] && exit 0
     exit 1
-fi
-if [ "$1" = "api" ] && [ "$5" = "-X" ] && [ "$6" = "POST" ]; then
-    touch "$STATE"
+    ;;
+*)
+    # default_branch lookup: `repos/OWNER/REPO --jq .default_branch`
+    echo "trunk"
     exit 0
-fi
-exit 1
+    ;;
+esac
 EOF
 chmod +x "$fakebin/gh"
 GH_FAKE_STATE="$tmp/pages-active-flag"
-export GH_FAKE_STATE
+GH_FAKE_POST_BRANCH_FILE="$tmp/pages-post-branch"
+export GH_FAKE_STATE GH_FAKE_POST_BRANCH_FILE
 out="$(PATH="$fakebin:$PATH" bash "$ra" "$r" --mode single --scope op --apply)"
 assert_line "$out" "SUMMARY applied=5 created=0 sourced=0 pruned=0 stubbed=2 renamed=0 linked=2 pages=activated" "pages-fix summary"
+[ "$(cat "$GH_FAKE_POST_BRANCH_FILE" 2>/dev/null)" = "trunk" ] || {
+    echo "FAIL: pages-fix — Pages activation should use the repo's real default branch (trunk), not a hardcoded main"
+    fail=1
+}
 grep -qF "https://acme.github.io/proj/skill-guides/foo.html" "$r/README.md" || {
     echo "FAIL: pages-fix — README guide link should use the derived Pages URL"
     fail=1
@@ -271,6 +288,23 @@ assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 ren
 }
 [ -e "$r/.claude-plugin/plugin.json.bak" ] && {
     echo "FAIL: m10-backup-fail — a .bak claiming success shouldn't exist when cp failed"
+    fail=1
+}
+
+# ---- case 10: M7 must never reshape a non-array `plugins` field (codex
+# review, PR #20 round 5) — jq's `map` on a JSON *object* silently turns it
+# into an array and drops the keys. A repo malformed this way is M1/M3's
+# territory, not M7's; the file must come out byte-for-byte unchanged.
+r="$tmp/m7-object-plugins"
+mkdir -p "$r/.claude-plugin" "$r/skills" "$r/docs/skill-guides" "$r/docs/skill-output"
+git -C "$r" init -q
+printf '{"name":"x","plugins":{"slot":{"name":"child"}}}' >"$r/.claude-plugin/marketplace.json"
+printf '# repo\n' >"$r/README.md"
+mf_before="$(cat "$r/.claude-plugin/marketplace.json")"
+out="$(bash "$ra" "$r" --mode single --scope mp --apply)"
+assert_no_line "$out" "[M7]" "m7-object-plugins: no M7 plan line for a non-array plugins field"
+[ "$(cat "$r/.claude-plugin/marketplace.json")" = "$mf_before" ] || {
+    echo "FAIL: m7-object-plugins — marketplace.json's plugins field was reshaped"
     fail=1
 }
 
