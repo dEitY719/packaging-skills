@@ -234,5 +234,7 @@ FAIL).
 
 ## Summary verdict
 
-See `references/report-template.md` → "Summary line" for the verdict-rollup
-rule — owned there, not restated here.
+`lib/structure_check.sh` computes and owns the verdict-rollup rule (its own
+`SUMMARY` line) over the checks it runs; `references/report-template.md` →
+"Summary line" renders it (folding in R3 per SKILL.md Step 3) — not restated
+here.

@@ -51,9 +51,10 @@ paths and skill discovery differ between modes. Each item reports PASS / WARN /
 FAIL / N/A. N/A means the subject does not exist (e.g. a plugin with 0 skills →
 R1/R2/R5 are N/A; M9 → N/A in single mode; M10 → N/A when no valid plugin.json).
 
-Verdict rule and the "structure-check PASS != install/runtime success"
-disclaimer: see references/report-template.md (owned there, not restated
-here).
+Verdict rule: computed by `lib/structure_check.sh`'s own `SUMMARY` line, folded
+with R3's judgment call per SKILL.md Step 3. The "structure-check PASS !=
+install/runtime success" disclaimer: see references/report-template.md (owned
+there, not restated here).
 
 Examples:
   /packaging:structure-check

@@ -88,8 +88,12 @@ When the mode was inferred by the ambiguous fallback, append `, 추정` —
 
 `요약: <VERDICT> (필수 <fail#>, 권장 <warn#>, N/A <na#>)`
 
-- `<VERDICT>`: `FAIL` if any M failed; else `WARN` if any R warned; else
-  `PASS`.
+- `<VERDICT>` and the counts are `lib/structure_check.sh`'s own `SUMMARY
+  <verdict> fail=<n> warn=<n> na=<n>` line (its verdict rule: FAIL if any M
+  failed; else WARN if any R warned; else PASS) — that script computes and
+  owns this rule; this template only renders it, adjusted for R3 per
+  SKILL.md Step 3 (R3 WARN → `warn#`+1, R3 N/A → `na#`+1, then re-derive
+  `<VERDICT>` from the adjusted counts).
 - Counts: `필수` = number of FAILs, `권장` = number of WARNs, `N/A` =
   number of N/A rows. Omit a count that is zero except keep `필수`/`권장`
   for readability.
