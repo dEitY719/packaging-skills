@@ -40,8 +40,9 @@
 # Exit: 0 on a normal run (dry-run or apply, any plan size); 64 bad usage;
 # 66 <repo-path> not a directory; 127 jq/git missing.
 # shellcheck disable=SC2153,SC2154 # HOST/OWNER/REPO come from the %q-quoted
-# eval of parse_remote.sh's stdout (see the two `eval "$remote_vars…"` call
-# sites below), not a typo of the local `repo` variable.
+# eval of parse_remote.sh's stdout (see the `eval "$remote_vars"` call site
+# below, resolved once and reused by both Pages activation and R5), not a
+# typo of the local `repo` variable.
 set -u
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -120,9 +121,6 @@ repo_base="$(basename "$repo")"
 eval_out="$(bash "$CHECK" "$repo" "--$mode" 2>/dev/null)"
 plugins_line="$(grep -m1 '^PLUGINS ' <<<"$eval_out" | cut -d' ' -f2-)"
 skills_line="$(grep -m1 '^SKILLS ' <<<"$eval_out" | cut -d' ' -f2-)"
-git_line="$(grep -m1 '^GIT ' <<<"$eval_out" | cut -d' ' -f2-)"
-git_repo=0
-[ "$git_line" = "yes" ] && git_repo=1
 
 ROOTS=()
 if [ "$mode" = single ]; then
@@ -161,11 +159,27 @@ pages_status="n/a"
 
 add_plan() { plan+=("$1"); }
 
+# Drop trailing blank lines before an R5 append, so N separate appends across
+# N skills (or across repeated runs that each still had something missing)
+# never accumulate more than the one blank-line separator each append adds.
+_trim_trailing_blank() {
+    local f="$1" t
+    t="$(mktemp)"
+    awk '{a[NR]=$0} END{n=NR; while (n>0 && a[n]=="") n--; for (i=1;i<=n;i++) print a[i]}' "$f" >"$t" && mv "$t" "$f"
+}
+
 # ---- M5 (+ per-root scaffolding dirs from Apply rule 1) ---------------------
 mkdir_needed=()
 [ -d "$repo/docs/skill-guides" ] || mkdir_needed+=("docs/skill-guides")
 [ -d "$repo/docs/skill-output" ] || mkdir_needed+=("docs/skill-output")
-[ -d "$repo/.claude-plugin" ] || mkdir_needed+=(".claude-plugin")
+# The top-level .claude-plugin/ (marketplace.json's home) is only a *separate*
+# directory from any plugin root in mono mode. In single mode the one plugin
+# root IS the repo root ("."), so the loop below already covers it via
+# "$root/.claude-plugin" == "./.claude-plugin" — checking it again here would
+# double-plan (and, worse, double-count `created`) the exact same mkdir.
+if [ "$mode" != single ]; then
+    [ -d "$repo/.claude-plugin" ] || mkdir_needed+=(".claude-plugin")
+fi
 for root in "${ROOTS[@]}"; do
     [ -d "$repo/$root/.claude-plugin" ] || mkdir_needed+=("$root/.claude-plugin")
     [ -d "$repo/$root/skills" ] || mkdir_needed+=("$root/skills")
@@ -179,8 +193,11 @@ for d in "${mkdir_needed[@]}"; do
 done
 
 # ---- M1: marketplace.json skeleton ------------------------------------------
+# `-s` (exists AND non-empty), not `-e`: `jq empty` treats a 0-byte file as
+# trivially valid (no JSON values to reject), so an empty marketplace.json
+# would otherwise be mistaken for an already-correct one and never repaired.
 mf="$repo/.claude-plugin/marketplace.json"
-if [ ! -e "$mf" ]; then
+if [ ! -s "$mf" ]; then
     if [ "$mode" = single ]; then
         plugins_json='[{"source":"./"}]'
     else
@@ -201,7 +218,7 @@ fi
 # ---- M3: per-root plugin.json skeleton --------------------------------------
 for root in "${ROOTS[@]}"; do
     pj="$repo/$root/.claude-plugin/plugin.json"
-    if [ ! -e "$pj" ]; then
+    if [ ! -s "$pj" ]; then
         pname="$(basename "$root")"
         [ "$root" = "." ] && pname="$repo_base"
         add_plan "[M3] create  $root/.claude-plugin/plugin.json (skeleton)"
@@ -305,26 +322,32 @@ if [ "$scope" = op ]; then
         fi
     done
 
+    # Remote resolution (once) — feeds both GitHub Pages activation below and
+    # R5's Pages-URL guide link. parse_remote.sh already fails softly (no
+    # stdout) when there's no git repo or no `origin` remote, so a separate
+    # up-front git-repo/remote check would only re-test what it re-tests.
+    remote_ok=0
+    if remote_vars="$( (cd "$repo" && bash "$PARSE_REMOTE" origin) 2>/dev/null)"; then
+        eval "$remote_vars"
+        remote_ok=1
+    fi
+
     # GitHub Pages activation — soft-fail: no remote, no `gh`, or a `gh`
     # error all warn (or stay n/a) and never abort the run.
-    if [ "$git_repo" -eq 1 ] && git -C "$repo" remote get-url origin >/dev/null 2>&1 &&
-        command -v gh >/dev/null 2>&1; then
-        if remote_vars="$( (cd "$repo" && bash "$PARSE_REMOTE" origin) 2>/dev/null)"; then
-            eval "$remote_vars"
-            add_plan "[Pages] enable GitHub Pages (branch=main, path=/docs) if inactive"
-            if [ "$apply" -eq 1 ]; then
-                if gh api --hostname "$HOST" "repos/$OWNER/$REPO/pages" >/dev/null 2>&1; then
-                    pages_status="active"
-                elif echo '{"source":{"branch":"main","path":"/docs"}}' |
-                    gh api --hostname "$HOST" "repos/$OWNER/$REPO/pages" -X POST --input - >/dev/null 2>&1; then
-                    pages_status="activated"
-                else
-                    pages_status="warn"
-                    echo "warn: GitHub Pages activation failed (missing token scope or unreachable host) — continuing" >&2
-                fi
+    if [ "$remote_ok" -eq 1 ] && command -v gh >/dev/null 2>&1; then
+        add_plan "[Pages] enable GitHub Pages (branch=main, path=/docs) if inactive"
+        if [ "$apply" -eq 1 ]; then
+            if gh api --hostname "$HOST" "repos/$OWNER/$REPO/pages" >/dev/null 2>&1; then
+                pages_status="active"
+            elif echo '{"source":{"branch":"main","path":"/docs"}}' |
+                gh api --hostname "$HOST" "repos/$OWNER/$REPO/pages" -X POST --input - >/dev/null 2>&1; then
+                pages_status="activated"
             else
-                pages_status="skip"
+                pages_status="warn"
+                echo "warn: GitHub Pages activation failed (missing token scope or unreachable host) — continuing" >&2
             fi
+        else
+            pages_status="skip"
         fi
     fi
 
@@ -337,12 +360,27 @@ if [ "$scope" = op ]; then
         case "$s" in *:*) continue ;; esac
         sm="$repo/$root/skills/$s/SKILL.md"
         [ -f "$sm" ] || continue
+        # Mirrors structure_check.sh's _frontmatter()/check_R4 name extraction
+        # (same M10 sourcing tradeoff as KNOWN_PLUGIN_JSON_FIELDS above: that
+        # script is invoked as a subprocess for discovery, not sourced, so its
+        # functions aren't in scope here).
         fm="$(awk 'NR==1{if($0=="---"){f=1;next}else{exit}} f&&$0=="---"{exit} f{print}' "$sm")"
         name="$(grep -m1 '^name:' <<<"$fm" | sed -E "s/^name:[[:space:]'\"]*//; s/[[:space:]'\"]*\$//")"
         if [ -n "$name" ] && [ "$name" != "$s" ]; then
             add_plan "[R4] rename  $root/skills/$s/SKILL.md name: $name → $s"
             if [ "$apply" -eq 1 ]; then
-                sed -i "0,/^name:.*/{s/^name:.*/name: $s/}" "$sm"
+                # awk, not `sed -i "0,/re/{…}"` — that address-range form is
+                # GNU-only and errors on BSD/macOS sed. Confined to the
+                # frontmatter block (between the first two `---` lines) so a
+                # `name:`-looking line in the body is never touched, and only
+                # the first frontmatter `name:` is rewritten.
+                rtmp="$(mktemp)"
+                awk -v newname="name: $s" '
+                    NR==1 && $0=="---" { infm=1; print; next }
+                    infm && $0=="---" { infm=0; print; next }
+                    infm && !done && /^name:/ { print newname; done=1; next }
+                    { print }
+                ' "$sm" >"$rtmp" && mv "$rtmp" "$sm"
                 renamed=$((renamed + 1))
             fi
         fi
@@ -354,9 +392,7 @@ if [ "$scope" = op ]; then
     # activation above).
     if [ -f "$repo/README.md" ]; then
         pages_base=""
-        if remote_vars2="$( (cd "$repo" && bash "$PARSE_REMOTE" origin) 2>/dev/null)"; then
-            # shellcheck disable=SC2153,SC2154 # see the Pages block above
-            eval "$remote_vars2"
+        if [ "$remote_ok" -eq 1 ]; then
             case "$HOST" in
             github.com) pages_base="https://$OWNER.github.io/$REPO" ;;
             *) pages_base="https://$HOST/pages/$OWNER/$REPO" ;;
@@ -379,6 +415,7 @@ if [ "$scope" = op ]; then
             if [ "${#missing[@]}" -gt 0 ]; then
                 add_plan "[R5] link    README.md ← $s guide/usage 링크 추가"
                 if [ "$apply" -eq 1 ]; then
+                    _trim_trailing_blank "$repo/README.md"
                     {
                         printf '\n'
                         printf '%s\n' "${missing[@]}"
