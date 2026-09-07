@@ -133,6 +133,9 @@ Execute the plan in this order so later steps see earlier results:
      `{ "source": "url", "url": "<that>" }` (remote fetch);
    - else the local path of the detected mode — mono `./plugins/<name>`
      (from the element's `name`), single `"./"`.
+   - **mono, no `name` either**: nothing to derive a path from — leave the
+     element untouched rather than inject a bogus `./plugins/` (codex
+     review, PR #20). M7 stays a FAIL for that element; a human names it.
    Idempotent: a no-op when every element already carries a source, and never
    touches string-form elements (they are already a source).
 3c. **M10 unknown-field prune (mandatory — runs under both `--mp` and `--op`)**:
