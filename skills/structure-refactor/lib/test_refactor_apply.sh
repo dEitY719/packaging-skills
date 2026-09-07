@@ -323,6 +323,24 @@ plugins_json="$(jq -c '.plugins' "$r/.claude-plugin/marketplace.json")"
     fail=1
 }
 
+# ---- case 12: SKILL_PAIRS must split on the LAST colon, not the first —
+# a plugin directory name containing a colon must not truncate the plugin
+# root or leak into the skill name (agy review, PR #20 round 7).
+r="$tmp/colon-plugin-name"
+mkdir -p "$r/.claude-plugin" "$r/plugins/my:plugin/.claude-plugin" "$r/plugins/my:plugin/skills/foo" \
+    "$r/docs/skill-guides" "$r/docs/skill-output"
+git -C "$r" init -q
+printf '{"plugins":["./plugins/my:plugin"]}' >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"myplugin","version":"0.0.0"}' >"$r/plugins/my:plugin/.claude-plugin/plugin.json"
+printf -- '---\nname: wrong\ndescription: test\n---\n' >"$r/plugins/my:plugin/skills/foo/SKILL.md"
+printf '# repo\n' >"$r/README.md"
+bash "$ra" "$r" --mode mono --scope op --apply >/dev/null
+name_after="$(grep '^name:' "$r/plugins/my:plugin/skills/foo/SKILL.md")"
+[ "$name_after" = "name: foo" ] || {
+    echo "FAIL: colon-plugin-name — expected 'name: foo' at the correctly-resolved path, got '$name_after'"
+    fail=1
+}
+
 if [ "$fail" -eq 0 ]; then
     echo "PASS: all refactor_apply.sh smoke cases"
     exit 0
