@@ -58,14 +58,18 @@ known-field schema (dEitY719/dotfiles#1084).
 
 **R3 is scored by you, not the script** — it needs judgment (README length +
 whether it substantively mentions plugins/skills). Apply the heuristic in
-`references/structure-spec.md` yourself and fold it into the script's
-FAIL/WARN/N/A counts for the final verdict. Item table: `references/help.md`.
+`references/structure-spec.md` yourself; it yields PASS, WARN, or N/A (never
+FAIL). Fold it into the script's `SUMMARY fail=<n> warn=<n> na=<n>` by hand:
+R3 WARN → `warn+1`, R3 N/A → `na+1`, R3 PASS → no change; then re-apply the
+script's own verdict rule (any fail → FAIL, else any warn → WARN, else PASS)
+to the adjusted counts. Item table: `references/help.md`.
 
 ## Step 4: Output the Report
 
-Read `references/report-template.md` for the exact format, including the
-summary-verdict rule and the install/runtime disclaimer — both are owned
-there; this step just applies them.
+Read `references/report-template.md` for the exact format and the
+install/runtime disclaimer text (owned there). The summary verdict itself is
+the script's own `SUMMARY` line (adjusted for R3 per Step 3) — this step just
+renders it into the template.
 
 ## Constraints
 

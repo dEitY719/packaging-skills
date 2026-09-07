@@ -80,6 +80,19 @@ fi
 # ---- JSON validity ---------------------------------------------------------
 _json_ok() { [ -f "$1" ] && jq empty "$1" >/dev/null 2>&1; }
 
+# echo N/A + return 1 unless $1 is valid JSON — the bare guard shared by
+# check_M9/R6/R7.
+_require_json_or_na() { _json_ok "$1" || { echo "N/A"; return 1; }; }
+
+# echo N/A + return 1 unless $1 is valid JSON with >=1 .plugins[] entry — the
+# guard shared by check_M7/M8 before they diverge into different jq filters.
+_plugins_or_na() {
+    local n
+    _require_json_or_na "$1" || return 1
+    n="$(jq '(.plugins // []) | length' "$1" 2>/dev/null || echo 0)"
+    [ "${n:-0}" -ge 1 ] || { echo "N/A"; return 1; }
+}
+
 # ---- dynamic discovery ------------------------------------------------------
 _plugins() {
     [ -d "$1/plugins" ] || return 0
@@ -150,6 +163,20 @@ plugin_roots() {
 MODE="$(detect_mode)"
 mapfile -t ROOTS < <(plugin_roots "$MODE")
 
+# Every (plugin-root, skill) pair, computed once and reused by every check
+# and the SKILLS context line below — avoids re-globbing skills/ per check.
+mapfile -t SKILL_PAIRS < <(
+    for root in "${ROOTS[@]:-}"; do
+        [ -n "$root" ] || continue
+        while IFS= read -r s; do
+            [ -n "$s" ] || continue
+            echo "$root $s"
+        done <<EOF
+$(_skills_in_root "$repo" "$root")
+EOF
+    done
+)
+
 # ---- mandatory checks (M1-M10) ---------------------------------------------
 check_M1() { _json_ok "$repo/.claude-plugin/marketplace.json" && echo PASS || echo FAIL; }
 
@@ -169,26 +196,22 @@ check_M3() {
 }
 
 check_M4() {
-    local root s any=0 sm
-    for root in "${ROOTS[@]:-}"; do
-        [ -n "$root" ] || continue
-        while IFS= read -r s; do
-            [ -n "$s" ] || continue
-            any=1
-            sm="$repo/$root/skills/$s/SKILL.md"
-            [ -f "$sm" ] || {
-                echo "FAIL $root/skills/$s/SKILL.md"
-                return
-            }
-            if ! grep -q '^name:' "$sm" || ! grep -q '^description:' "$sm"; then
-                echo "FAIL $root/skills/$s/SKILL.md"
-                return
-            fi
-        done <<EOF
-$(_skills_in_root "$repo" "$root")
-EOF
+    local pair root s sm
+    for pair in "${SKILL_PAIRS[@]:-}"; do
+        [ -n "$pair" ] || continue
+        root="${pair%% *}"
+        s="${pair#* }"
+        sm="$repo/$root/skills/$s/SKILL.md"
+        [ -f "$sm" ] || {
+            echo "FAIL $root/skills/$s/SKILL.md"
+            return
+        }
+        if ! grep -q '^name:' "$sm" || ! grep -q '^description:' "$sm"; then
+            echo "FAIL $root/skills/$s/SKILL.md"
+            return
+        fi
     done
-    [ "$any" -eq 1 ] && echo PASS || echo "N/A"
+    [ "${#SKILL_PAIRS[@]}" -ge 1 ] && echo PASS || echo "N/A"
 }
 
 check_M5() { [ -d "$repo/docs/skill-guides" ] && [ -d "$repo/docs/skill-output" ] && echo PASS || echo FAIL; }
@@ -196,31 +219,15 @@ check_M5() { [ -d "$repo/docs/skill-guides" ] && [ -d "$repo/docs/skill-output" 
 check_M6() { [ -f "$repo/README.md" ] && echo PASS || echo FAIL; }
 
 check_M7() {
-    local mf="$repo/.claude-plugin/marketplace.json" n bad
-    _json_ok "$mf" || {
-        echo "N/A"
-        return
-    }
-    n="$(jq '(.plugins // []) | length' "$mf" 2>/dev/null || echo 0)"
-    [ "${n:-0}" -ge 1 ] || {
-        echo "N/A"
-        return
-    }
+    local mf="$repo/.claude-plugin/marketplace.json" bad
+    _plugins_or_na "$mf" || return
     bad="$(jq -r '[(.plugins // [])[] | select(type=="object") | select(has("source")|not)] | length' "$mf" 2>/dev/null || echo 1)"
     [ "${bad:-1}" -eq 0 ] && echo PASS || echo "FAIL marketplace.json"
 }
 
 check_M8() {
-    local mf="$repo/.claude-plugin/marketplace.json" n bad
-    _json_ok "$mf" || {
-        echo "N/A"
-        return
-    }
-    n="$(jq '(.plugins // []) | length' "$mf" 2>/dev/null || echo 0)"
-    [ "${n:-0}" -ge 1 ] || {
-        echo "N/A"
-        return
-    }
+    local mf="$repo/.claude-plugin/marketplace.json" bad
+    _plugins_or_na "$mf" || return
     bad="$(jq '
       [ (.plugins // [])[]
         | ( if type=="object" then . else { "source": . } end ) as $e
@@ -242,10 +249,7 @@ check_M9() {
         echo "N/A"
         return
     }
-    _json_ok "$mf" || {
-        echo "N/A"
-        return
-    }
+    _require_json_or_na "$mf" || return
     paths="$(jq -r '(.plugins // [])[]
         | ( if type=="object" then .source else . end )
         | select(type=="string")
@@ -293,106 +297,82 @@ check_M10() {
 
 # ---- recommended checks (R1,R2,R4-R8; R3 is a model judgment call) ---------
 check_R1() {
-    local root s any=0
-    for root in "${ROOTS[@]:-}"; do
-        [ -n "$root" ] || continue
-        while IFS= read -r s; do
-            [ -n "$s" ] || continue
-            any=1
-            [ -f "$repo/docs/skill-guides/$s.html" ] || {
-                echo "WARN $s"
-                return
-            }
-        done <<EOF
-$(_skills_in_root "$repo" "$root")
-EOF
+    local pair s
+    for pair in "${SKILL_PAIRS[@]:-}"; do
+        [ -n "$pair" ] || continue
+        s="${pair#* }"
+        [ -f "$repo/docs/skill-guides/$s.html" ] || {
+            echo "WARN $s"
+            return
+        }
     done
-    [ "$any" -eq 1 ] && echo PASS || echo "N/A"
+    [ "${#SKILL_PAIRS[@]}" -ge 1 ] && echo PASS || echo "N/A"
 }
 
 check_R2() {
-    local root s any=0
-    for root in "${ROOTS[@]:-}"; do
-        [ -n "$root" ] || continue
-        while IFS= read -r s; do
-            [ -n "$s" ] || continue
-            any=1
-            { [ -f "$repo/docs/skill-output/$s-usage.html" ] ||
-                [ -f "$repo/docs/skill-output/$s-usage.md" ]; } || {
-                echo "WARN $s"
-                return
-            }
-        done <<EOF
-$(_skills_in_root "$repo" "$root")
-EOF
+    local pair s
+    for pair in "${SKILL_PAIRS[@]:-}"; do
+        [ -n "$pair" ] || continue
+        s="${pair#* }"
+        { [ -f "$repo/docs/skill-output/$s-usage.html" ] ||
+            [ -f "$repo/docs/skill-output/$s-usage.md" ]; } || {
+            echo "WARN $s"
+            return
+        }
     done
-    [ "$any" -eq 1 ] && echo PASS || echo "N/A"
+    [ "${#SKILL_PAIRS[@]}" -ge 1 ] && echo PASS || echo "N/A"
 }
 
 check_R4() {
     # naming: SKILL.md name: must be bare and == the skill directory basename.
-    local root s any=0 sm name
-    for root in "${ROOTS[@]:-}"; do
-        [ -n "$root" ] || continue
-        while IFS= read -r s; do
-            [ -n "$s" ] || continue
-            sm="$repo/$root/skills/$s/SKILL.md"
-            [ -f "$sm" ] || continue
-            any=1
-            name="$(grep -m1 '^name:' "$sm" | sed 's/^name:[[:space:]'\''" ]*//;s/[[:space:]'\''" ]*$//')"
-            [ "$name" = "$s" ] || {
-                echo "WARN $s ($name)"
-                return
-            }
-        done <<EOF
-$(_skills_in_root "$repo" "$root")
-EOF
+    local pair root s any=0 sm name
+    for pair in "${SKILL_PAIRS[@]:-}"; do
+        [ -n "$pair" ] || continue
+        root="${pair%% *}"
+        s="${pair#* }"
+        sm="$repo/$root/skills/$s/SKILL.md"
+        [ -f "$sm" ] || continue
+        any=1
+        name="$(grep -m1 '^name:' "$sm" | sed 's/^name:[[:space:]'\''" ]*//;s/[[:space:]'\''" ]*$//')"
+        [ "$name" = "$s" ] || {
+            echo "WARN $s ($name)"
+            return
+        }
     done
     [ "$any" -eq 1 ] && echo PASS || echo "N/A"
 }
 
 check_R5() {
-    local root s any=0
+    local pair s
     [ -f "$repo/README.md" ] || {
         echo "N/A"
         return
     }
-    for root in "${ROOTS[@]:-}"; do
-        [ -n "$root" ] || continue
-        while IFS= read -r s; do
-            [ -n "$s" ] || continue
-            any=1
-            grep -qF "skill-guides/$s.html" "$repo/README.md" || {
-                echo "WARN $s"
-                return
-            }
-            { grep -qF "skill-output/$s-usage.html" "$repo/README.md" ||
-                grep -qF "skill-output/$s-usage.md" "$repo/README.md"; } || {
-                echo "WARN $s"
-                return
-            }
-        done <<EOF
-$(_skills_in_root "$repo" "$root")
-EOF
+    for pair in "${SKILL_PAIRS[@]:-}"; do
+        [ -n "$pair" ] || continue
+        s="${pair#* }"
+        grep -qF "skill-guides/$s.html" "$repo/README.md" || {
+            echo "WARN $s"
+            return
+        }
+        { grep -qF "skill-output/$s-usage.html" "$repo/README.md" ||
+            grep -qF "skill-output/$s-usage.md" "$repo/README.md"; } || {
+            echo "WARN $s"
+            return
+        }
     done
-    [ "$any" -eq 1 ] && echo PASS || echo "N/A"
+    [ "${#SKILL_PAIRS[@]}" -ge 1 ] && echo PASS || echo "N/A"
 }
 
 check_R6() {
     local mf="$repo/.claude-plugin/marketplace.json"
-    _json_ok "$mf" || {
-        echo "N/A"
-        return
-    }
+    _require_json_or_na "$mf" || return
     [ "$(jq -r 'has("$schema")' "$mf" 2>/dev/null)" = "true" ] && echo PASS || echo WARN
 }
 
 check_R7() {
     local mf="$repo/.claude-plugin/marketplace.json" missing
-    _json_ok "$mf" || {
-        echo "N/A"
-        return
-    }
+    _require_json_or_na "$mf" || return
     [ "$(jq -r '(has("description") and (.description|type=="string") and (.description|length>0))' "$mf" 2>/dev/null)" = "true" ] || {
         echo WARN
         return
@@ -429,14 +409,11 @@ fi
 [ -n "$plugins_list" ] || plugins_list="(none)"
 
 skills_list=""
-for root in "${ROOTS[@]:-}"; do
-    [ -n "$root" ] || continue
-    while IFS= read -r s; do
-        [ -n "$s" ] || continue
-        skills_list="$skills_list ${root##*/}:$s"
-    done <<EOF
-$(_skills_in_root "$repo" "$root")
-EOF
+for pair in "${SKILL_PAIRS[@]:-}"; do
+    [ -n "$pair" ] || continue
+    root="${pair%% *}"
+    s="${pair#* }"
+    skills_list="$skills_list ${root##*/}:$s"
 done
 skills_list="${skills_list# }"
 [ -n "$skills_list" ] || skills_list="(none)"
