@@ -187,8 +187,11 @@ done
 for d in "${mkdir_needed[@]}"; do
     add_plan "[M5] mkdir   $d/"
     if [ "$apply" -eq 1 ]; then
-        mkdir -p "$repo/$d"
-        created=$((created + 1))
+        if mkdir -p "$repo/$d"; then
+            created=$((created + 1))
+        else
+            echo "warn: mkdir failed: $repo/$d" >&2
+        fi
     fi
 done
 
@@ -209,9 +212,12 @@ if [ ! -s "$mf" ]; then
     add_plan "[M1] create  .claude-plugin/marketplace.json (skeleton)"
     if [ "$apply" -eq 1 ]; then
         mkdir -p "$repo/.claude-plugin"
-        jq -n --arg name "$repo_base" --argjson plugins "$plugins_json" \
-            '{name: $name, plugins: $plugins}' >"$mf"
-        created=$((created + 1))
+        if jq -n --arg name "$repo_base" --argjson plugins "$plugins_json" \
+            '{name: $name, plugins: $plugins}' >"$mf"; then
+            created=$((created + 1))
+        else
+            echo "warn: failed to write $mf" >&2
+        fi
     fi
 fi
 
@@ -224,8 +230,11 @@ for root in "${ROOTS[@]}"; do
         add_plan "[M3] create  $root/.claude-plugin/plugin.json (skeleton)"
         if [ "$apply" -eq 1 ]; then
             mkdir -p "$(dirname "$pj")"
-            jq -n --arg name "$pname" '{name: $name, version: "0.0.0"}' >"$pj"
-            created=$((created + 1))
+            if jq -n --arg name "$pname" '{name: $name, version: "0.0.0"}' >"$pj"; then
+                created=$((created + 1))
+            else
+                echo "warn: failed to write $pj" >&2
+            fi
         fi
     fi
 done
@@ -234,8 +243,11 @@ done
 if [ ! -e "$repo/README.md" ]; then
     add_plan "[M6] create  README.md (stub)"
     if [ "$apply" -eq 1 ]; then
-        printf '# %s\n' "$repo_base" >"$repo/README.md"
-        created=$((created + 1))
+        if printf '# %s\n' "$repo_base" >"$repo/README.md"; then
+            created=$((created + 1))
+        else
+            echo "warn: failed to write $repo/README.md" >&2
+        fi
     fi
 fi
 
@@ -255,15 +267,27 @@ if [ -e "$mf" ] && jq empty "$mf" >/dev/null 2>&1; then
                   ((.homepage // .repository // "")) as $g
                   | if ($g | type == "string") and ($g | endswith(".git")) then
                       . + {source: "url", url: $g}
+                    elif $mode == "mono" and ((.name // "") == "") then
+                      # no name to derive a "./plugins/<name>" path from, and
+                      # no git-URL fallback either — injecting "./plugins/"
+                      # would be a worse-than-nothing bogus source. Leave the
+                      # element as-is; M7 stays a FAIL for a human to name it.
+                      .
                     else
-                      . + {source: (if $mode == "mono" then "./plugins/" + (.name // "") else "./" end)}
+                      . + {source: (if $mode == "mono" then "./plugins/" + .name else "./" end)}
                     end
                 else
                   .
                 end
               )
             ' "$mf" >"$tmp" && mv "$tmp" "$mf"
-            sourced=$((sourced + missing_before))
+            # Count from the post-transform file rather than assuming the
+            # transform fixed everything: a skipped nameless element (above)
+            # or a failed `mv` (disk full, permissions) must not inflate
+            # `sourced` past what the file actually gained.
+            missing_after="$(jq '[(.plugins // [])[] | select(type=="object") | select(has("source")|not)] | length' "$mf" 2>/dev/null || echo "$missing_before")"
+            sourced=$((sourced + missing_before - missing_after))
+            [ "${missing_after:-0}" -eq 0 ] || echo "warn: $missing_after plugins[] element(s) in $mf still missing source (no name/homepage/repository to derive one from) — needs a human" >&2
         fi
     fi
 fi
@@ -287,7 +311,13 @@ for root in "${ROOTS[@]}"; do
             tmp="$(mktemp)"
             jq --argjson k "$KNOWN_PLUGIN_JSON_FIELDS" \
                 'with_entries(select(.key as $x | $k | index($x)))' "$pj" >"$tmp" && mv "$tmp" "$pj"
-            pruned=$((pruned + unknown_n))
+            # Count from the post-transform file, not the pre-transform plan
+            # count — a failed `mv` must not claim fields were pruned that
+            # are still sitting in $pj.
+            unknown_after="$(jq --argjson k "$KNOWN_PLUGIN_JSON_FIELDS" \
+                '[keys[] | select(. as $x | $k | index($x) | not)] | length' "$pj" 2>/dev/null || echo "$unknown_n")"
+            pruned=$((pruned + unknown_n - unknown_after))
+            [ "${unknown_after:-0}" -eq 0 ] || echo "warn: $unknown_after unknown field(s) still in $pj — prune failed, .bak kept at $pj.bak" >&2
         fi
     fi
 done
@@ -303,8 +333,11 @@ if [ "$scope" = op ]; then
             add_plan "[R1] visualize docs/skill-guides/$s.html (→ /visuals:visualize; TODO stub if unavailable)"
             if [ "$apply" -eq 1 ]; then
                 mkdir -p "$(dirname "$g")"
-                printf '<!-- TODO: claude-plugin guide for %s -->\n<!-- 이 가이드는 /visuals:visualize 로 채우세요 (placeholder stub). -->\n' "$s" >"$g"
-                stubbed=$((stubbed + 1))
+                if printf '<!-- TODO: claude-plugin guide for %s -->\n<!-- 이 가이드는 /visuals:visualize 로 채우세요 (placeholder stub). -->\n' "$s" >"$g"; then
+                    stubbed=$((stubbed + 1))
+                else
+                    echo "warn: failed to write $g" >&2
+                fi
             fi
         fi
     done
@@ -316,8 +349,11 @@ if [ "$scope" = op ]; then
             add_plan "[R2] stub    docs/skill-output/$s-usage.md"
             if [ "$apply" -eq 1 ]; then
                 mkdir -p "$repo/docs/skill-output"
-                printf '<!-- TODO: %s usage sample — fill with /visuals:visualize -->\n' "$s" >"$repo/docs/skill-output/$s-usage.md"
-                stubbed=$((stubbed + 1))
+                if printf '<!-- TODO: %s usage sample — fill with /visuals:visualize -->\n' "$s" >"$repo/docs/skill-output/$s-usage.md"; then
+                    stubbed=$((stubbed + 1))
+                else
+                    echo "warn: failed to write $repo/docs/skill-output/$s-usage.md" >&2
+                fi
             fi
         fi
     done
@@ -375,13 +411,16 @@ if [ "$scope" = op ]; then
                 # `name:`-looking line in the body is never touched, and only
                 # the first frontmatter `name:` is rewritten.
                 rtmp="$(mktemp)"
-                awk -v newname="name: $s" '
+                if awk -v newname="name: $s" '
                     NR==1 && $0=="---" { infm=1; print; next }
                     infm && $0=="---" { infm=0; print; next }
                     infm && !done && /^name:/ { print newname; done=1; next }
                     { print }
-                ' "$sm" >"$rtmp" && mv "$rtmp" "$sm"
-                renamed=$((renamed + 1))
+                ' "$sm" >"$rtmp" && mv "$rtmp" "$sm"; then
+                    renamed=$((renamed + 1))
+                else
+                    echo "warn: failed to rewrite name: in $sm" >&2
+                fi
             fi
         fi
     done
@@ -416,11 +455,14 @@ if [ "$scope" = op ]; then
                 add_plan "[R5] link    README.md ← $s guide/usage 링크 추가"
                 if [ "$apply" -eq 1 ]; then
                     _trim_trailing_blank "$repo/README.md"
-                    {
+                    if {
                         printf '\n'
                         printf '%s\n' "${missing[@]}"
-                    } >>"$repo/README.md"
-                    linked=$((linked + ${#missing[@]}))
+                    } >>"$repo/README.md"; then
+                        linked=$((linked + ${#missing[@]}))
+                    else
+                        echo "warn: failed to append to $repo/README.md" >&2
+                    fi
                 fi
             fi
         done

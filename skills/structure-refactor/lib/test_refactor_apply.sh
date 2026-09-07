@@ -105,6 +105,25 @@ src="$(jq -r '.plugins[0].source' "$r/.claude-plugin/marketplace.json")"
     fail=1
 }
 
+# ---- case 4b: M7 on an object element with no name/homepage/repository --
+# must NOT inject a bogus "./plugins/" source (codex review, PR #20) and must
+# not count it toward `sourced` since nothing was actually fixed.
+r="$tmp/m7-nameless"
+mkdir -p "$r/.claude-plugin" "$r/plugins/bar/.claude-plugin" "$r/plugins/bar/skills/baz" \
+    "$r/docs/skill-guides" "$r/docs/skill-output"
+git -C "$r" init -q
+printf '{"plugins":[{}]}' >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"bar-plugin","version":"0.0.0"}' >"$r/plugins/bar/.claude-plugin/plugin.json"
+printf -- '---\nname: baz\ndescription: test\n---\n' >"$r/plugins/bar/skills/baz/SKILL.md"
+printf '# repo\n' >"$r/README.md"
+out="$(bash "$ra" "$r" --mode mono --scope mp --apply 2>/dev/null)"
+assert_line "$out" "SUMMARY applied=1 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "m7-nameless summary (no false credit)"
+src="$(jq -r '.plugins[0].source // "MISSING"' "$r/.claude-plugin/marketplace.json")"
+[ "$src" = "MISSING" ] || {
+    echo "FAIL: m7-nameless — expected no source injected, got '$src'"
+    fail=1
+}
+
 # ---- case 5: M10 prune with .bak backup ------------------------------------
 r="$tmp/m10-fix"
 mkdir -p "$r/.claude-plugin" "$r/skills/foo" "$r/docs/skill-guides" "$r/docs/skill-output"
