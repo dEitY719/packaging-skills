@@ -249,6 +249,31 @@ assert_line "$out" "SUMMARY applied=1 created=1 sourced=0 pruned=0 stubbed=0 ren
     fail=1
 }
 
+# ---- case 9: M10 must never prune without a verified .bak (codex review,
+# PR #20 round 4) — a read-only .claude-plugin/ blocks the `cp ... .bak`
+# step, and plugin.json must come out byte-for-byte unchanged, not partially
+# pruned.
+r="$tmp/m10-backup-fail"
+mkdir -p "$r/.claude-plugin" "$r/skills/foo" "$r/docs/skill-guides" "$r/docs/skill-output"
+git -C "$r" init -q
+printf '{"plugins":["./"]}' >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"foo-plugin","version":"0.0.0","skills":["foo"]}' >"$r/.claude-plugin/plugin.json"
+printf -- '---\nname: foo\ndescription: test\n---\n' >"$r/skills/foo/SKILL.md"
+printf '# repo\n' >"$r/README.md"
+plugin_json_before="$(cat "$r/.claude-plugin/plugin.json")"
+chmod 555 "$r/.claude-plugin"
+out="$(bash "$ra" "$r" --mode single --scope mp --apply 2>/dev/null)"
+chmod 755 "$r/.claude-plugin"
+assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "m10-backup-fail: no prune without a verified backup"
+[ "$(cat "$r/.claude-plugin/plugin.json")" = "$plugin_json_before" ] || {
+    echo "FAIL: m10-backup-fail — plugin.json changed despite the backup failing"
+    fail=1
+}
+[ -e "$r/.claude-plugin/plugin.json.bak" ] && {
+    echo "FAIL: m10-backup-fail — a .bak claiming success shouldn't exist when cp failed"
+    fail=1
+}
+
 if [ "$fail" -eq 0 ]; then
     echo "PASS: all refactor_apply.sh smoke cases"
     exit 0
