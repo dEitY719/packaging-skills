@@ -45,7 +45,7 @@ claude-plugin structure refactor — <repo-path>   (mode: mono|single[, 추정] 
   [M5] mkdir   docs/skill-guides/, docs/skill-output/
   [R1] visualize docs/skill-guides/visualize.html   (→ /visuals:visualize, --op only)
   [R2] stub    docs/skill-output/visualize-usage.md  (--op only)
-  [Pages] enable GitHub Pages (branch=main, path=/docs) (--op only)
+  [Pages] enable GitHub Pages (default branch, path=/docs) (--op only)
   [R4] rename  SKILL.md name: 교정 → visualize (bare = 디렉터리명)  (--op only)
   [R5] link    README.md ← visualize guide Pages URL 링크 추가 (--op only)
 
@@ -126,9 +126,13 @@ Execute the plan in this order so later steps see earlier results:
    `[{ "source": "./" }]` for single, so a freshly-created skeleton already
    satisfies M7/M8.
 3b. **M7 source injection (mandatory — runs under both `--mp` and `--op`)**:
-   when a marketplace.json **already exists** and a `plugins[]` **object**
-   element lacks its own `source`, inject one (the claude-plugin-jira#61
-   install-fail shape). Derivation order per element:
+   when a marketplace.json **already exists**, `plugins` **is an array**
+   (a non-array `plugins` — an object, a string, anything else — is M1/M3's
+   territory; M7 skips it entirely rather than risk `jq`'s `map` silently
+   reshaping an object into an array and dropping its keys, codex review,
+   PR #20), and a `plugins[]` **object** element lacks its own `source`,
+   inject one (the claude-plugin-jira#61 install-fail shape). Derivation
+   order per element:
    - if the element has a `homepage`/`repository` ending in `.git` →
      `{ "source": "url", "url": "<that>" }` (remote fetch);
    - else the local path of the detected mode — mono `./plugins/<name>`
@@ -173,14 +177,19 @@ Execute the plan in this order so later steps see earlier results:
    ```bash
    gh api --hostname "$HOST" "repos/$OWNER/$REPO/pages"
    ```
-   If it 404s (Pages inactive), activate it (pipe the JSON in via stdin — no
-   bash-only here-string, so the snippet is `/bin/sh`-safe):
+   If it 404s (Pages inactive), look up the repo's actual default branch
+   (`gh api --hostname "$HOST" "repos/$OWNER/$REPO" --jq .default_branch`,
+   falling back to `main` only if that lookup itself fails — never assume
+   `main`, a repo on `master` or anything else would otherwise get a Pages
+   request naming a branch that doesn't exist) and activate it (pipe the
+   JSON in via stdin — no bash-only here-string, so the snippet is
+   `/bin/sh`-safe):
    ```bash
-   echo '{"source":{"branch":"main","path":"/docs"}}' \
+   jq -cn --arg branch "$DEFAULT_BRANCH" '{source:{branch:$branch,path:"/docs"}}' \
      | gh api --hostname "$HOST" "repos/$OWNER/$REPO/pages" -X POST --input -
    ```
    Skip when Pages already responds 200 (idempotent). Soft-fail: a missing
-   token scope or unreachable host warns and continues.
+   token scope, wrong branch, or unreachable host warns and continues.
 7. **`--op` only — R4 naming**: when a SKILL.md `name:` is not the bare
    directory basename — it carries a colon, or differs from the basename —
    rewrite `name:` in that `SKILL.md` to the basename. Never `git mv` the
