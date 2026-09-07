@@ -4,16 +4,15 @@ Usage:
   /packaging:structure-check [repo-path] [--single | --mono]
   /packaging:structure-check help
 
-Arguments:
-  [repo-path]   Path to the claude-plugin repo to audit (optional).
-                Defaults to the current directory.
+| Option | Description | Default |
+|--------|-------------|---------|
+| `[repo-path]` | repo to audit | current directory |
+| `--single` | force the single layout (repo itself is one plugin; marketplace source `"./"`, skills at root `skills/<s>/`) | off (auto-detect) |
+| `--mono` | force the mono layout (repo bundles many plugins; source `"./plugins/<name>"`, skills at `plugins/<p>/skills/<s>/`) | off (auto-detect) |
+| `-h`/`--help`/`help` | print this help and stop | — |
 
-Options:
-  --single      Force the single layout (repo itself is one plugin;
-                marketplace source "./", skills at root skills/<s>/).
-  --mono        Force the mono layout (repo bundles many plugins;
-                source "./plugins/<name>", skills at plugins/<p>/skills/<s>/).
-                --single / --mono override auto-detection (last one wins).
+`--single`/`--mono` are mutually exclusive; if both are given, the last one
+wins.
 
 Layout modes & auto-detection:
   Without a flag the mode is detected in priority order:
@@ -52,16 +51,9 @@ paths and skill discovery differ between modes. Each item reports PASS / WARN /
 FAIL / N/A. N/A means the subject does not exist (e.g. a plugin with 0 skills →
 R1/R2/R5 are N/A; M9 → N/A in single mode; M10 → N/A when no valid plugin.json).
 
-Note: structure-check PASS != install/runtime success — install can still
-succeed while a schema-violating plugin.json (M10, e.g. a skills field) blocks
-the plugin from loading; a marketplace source problem (M7-M9) can block install.
-
-Verdict:
-  any FAIL → FAIL ; no FAIL but >=1 WARN → WARN ; all PASS/N/A → PASS
-
-Note: this audit checks STRUCTURE only. structure-check PASS != install /
-runtime success — if /plugin install fails, inspect marketplace source
-(claude-plugin-jira#61) or SKILL.md frontmatter separately.
+Verdict rule and the "structure-check PASS != install/runtime success"
+disclaimer: see references/report-template.md (owned there, not restated
+here).
 
 Examples:
   /packaging:structure-check

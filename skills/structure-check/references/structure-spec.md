@@ -1,10 +1,9 @@
 # claude-plugin Standard Structure — spec SSOT (embedded copy)
 
 Standard directory layout for a **claude-plugin marketplace repo** (e.g.
-`claude-plugin-visuals`). This file is an intentional copy of the design
-SSOT (`docs/feature/superpowers-specs/2026-05-30-claude-plugin-structure-skills-design.md`)
-so each skill installs independently. Keep both copies in sync when the
-spec changes.
+`claude-plugin-visuals`). This file is the SSOT for the layout spec — kept
+embedded here (rather than pointing at an external design doc) so the skill
+installs independently of any other repo.
 
 `structure-check` evaluates against it (read-only). `structure-refactor`
 edits a repo toward it (dry-run / `--apply`). Plugins and skills are
@@ -93,10 +92,12 @@ M10 → see "plugin.json known fields" below.
 
 ## marketplace `plugins[].source` integrity (M7-M9, dEitY719/dotfiles#1084)
 
-Claude Code (observed on 2.1.198) does **not** inherit a marketplace top-level
-`source` into a plugin at install time — each `plugins[]` element must carry
-its own source, or `/plugin install` fails with *"This plugin uses a source
-type your Claude Code version does not support"* (claude-plugin-jira#61). A
+Claude Code (confirmed on 2.1.198, unchanged as of 2026-09 / 2.1.263 — no
+`/plugin install` source-inheritance change has been reported since) does
+**not** inherit a marketplace top-level `source` into a plugin at install
+time — each `plugins[]` element must carry its own source, or `/plugin
+install` fails with *"This plugin uses a source type your Claude Code
+version does not support"* (claude-plugin-jira#61). A
 structure audit that stopped at M6 passed such a repo, which then misled the
 diagnosis (claude-plugin-jira#63). M7-M9 close that gap. They evaluate only
 when M1 passes (marketplace parses) and ≥1 plugin is listed; otherwise **N/A**
@@ -137,7 +138,8 @@ true. Cause: a custom `skills` array in `plugin.json`. The runtime auto-scans
 (`aws-login`, `ds-skills`) omit it entirely.
 
 **M10 — every plugin.json top-level key is in the known-field whitelist.**
-Known fields (Claude Code manifest schema, **2.1.x**):
+Known fields (Claude Code manifest schema; last verified 2026-09 against CC
+2.1.263, unchanged since the check was introduced):
 
 ```
 name (required), version (required), description, author,
@@ -148,9 +150,10 @@ Any key outside this set → **FAIL** (e.g. the `skills` array above). `skills`
 is the classic trap: it looks supported because it matches the auto-scanned
 folder name, so authors add it by hand. Evaluated per plugin root over the same
 root set as M3; a missing/invalid plugin.json is M3's concern (skipped here),
-and no plugin root with a valid manifest → **N/A**. The whitelist is the SSOT
-`_CPS_PLUGIN_JSON_KNOWN_FIELDS` in the bats fixture — bump it (with a version
-note) on each Claude Code manifest-schema release.
+and no plugin root with a valid manifest → **N/A**. The whitelist SSOT ships
+with this plugin at `lib/structure_check.sh`'s `KNOWN_PLUGIN_JSON_FIELDS` —
+bump it (with a "last verified" date) on each Claude Code manifest-schema
+change.
 
 ## Recommended items (WARN when missing)
 
@@ -231,6 +234,5 @@ FAIL).
 
 ## Summary verdict
 
-- any FAIL → **FAIL**
-- no FAIL, any WARN → **WARN**
-- all PASS/N/A → **PASS**
+See `references/report-template.md` → "Summary line" for the verdict-rollup
+rule — owned there, not restated here.

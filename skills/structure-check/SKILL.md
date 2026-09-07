@@ -37,35 +37,35 @@ its content verbatim, then stop. No filesystem scan.
 ## Step 2: Detect Mode + Discover Plugin Roots + Skills
 
 Read `references/structure-spec.md` for the full standard (embedded SSOT) —
-see "Layout modes", "Mode detection", and "Mandatory items by mode".
-
-For detailed evaluation rules and mode/type classification logic: see [references/evaluation-rules.md](references/evaluation-rules.md)
+see "Layout modes", "Mode detection", and "Mandatory items by mode". The same
+logic is executable in `lib/structure_check.sh` (run in Step 3); spec and
+script must agree.
 
 Record the detected mode, plugin-root list, and skill list for the report
 header and the per-skill recommended checks (R1/R2/R5).
 
 ## Step 3: Evaluate M1-M10 and R1-R8
 
-Apply PASS/WARN/FAIL/N/A to each item per the scoring rules in
-[references/evaluation-rules.md](references/evaluation-rules.md). Mandatory
-items M1-M10 fail when missing — including M7-M9 marketplace `plugins[].source`
-install integrity and M10 `plugin.json` known-field schema
-(dEitY719/dotfiles#1084). Recommended items R1-R8 warn. Full
-item-by-item table: `references/help.md`.
+Run `bash lib/structure_check.sh "$REPO" ${MODE_FLAG:-}` — the script sits
+next to this SKILL.md (resolve its path from where this skill is installed,
+not from `$REPO`). `$REPO` = Step 1's resolved path; `$MODE_FLAG` =
+`--single`/`--mono` if forced, else omitted. It prints `MODE`/`PLUGINS`/
+`SKILLS`/`GIT` context lines, one `<ID> <RESULT> [detail]` line for every
+M1-M10 and R1/R2/R4-R8 item, and a `SUMMARY` line — see its header comment
+for the exact contract. Mandatory items FAIL when missing, including M7-M9
+marketplace `plugins[].source` install integrity and M10 `plugin.json`
+known-field schema (dEitY719/dotfiles#1084).
+
+**R3 is scored by you, not the script** — it needs judgment (README length +
+whether it substantively mentions plugins/skills). Apply the heuristic in
+`references/structure-spec.md` yourself and fold it into the script's
+FAIL/WARN/N/A counts for the final verdict. Item table: `references/help.md`.
 
 ## Step 4: Output the Report
 
-Read `references/report-template.md` for the exact format. The report has a
-header line (path + detected mode + discovered plugins/skills), a `[필수]`
-block (M1-M10) and a `[권장]` block (R1-R8), then the summary verdict:
-
-- any FAIL → **FAIL**
-- no FAIL but ≥1 WARN → **WARN**
-- all PASS/N/A → **PASS**
-
-Emit the next-action hint **only when** there is ≥1 FAIL or WARN. Always append
-the "structure-check PASS ≠ install/runtime 성공" disclaimer (report-template.md
-→ "Install/runtime disclaimer", dEitY719/dotfiles#1084).
+Read `references/report-template.md` for the exact format, including the
+summary-verdict rule and the install/runtime disclaimer — both are owned
+there; this step just applies them.
 
 ## Constraints
 
