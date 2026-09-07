@@ -34,8 +34,10 @@
 #   ...
 #   SUMMARY applied=<n> created=<n> sourced=<n> pruned=<n> stubbed=<n> renamed=<n> linked=<n> pages=<activated|active|skip|n/a>
 #
-# `applied` counts plan lines actually executed (0 on a dry run). An empty
-# plan is success (idempotent: nothing left to fix), never a failure.
+# `applied` is the sum of the per-category counts below — actual changes
+# made, not plan lines attempted (0 on a dry run, and a plan line whose write
+# failed or whose fix skipped a specific element does not inflate it). An
+# empty plan is success (idempotent: nothing left to fix), never a failure.
 #
 # Exit: 0 on a normal run (dry-run or apply, any plan size); 64 bad usage;
 # 66 <repo-path> not a directory; 127 jq/git missing.
@@ -482,7 +484,12 @@ if [ "${#plan[@]}" -gt 0 ]; then
     printf '%s\n' "${plan[@]}"
 fi
 
-applied=0
-[ "$apply" -eq 1 ] && applied="${#plan[@]}"
+# `applied` sums what actually changed, not `${#plan[@]}` (plan lines
+# attempted) — a plan line whose write failed, or whose fix skipped a
+# specific element (the M7 nameless-element case above), must not report
+# a success that didn't happen (codex review, PR #20 round 3).
+pages_applied=0
+[ "$pages_status" = "activated" ] && pages_applied=1
+applied=$((created + sourced + pruned + stubbed + renamed + linked + pages_applied))
 echo "SUMMARY applied=$applied created=$created sourced=$sourced pruned=$pruned stubbed=$stubbed renamed=$renamed linked=$linked pages=$pages_status"
 exit 0

@@ -117,7 +117,7 @@ printf '{"name":"bar-plugin","version":"0.0.0"}' >"$r/plugins/bar/.claude-plugin
 printf -- '---\nname: baz\ndescription: test\n---\n' >"$r/plugins/bar/skills/baz/SKILL.md"
 printf '# repo\n' >"$r/README.md"
 out="$(bash "$ra" "$r" --mode mono --scope mp --apply 2>/dev/null)"
-assert_line "$out" "SUMMARY applied=1 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "m7-nameless summary (no false credit)"
+assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "m7-nameless summary (no false credit)"
 src="$(jq -r '.plugins[0].source // "MISSING"' "$r/.claude-plugin/marketplace.json")"
 [ "$src" = "MISSING" ] || {
     echo "FAIL: m7-nameless — expected no source injected, got '$src'"
@@ -220,12 +220,34 @@ chmod +x "$fakebin/gh"
 GH_FAKE_STATE="$tmp/pages-active-flag"
 export GH_FAKE_STATE
 out="$(PATH="$fakebin:$PATH" bash "$ra" "$r" --mode single --scope op --apply)"
-assert_line "$out" "SUMMARY applied=4 created=0 sourced=0 pruned=0 stubbed=2 renamed=0 linked=2 pages=activated" "pages-fix summary"
+assert_line "$out" "SUMMARY applied=5 created=0 sourced=0 pruned=0 stubbed=2 renamed=0 linked=2 pages=activated" "pages-fix summary"
 grep -qF "https://acme.github.io/proj/skill-guides/foo.html" "$r/README.md" || {
     echo "FAIL: pages-fix — README guide link should use the derived Pages URL"
     fail=1
 }
 unset GH_FAKE_STATE
+
+# ---- case 8: a write that actually fails must not inflate `created`/
+# `applied` (codex review, PR #20 round 3 — reproduced with a read-only dir).
+# A read-only .claude-plugin/ blocks M1's marketplace.json and M3's
+# plugin.json (both write inside it) but not M6's README.md (repo root is
+# still writable) — `created` must reflect exactly that one real success,
+# not all three attempted plan lines.
+r="$tmp/write-fail"
+mkdir -p "$r/docs/skill-guides" "$r/docs/skill-output" "$r/.claude-plugin" "$r/skills"
+git -C "$r" init -q
+chmod 555 "$r/.claude-plugin"
+out="$(bash "$ra" "$r" --mode single --scope mp --apply 2>/dev/null)"
+chmod 755 "$r/.claude-plugin" # restore before the trap's rm -rf can run
+assert_line "$out" "SUMMARY applied=1 created=1 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "write-fail: only the one real success (README) counts, not all 3 plan lines"
+[ -e "$r/.claude-plugin/marketplace.json" ] && {
+    echo "FAIL: write-fail — marketplace.json should not exist (write into a read-only dir can't have succeeded)"
+    fail=1
+}
+[ -e "$r/README.md" ] || {
+    echo "FAIL: write-fail — README.md should exist (repo root was still writable)"
+    fail=1
+}
 
 if [ "$fail" -eq 0 ]; then
     echo "PASS: all refactor_apply.sh smoke cases"
