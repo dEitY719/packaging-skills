@@ -37,6 +37,9 @@ fi
 REPO="${REPO%/}"
 REPO="${REPO%.git}"
 HOST="${HOST##*@}"  # strip optional userinfo (ssh://user@host/... form)
+HOST="${HOST%%:*}"  # strip optional :port (ssh://host:2222/... form) —
+                     # `gh auth status --hostname` / `gh repo rename --repo`
+                     # both want a bare hostname, never host:port
 if [ -z "$HOST" ] || [ -z "$OWNER" ] || [ -z "$REPO" ]; then
   echo "parse_remote: unrecognized remote URL: $URL" >&2
   exit 1

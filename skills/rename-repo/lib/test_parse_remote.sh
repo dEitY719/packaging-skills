@@ -41,6 +41,10 @@ check "git@github.com:dEitY719/claude-plugin-visuals.git" \
 check "ssh://git@github.com/dEitY719/claude-plugin-visuals.git" \
   github.com dEitY719 claude-plugin-visuals
 
+# ssh:// URL form with an explicit port — HOST must drop the :port
+check "ssh://git@github.our-company.com:2222/team/company-skills.git" \
+  github.our-company.com team company-skills
+
 # trailing slash, no .git
 check "https://github.com/dEitY719/claude-plugin-visuals/" \
   github.com dEitY719 claude-plugin-visuals
