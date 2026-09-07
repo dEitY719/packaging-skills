@@ -308,6 +308,21 @@ assert_no_line "$out" "[M7]" "m7-object-plugins: no M7 plan line for a non-array
     fail=1
 }
 
+# ---- case 11: an empty mono repo (no plugins/*/ at all) must not invent a
+# plugin name for the marketplace.json skeleton (codex review, PR #20 round
+# 6) — "plugins": [] is honest; "plugins": ["./plugins/<repo-basename>"]
+# would dangle, since M3 never creates a matching plugins/<repo-basename>/.
+r="$tmp/empty-mono"
+mkdir -p "$r"
+git -C "$r" init -q
+out="$(bash "$ra" "$r" --mode mono --scope mp --apply)"
+assert_line "$out" "ROOTS (none)" "empty-mono: no roots discovered"
+plugins_json="$(jq -c '.plugins' "$r/.claude-plugin/marketplace.json")"
+[ "$plugins_json" = "[]" ] || {
+    echo "FAIL: empty-mono — expected plugins: [], got $plugins_json"
+    fail=1
+}
+
 if [ "$fail" -eq 0 ]; then
     echo "PASS: all refactor_apply.sh smoke cases"
     exit 0

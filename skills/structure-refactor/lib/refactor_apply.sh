@@ -208,8 +208,19 @@ if [ ! -s "$mf" ]; then
     else
         names=()
         for root in "${ROOTS[@]}"; do names+=("$(basename "$root")"); done
-        [ "${#names[@]}" -gt 0 ] || names=("$repo_base")
-        plugins_json="$(jq -n --args '$ARGS.positional | map("./plugins/" + .)' "${names[@]}")"
+        if [ "${#names[@]}" -gt 0 ]; then
+            plugins_json="$(jq -n --args '$ARGS.positional | map("./plugins/" + .)' "${names[@]}")"
+        else
+            # No plugins/*/ discovered yet — an empty mono repo is
+            # `packaging:create`'s job, not this skill's (CLAUDE.md).
+            # Inventing a plugin name here (e.g. the repo basename) would
+            # write a marketplace.json pointing at a plugins/<name>/ that
+            # doesn't exist and that M3 (which only iterates the roots
+            # discovered *before* this skeleton is written) never creates
+            # either — an honest empty array beats a dangling reference
+            # (codex review, PR #20 round 6).
+            plugins_json='[]'
+        fi
     fi
     add_plan "[M1] create  .claude-plugin/marketplace.json (skeleton)"
     if [ "$apply" -eq 1 ]; then
