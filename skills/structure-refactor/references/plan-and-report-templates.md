@@ -1,5 +1,36 @@
 # packaging:structure-refactor — Plan & Report Templates
 
+## Executable engine
+
+`lib/refactor_apply.sh` runs Apply rules 1 and 3-8 below — every deterministic
+operation except rule 2 (see its note). It reuses
+`../structure-check/lib/structure_check.sh` for mode-aware plugin/skill
+discovery instead of re-deriving it, and `../rename-repo/lib/parse_remote.sh`
+for host/owner/repo parsing (Pages, R5 link URLs) — one implementation each,
+not a third prose spec of the same rules (packaging-skills#8).
+
+Call pattern from Step 4:
+
+```bash
+bash skills/structure-refactor/lib/refactor_apply.sh "$REPO" \
+  --mode "$MODE" --scope "$SCOPE" ${APPLY:+--apply}
+```
+
+`$MODE` is the already-resolved detected/forced mode from Step 2 (the
+conversion guard below runs *before* this call and short-circuits the whole
+step when it fires). `$SCOPE` is `mp` or `op`. The script prints the plan
+(context lines, then one `[ID] verb detail` line per pending change) and a
+`SUMMARY applied=… created=… sourced=… pruned=… stubbed=… renamed=… linked=…
+pages=…` line; Step 5's report is built from that output.
+
+R1's real guide content is the one piece the script cannot produce itself
+(`/visuals:visualize` is an AI skill invocation): under `--op --apply`, Step 4
+calls `/visuals:visualize <SKILL.md>` → `docs/skill-guides/<s>.html` for every
+skill still missing that file **before** invoking the script, then invokes
+it — the script's own R1 step only ever writes the documented TODO fallback
+stub, and only for a guide still missing afterward (delegation unavailable or
+failed).
+
 ## Plan template (dry-run AND the pre-amble of --apply)
 
 ```
@@ -11,7 +42,6 @@ claude-plugin structure refactor — <repo-path>   (mode: mono|single[, 추정] 
   [M7] source  plugins[].source 주입 (visuals ← ./plugins/visuals | git URL)
   [M3] create  plugins/visuals/.claude-plugin/plugin.json (skeleton)
   [M10] prune  plugins/visuals/.claude-plugin/plugin.json ← 미지원 필드(skills) 제거 (.bak 백업)
-  [M4] git mv  visualize/SKILL.md → plugins/visuals/skills/visualize/SKILL.md
   [M5] mkdir   docs/skill-guides/, docs/skill-output/
   [R1] visualize docs/skill-guides/visualize.html   (→ /visuals:visualize, --op only)
   [R2] stub    docs/skill-output/visualize-usage.md  (--op only)
@@ -40,6 +70,10 @@ claude-plugin structure refactor — <repo-path>   (mode: mono|single[, 추정] 
 - R1-R5 lines appear only when scope is `--op` / `--recommended`. R6-R8 are
   audit-only WARNs (surfaced by structure-check) — refactor never emits a plan
   line or applies a fix for them.
+- M2 (no plugin root), M4 (a skill directory exists but its SKILL.md doesn't),
+  M8/M9 (a malformed or dangling `plugins[].source`) also produce no
+  auto-fix — Apply rule 2's note explains why. They stay whatever
+  structure-check reports; a human resolves them.
 
 ### Layout-conversion warning (forced mode ≠ detected mode)
 
@@ -67,6 +101,11 @@ Execute the plan in this order so later steps see earlier results:
    `docs/skill-output/`, `plugins/<p>/skills/`.
 2. **move** misplaced files: `git mv <src> <dst>` inside a git repo;
    `mv <src> <dst>` otherwise. Never overwrite an existing destination.
+   **Not automated** — discovery (shared with structure-check) only ever
+   finds a skill by its canonical `<root>/skills/<s>/SKILL.md` path, so a
+   file sitting somewhere else is invisible to it; there is no reliable
+   source path to move *from*. `lib/refactor_apply.sh` does not implement
+   this step (M4 stays a manual `git mv` when structure-check reports it).
 3. **skeleton** for a missing JSON:
    - `marketplace.json`:
      ```json
@@ -121,6 +160,10 @@ Execute the plan in this order so later steps see earlier results:
    ```markdown
    <!-- TODO: <s> usage sample — fill with /visuals:visualize -->
    ```
+   This is always a `.md` stub. The `-usage.{html,md}` extension tolerance in
+   `structure-spec.md`'s R2/R5 items is for the **audit** side only, so a repo
+   that instead publishes a rendered `-usage.html` (from some other pipeline)
+   still passes both checks without this skill ever writing one.
 6. **`--op` only — GitHub Pages activation**: derive `$HOST` / `$OWNER` /
    `$REPO` per "Pages host & URL derivation (`--op`)" below. Query the
    current state:
@@ -195,8 +238,17 @@ Planned: <n>   Applied: <n>   Skipped (already correct): <n>
 <the plan block above, with applied lines marked ✓>
 
 [OK] refactor complete   |   [FAIL] <reason>
-applied=<n> moved=<n> created=<n> sourced=<n> pruned=<n> visualized=<n> stubbed=<n> pages=<activated|active|skip|n/a> linked=<n> layout=<mono|single> mode=<dry-run|apply> scope=<mp|op>
+applied=<n> moved=<n> created=<n> sourced=<n> pruned=<n> visualized=<n> stubbed=<n> renamed=<n> pages=<activated|active|skip|n/a> linked=<n> layout=<mono|single> mode=<dry-run|apply> scope=<mp|op>
 ```
+
+`created`/`sourced`/`pruned`/`stubbed`/`renamed`/`linked`/`pages` come
+straight from `lib/refactor_apply.sh`'s own `SUMMARY` line; `applied` is that
+line's `applied` count plus 1 per real (non-fallback) R1 guide Step 4
+generated before calling it. `moved` is always `0` — M4 is never automated
+(Apply rule 2's note). `visualized` counts only the real
+`/visuals:visualize` guides Step 4 generated; a guide the script wrote as a
+fallback stub counts toward `stubbed`, not `visualized`. `layout`/`mode`/
+`scope` are Step 1/2's own resolved values, not part of the script's output.
 
 For a guarded layout-conversion (forced mode ≠ detected) the report is
 `[OK] no conversion (out of scope)` with `applied=0 layout=<from>→<to>` and
@@ -210,3 +262,21 @@ End with the next-action hint:
 
 A no-op run (nothing to change) still reports `[OK] refactor complete` with
 `applied=0` and the verify hint.
+
+## Constraints (Never / Always)
+
+- **Never** write anything without `--apply`; dry-run only ever prints the
+  plan above.
+- **Never** auto-apply on a dirty tree — show the dry-run plan and require an
+  explicit `--apply`.
+- **Never** perform a single↔mono conversion — see "Layout-conversion
+  warning" above; `--apply` stops without writing, even when given.
+- **Never** abort the run over a soft-fail step (Pages activation, R5 link
+  backfill): warn and continue.
+- **Always** prefer `git mv` over `mv` inside a git repo, to preserve
+  history.
+- **Always** discover plugins/skills by scan (repo-agnostic) — the spec in
+  `../structure-check/references/structure-spec.md` is abstract, never
+  hardcoded to one repo's names.
+- **Always** treat an already-standard repo (within scope) as a no-op —
+  idempotency is the skill's whole safety story, not an aspiration.

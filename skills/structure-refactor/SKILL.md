@@ -8,6 +8,7 @@ description: >-
 license: MIT
 compatibility:
   tools: Read, Glob, Grep, Write, Edit, Bash
+  network: required
 metadata:
   model_recommendation:
     tier: sonnet
@@ -40,13 +41,15 @@ fall back to `mv`). Dirty tree → show the dry-run plan and require an explicit
 
 ## Step 2: Detect Mode + Compute Plugin Roots + Evaluate Current ↔ Target
 
-Read `references/structure-spec.md` (embedded SSOT) for layout modes, mode
-detection/override, and mandatory items by mode.
+Read `../structure-check/references/structure-spec.md` (the SSOT this skill
+shares with `structure-check` — one spec, not two drifting copies) for layout
+modes, mode detection/override, and mandatory items by mode.
 
 1. **Detect the current mode** (priority: flag → manifest `plugins[].source`
    → filesystem → default `mono`).
 2. **Conversion guard** — forced mode ≠ detected current layout → out of
-   scope (rules in spec → "Mode override = layout conversion").
+   scope (rules in `references/plan-and-report-templates.md` →
+   "Layout-conversion warning").
 3. **Compute the plugin-root set**: `mono` → each `plugins/*/`; `single` →
    repo root `./` (exactly one).
 4. **Discover skills** and run M1-M10 / R1-R8 evaluation over the roots to
@@ -64,16 +67,18 @@ conversion produces only the `[convert]` warning line.
 
 ## Step 4: Dry-run or Apply
 
-- **Dry-run (default)**: print the plan only. Touch nothing.
 - **Conversion required (forced mode ≠ detected)**: print the `[convert]`
-  warning and stop — even under `--apply`, write nothing.
-- **`--apply`**: execute the plan in order following the **Apply rules**
-  (mkdir → move → skeleton → M7 `plugins[].source` injection → M10 unknown
-  `plugin.json` field strip with a `.bak` backup — the
-  dEitY719/dotfiles#1084 install/load-fail fixes), fully listed in
-  `references/plan-and-report-templates.md`; `--op`
-  adds R1-R5 (R1 guides via `/visuals:visualize`, GitHub Pages auto-activation,
-  R2 stubs) — see `references/op-rules.md`.
+  warning and stop — even under `--apply`, don't run the script below.
+- Otherwise, under `--op`, generate real R1 guides first: call
+  `/visuals:visualize <SKILL.md>` for each skill still missing
+  `docs/skill-guides/<s>.html`; on failure, warn and move on (the script's
+  fallback stub covers it next).
+- Run `bash skills/structure-refactor/lib/refactor_apply.sh "$REPO" --mode
+  "$MODE" --scope "$SCOPE" ${APPLY:+--apply}` (dry-run omits `--apply`). It
+  executes every mkdir/skeleton/M7-source/M10-prune/R1-fallback/R2-stub/
+  Pages/R4-rename/R5-link step — rule-by-rule detail is in
+  `references/plan-and-report-templates.md`. M2, M4, M8, M9 have no
+  auto-fix (same file explains why) and are left for a human.
 
 ## Step 5: Report
 
@@ -86,9 +91,9 @@ key=value summary, then the next-action hint:
 
 ## Constraints
 
-See [references/constraints.md](references/constraints.md) for the full
-Never/Always rule set (dry-run default, idempotency, `git mv` preference,
-the single↔mono conversion guard, soft-fail behaviors).
+See `references/plan-and-report-templates.md` → "Constraints (Never /
+Always)" for the full rule set (dry-run default, idempotency, `git mv`
+preference, the single↔mono conversion guard, soft-fail behaviors).
 
 ## Related Skills
 
