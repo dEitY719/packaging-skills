@@ -44,8 +44,12 @@
 # re-deriving it. SUMMARY covers only the checks this script runs (R3 is
 # excluded) — the caller combines it with its own R3 judgment.
 #
+# Requires jq (all M1/M3/M7-M10/R6-R7 JSON checks go through it) — a clear
+# error and exit 127 if it's missing, never a silent false FAIL.
+#
 # Exit: 0 all PASS/N/A, 1 any WARN (no FAIL), 2 any FAIL — over the checks
-# this script runs. 64 on bad usage, 66 if <repo-path> is not a directory.
+# this script runs. 64 on bad usage, 66 if <repo-path> is not a directory,
+# 127 if jq is missing.
 # shellcheck disable=SC2317 # check_* functions are invoked indirectly via `check_"$id"`
 set -u
 
@@ -77,8 +81,31 @@ if [ ! -d "$repo" ]; then
     exit 66
 fi
 
+# jq drives every JSON check below (M1, M3, M7-M10, R6-R7). Without this
+# guard a missing jq makes `jq empty` fail like a parse error, so every JSON
+# check would silently report FAIL instead of naming the real problem
+# (codex review, PR #19).
+if ! command -v jq >/dev/null 2>&1; then
+    echo "error: jq is required but was not found in PATH" >&2
+    exit 127
+fi
+
 # ---- JSON validity ---------------------------------------------------------
 _json_ok() { [ -f "$1" ] && jq empty "$1" >/dev/null 2>&1; }
+
+# ---- frontmatter extraction -------------------------------------------------
+_frontmatter() {
+    # $1=file -> echoes the lines strictly between the first `---` line and
+    # the next `---` line (the YAML frontmatter block); nothing if the file
+    # doesn't open with `---`. A bare `grep '^name:'` over the whole file
+    # would also match `name:` in the body (e.g. a code-block example) —
+    # M4/R4 must only ever see this block (agy+codex review, PR #19).
+    awk '
+        NR==1 { if ($0=="---") { infm=1; next } else { exit } }
+        infm && $0=="---" { exit }
+        infm { print }
+    ' "$1"
+}
 
 # echo N/A + return 1 unless $1 is valid JSON — the bare guard shared by
 # check_M9/R6/R7.
@@ -166,7 +193,7 @@ mapfile -t ROOTS < <(plugin_roots "$MODE")
 # Every (plugin-root, skill) pair, computed once and reused by every check
 # and the SKILLS context line below — avoids re-globbing skills/ per check.
 mapfile -t SKILL_PAIRS < <(
-    for root in "${ROOTS[@]:-}"; do
+    for root in "${ROOTS[@]}"; do
         [ -n "$root" ] || continue
         while IFS= read -r s; do
             [ -n "$s" ] || continue
@@ -184,7 +211,7 @@ check_M2() { [ "${#ROOTS[@]}" -ge 1 ] && echo PASS || echo FAIL; }
 
 check_M3() {
     local root any=0
-    for root in "${ROOTS[@]:-}"; do
+    for root in "${ROOTS[@]}"; do
         [ -n "$root" ] || continue
         any=1
         _json_ok "$repo/$root/.claude-plugin/plugin.json" || {
@@ -196,8 +223,8 @@ check_M3() {
 }
 
 check_M4() {
-    local pair root s sm
-    for pair in "${SKILL_PAIRS[@]:-}"; do
+    local pair root s sm fm
+    for pair in "${SKILL_PAIRS[@]}"; do
         [ -n "$pair" ] || continue
         root="${pair%% *}"
         s="${pair#* }"
@@ -206,7 +233,8 @@ check_M4() {
             echo "FAIL $root/skills/$s/SKILL.md"
             return
         }
-        if ! grep -q '^name:' "$sm" || ! grep -q '^description:' "$sm"; then
+        fm="$(_frontmatter "$sm")"
+        if ! grep -q '^name:' <<<"$fm" || ! grep -q '^description:' <<<"$fm"; then
             echo "FAIL $root/skills/$s/SKILL.md"
             return
         fi
@@ -279,7 +307,7 @@ KNOWN_PLUGIN_JSON_FIELDS='["name","version","description","author","homepage","r
 
 check_M10() {
     local root pj unknown any=0
-    for root in "${ROOTS[@]:-}"; do
+    for root in "${ROOTS[@]}"; do
         [ -n "$root" ] || continue
         pj="$repo/$root/.claude-plugin/plugin.json"
         _json_ok "$pj" || continue
@@ -298,7 +326,7 @@ check_M10() {
 # ---- recommended checks (R1,R2,R4-R8; R3 is a model judgment call) ---------
 check_R1() {
     local pair s
-    for pair in "${SKILL_PAIRS[@]:-}"; do
+    for pair in "${SKILL_PAIRS[@]}"; do
         [ -n "$pair" ] || continue
         s="${pair#* }"
         [ -f "$repo/docs/skill-guides/$s.html" ] || {
@@ -311,7 +339,7 @@ check_R1() {
 
 check_R2() {
     local pair s
-    for pair in "${SKILL_PAIRS[@]:-}"; do
+    for pair in "${SKILL_PAIRS[@]}"; do
         [ -n "$pair" ] || continue
         s="${pair#* }"
         { [ -f "$repo/docs/skill-output/$s-usage.html" ] ||
@@ -325,15 +353,16 @@ check_R2() {
 
 check_R4() {
     # naming: SKILL.md name: must be bare and == the skill directory basename.
-    local pair root s any=0 sm name
-    for pair in "${SKILL_PAIRS[@]:-}"; do
+    local pair root s any=0 sm name fm
+    for pair in "${SKILL_PAIRS[@]}"; do
         [ -n "$pair" ] || continue
         root="${pair%% *}"
         s="${pair#* }"
         sm="$repo/$root/skills/$s/SKILL.md"
         [ -f "$sm" ] || continue
         any=1
-        name="$(grep -m1 '^name:' "$sm" | sed 's/^name:[[:space:]'\''" ]*//;s/[[:space:]'\''" ]*$//')"
+        fm="$(_frontmatter "$sm")"
+        name="$(grep -m1 '^name:' <<<"$fm" | sed 's/^name:[[:space:]'\''" ]*//;s/[[:space:]'\''" ]*$//')"
         [ "$name" = "$s" ] || {
             echo "WARN $s ($name)"
             return
@@ -348,7 +377,7 @@ check_R5() {
         echo "N/A"
         return
     }
-    for pair in "${SKILL_PAIRS[@]:-}"; do
+    for pair in "${SKILL_PAIRS[@]}"; do
         [ -n "$pair" ] || continue
         s="${pair#* }"
         grep -qF "skill-guides/$s.html" "$repo/README.md" || {
@@ -409,7 +438,7 @@ fi
 [ -n "$plugins_list" ] || plugins_list="(none)"
 
 skills_list=""
-for pair in "${SKILL_PAIRS[@]:-}"; do
+for pair in "${SKILL_PAIRS[@]}"; do
     [ -n "$pair" ] || continue
     root="${pair%% *}"
     s="${pair#* }"

@@ -74,6 +74,45 @@ assert_exit "$?" 64 "usage exit"
 bash "$sc" "$tmp/does-not-exist" >/dev/null 2>&1
 assert_exit "$?" 66 "missing-dir exit"
 
+# ---- case 5: M7 FAIL — object plugin element with no source key -----------
+r="$tmp/m7-fail"
+mkdir -p "$r/.claude-plugin" "$r/plugins/bar/.claude-plugin" "$r/plugins/bar/skills/baz" \
+    "$r/docs/skill-guides" "$r/docs/skill-output"
+printf '{"plugins":[{"name":"bar"}]}' >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"bar-plugin","version":"0.0.0"}' >"$r/plugins/bar/.claude-plugin/plugin.json"
+printf -- '---\nname: baz\ndescription: test\n---\n' >"$r/plugins/bar/skills/baz/SKILL.md"
+printf '# repo\n' >"$r/README.md"
+out="$(bash "$sc" "$r")"
+code=$?
+assert_line "$out" "M7 FAIL marketplace.json" "m7-fail detail"
+assert_exit "$code" 2 "m7-fail exit"
+
+# ---- case 6: M10 FAIL — plugin.json has an unknown top-level field ---------
+r="$tmp/m10-fail"
+mkdir -p "$r/.claude-plugin" "$r/skills/foo" "$r/docs/skill-guides" "$r/docs/skill-output"
+printf '{"plugins":["./"]}' >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"foo-plugin","version":"0.0.0","skills":["foo"]}' >"$r/.claude-plugin/plugin.json"
+printf -- '---\nname: foo\ndescription: test\n---\n' >"$r/skills/foo/SKILL.md"
+printf '# repo\n' >"$r/README.md"
+out="$(bash "$sc" "$r")"
+code=$?
+assert_line "$out" "M10 FAIL ./.claude-plugin/plugin.json" "m10-fail detail"
+assert_exit "$code" 2 "m10-fail exit"
+
+# ---- case 7: SKILL.md has no real frontmatter, only name:/description: in
+# the body (e.g. a code-block example) -> M4 FAIL, R4 must not false-PASS by
+# matching the body text (agy+codex review, PR #19) -----------------------
+r="$tmp/fm-bug"
+mkdir -p "$r/.claude-plugin" "$r/skills/foo" "$r/docs/skill-guides" "$r/docs/skill-output"
+printf '{"plugins":["./"]}' >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"foo-plugin","version":"0.0.0"}' >"$r/.claude-plugin/plugin.json"
+printf 'No real frontmatter here.\n\nExample:\nname: foo\ndescription: fake\n' >"$r/skills/foo/SKILL.md"
+printf '# repo\n' >"$r/README.md"
+out="$(bash "$sc" "$r")"
+code=$?
+assert_line "$out" "M4 FAIL ./skills/foo/SKILL.md" "fm-bug M4"
+assert_exit "$code" 2 "fm-bug exit"
+
 if [ "$fail" -eq 0 ]; then
     echo "PASS: all structure_check.sh smoke cases"
     exit 0
