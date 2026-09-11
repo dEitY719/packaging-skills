@@ -1,4 +1,4 @@
-# packaging:create — README Template
+# packaging:scaffold-repo — README Template
 
 Written in Step 5 at `<dest>/<repo-name>/README.md`. Placeholders:
 `<repo-name>` = repo name, `<plugin>` = plugin key, `<owner>`/`<host>`

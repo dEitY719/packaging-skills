@@ -220,7 +220,7 @@ if [ ! -s "$mf" ]; then
             plugins_json="$(jq -n --args '$ARGS.positional | map("./plugins/" + .)' "${names[@]}")"
         else
             # No plugins/*/ discovered yet — an empty mono repo is
-            # `packaging:create`'s job, not this skill's (CLAUDE.md).
+            # `packaging:scaffold-repo`'s job, not this skill's (CLAUDE.md).
             # Inventing a plugin name here (e.g. the repo basename) would
             # write a marketplace.json pointing at a plugins/<name>/ that
             # doesn't exist and that M3 (which only iterates the roots

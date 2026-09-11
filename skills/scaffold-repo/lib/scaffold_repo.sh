@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# skills/create/lib/scaffold_repo.sh — deterministic half of packaging:create
+# skills/scaffold-repo/lib/scaffold_repo.sh — deterministic half of packaging:scaffold-repo
 # Steps 3+5: golden split-layout directory tree, all seven harness
 # manifests, package.json, gemini-extension.json, the Hermes/OpenCode
 # integration files, both CI workflows, LICENSE, .gitignore.

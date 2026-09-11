@@ -86,4 +86,4 @@ renders it into the template.
 
 ## Related Skills
 
-`packaging:structure-refactor` (fixes what this finds) · `packaging:rename-repo` (renames the repo to the team convention) · `packaging:create` (builds a new repo from scratch).
+`packaging:structure-refactor` (fixes what this finds) · `packaging:rename-repo` (renames the repo to the team convention) · `packaging:scaffold-repo` (builds a new repo from scratch).

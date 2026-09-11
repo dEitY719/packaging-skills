@@ -1,10 +1,10 @@
 ---
-name: create
+name: scaffold-repo
 description: >-
   Create an agent skill marketplace repo from scratch — manifests for every
   harness, flat skills/, copy-only import, git init, repo create, push. Use
   for "새 플러그인 만들어", "스킬 묶어서 플러그인으로", "skills repo 신규 생성",
-  "/packaging:create <name>". New repos only.
+  "/packaging:scaffold-repo <name>". New repos only.
 license: MIT
 compatibility:
   tools: Read, Write, Edit, Bash, Glob
@@ -45,7 +45,7 @@ Print the `[PLAN]` block per `references/help.md`. `--dry-run` stops here.
 
 ## Step 3: Build the Directory Structure + Mechanical Manifests
 
-Run `skills/create/lib/scaffold_repo.sh --name <repo-name> --plugin <plugin> --dest <dest> --owner <owner> --host <host> --description "<one-line>" --plugin-description "<plugin desc>" --skill <skill> [--skill <skill> ...]` —
+Run `skills/scaffold-repo/lib/scaffold_repo.sh --name <repo-name> --plugin <plugin> --dest <dest> --owner <owner> --host <host> --description "<one-line>" --plugin-description "<plugin desc>" --skill <skill> [--skill <skill> ...]` —
 builds the split golden tree (never `plugins/`; CI rejects one) plus every mechanically-derivable file (manifests, `package.json`, CI workflows, `LICENSE`, `.gitignore`).
 Full list + CI's version/license gate: `references/options.md`, `references/manifest-templates.md`. Aborts, no writes, if the dest exists.
 
@@ -95,4 +95,4 @@ then emit the `[OK]` report from `references/help.md`.
 
 ## Related Skills
 
-`packaging:structure-check` (verify after create) · `packaging:structure-refactor` (fix an existing repo's layout) · `packaging:rename-repo` (rename to the team convention). This skill creates.
+`packaging:structure-check` (verify after scaffold-repo) · `packaging:structure-refactor` (fix an existing repo's layout) · `packaging:rename-repo` (rename to the team convention). This skill scaffolds.

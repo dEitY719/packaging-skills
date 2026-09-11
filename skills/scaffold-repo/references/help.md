@@ -1,9 +1,9 @@
-/packaging:create — Create a new agent skill marketplace repo from scratch
+/packaging:scaffold-repo — Create a new agent skill marketplace repo from scratch
 
 Usage:
-  /packaging:create <repo-name> [skill ...] --src <path> [--dest <path>]
+  /packaging:scaffold-repo <repo-name> [skill ...] --src <path> [--dest <path>]
                         [--host <ghes-host>] [--owner <owner>] [--plugin <name>] [--dry-run]
-  /packaging:create help
+  /packaging:scaffold-repo help
 
 Arguments:
   <repo-name>     Repo name in `<domain>-skills` form (required). A missing
@@ -25,7 +25,7 @@ Flags:
   -h | --help     Print this help and stop. No filesystem or network calls.
 
 Plan output (Step 2, always printed):
-  [PLAN] packaging:create
+  [PLAN] packaging:scaffold-repo
     Repo name   : harness-skills
     Plugin key  : harness
     Destination : ~/para/project/skills/harness-skills/
@@ -58,7 +58,7 @@ Behavior (split golden layout — 1 repo = 1 plugin, dotfiles#1410 P-1):
   9. packaging:structure-check --single -> confirm M1-M10 PASS.
 
 Completion report (Step 9):
-  [OK] packaging:create
+  [OK] packaging:scaffold-repo
     Repo  : https://<host>/<owner>/<repo-name>
     Skills: N copied
     Check : M1-M10 PASS
@@ -75,12 +75,12 @@ Safety:
   - gh auth status is checked before any gh call; never git push --force.
 
 Examples:
-  /packaging:create harness-skills ai-context --src <skills-dir>
-  /packaging:create harness ai-context --src <skills-dir> --dry-run
-  /packaging:create visuals-skills visualize --src <skills-dir> --owner acme
-  /packaging:create help
+  /packaging:scaffold-repo harness-skills ai-context --src <skills-dir>
+  /packaging:scaffold-repo harness ai-context --src <skills-dir> --dry-run
+  /packaging:scaffold-repo visuals-skills visualize --src <skills-dir> --owner acme
+  /packaging:scaffold-repo help
 
 Sister skills:
-  /packaging:structure-check     — read-only audit (run after create)
+  /packaging:structure-check     — read-only audit (run after scaffold-repo)
   /packaging:structure-refactor  — fix an existing repo's structure
   /packaging:rename-repo         — rename a repo to the team convention

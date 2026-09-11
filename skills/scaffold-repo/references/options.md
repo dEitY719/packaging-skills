@@ -1,4 +1,4 @@
-# Options — full flag/argument reference for packaging:create
+# Options — full flag/argument reference for packaging:scaffold-repo
 
 Positional `<repo-name>` (required) + optional `[skill ...]` list, plus the
 flags below. (The same surface, with examples, is in `help.md`.)
