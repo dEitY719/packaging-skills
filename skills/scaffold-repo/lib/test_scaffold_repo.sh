@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# skills/create/lib/test_scaffold_repo.sh — one runnable smoke test for
+# skills/scaffold-repo/lib/test_scaffold_repo.sh — one runnable smoke test for
 # scaffold_repo.sh. Not a framework: asserts, plain bash. Run directly:
-#   bash skills/create/lib/test_scaffold_repo.sh
+#   bash skills/scaffold-repo/lib/test_scaffold_repo.sh
 
 set -euo pipefail
 

@@ -1,4 +1,4 @@
-# packaging:create — Manifest, CI, LICENSE & .gitignore Templates
+# packaging:scaffold-repo — Manifest, CI, LICENSE & .gitignore Templates
 
 The mechanical templates below (every file except `CLAUDE.md`/`GEMINI.md`) are
 implemented verbatim in `lib/scaffold_repo.sh`, run at Step 3. This file is
@@ -23,7 +23,7 @@ template below substitutes that variable, never the raw one. `<repo-name>`,
 | `<Plugin>` | `<plugin>` in PascalCase, hyphens removed | `gh-flow` -> `GhFlow` |
 | `<owner>` / `<host>` | from the flags | `dEitY719` / `github.com` |
 | `<skill>` | one discovered skill directory | `structure-check` |
-| `<first-skill>` | the first skill in sorted order | `create` |
+| `<first-skill>` | the first skill in sorted order | `rename-repo` |
 | `<year>` | `date +%Y` at runtime — never hardcoded | `2026` |
 
 Keep `.claude-plugin/marketplace.json` `name` equal to the repo name 1:1 (same
