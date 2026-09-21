@@ -2,12 +2,13 @@
 name: scaffold-repo
 description: >-
   Create an agent skill marketplace repo from scratch — manifests for every
-  harness, flat skills/, copy-only import, git init, repo create, push. Use
+  harness, flat skills/, copy-only import, git init, repo create. Use
   for "새 플러그인 만들어", "스킬 묶어서 플러그인으로", "skills repo 신규 생성",
   "/packaging:scaffold-repo <name>". New repos only.
 license: MIT
 compatibility:
   tools: Read, Write, Edit, Bash, Glob
+  network: required
 metadata:
   model_recommendation:
     tier: sonnet
