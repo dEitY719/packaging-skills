@@ -1,7 +1,7 @@
 ---
 name: structure-check
 description: >-
-  Audit a claude-plugin marketplace repo's directory layout. Read-only;
+  Audit a claude-plugin marketplace repo's layout. Read-only;
   `packaging:structure-refactor` fixes. Use for "check my claude-plugin
   repo structure", "/packaging:structure-check". Not SKILL.md
   (`authoring:skill-check`) or shell (`authoring:sh-check`).

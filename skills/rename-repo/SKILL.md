@@ -8,6 +8,7 @@ description: >-
 license: MIT
 compatibility:
   tools: Read, Bash, Edit, Write, Grep
+  network: required
 metadata:
   model_recommendation:
     tier: sonnet
