@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# structure_check.sh — deterministic M1-M10 / R1,R2,R4-R8 evaluator for a
+# structure_check.sh — deterministic M1-M10 / R1,R2,R4-R11 evaluator for a
 # claude-plugin marketplace repo.
 #
 # Ported from the SSOT bats fixture at
@@ -37,6 +37,9 @@
 #   R6 <PASS|WARN|N/A>
 #   R7 <PASS|WARN|N/A>
 #   R8 <PASS|WARN|N/A>
+#   R9 <PASS|WARN|N/A> [detail]
+#   R10 <PASS|WARN|N/A> [detail]
+#   R11 <PASS|WARN|N/A> [detail]
 #   SUMMARY <FAIL|WARN|PASS> fail=<n> warn=<n> na=<n>
 #
 # `detail` (when present) names the failing/warning path or subject so
@@ -428,6 +431,56 @@ check_R8() {
     esac
 }
 
+# ---- multi-harness checks (R9-R11) ------------------------------------------
+# Other harnesses (Hermes, `npx skills`, Codex-style) look for skills at the
+# repo-root skills/, reject symlinks in a skill bundle, and share one flat
+# skill namespace. WARN only — a Claude-Code-only repo never FAILs on these.
+check_R9() {
+    [ "$MODE" = single ] && {
+        echo PASS
+        return
+    }
+    case "${#ROOTS[@]}" in
+    0) echo "N/A" ;;
+    1) echo "WARN convert to single: marketplace source \"./\", move ${ROOTS[0]}/skills → skills/, plugin.json → .claude-plugin/ (no skills field — M10)" ;;
+    *) echo "N/A multi-plugin mono: Hermes needs external_dirs/tap path per plugin" ;;
+    esac
+}
+
+check_R10() {
+    # symlinks under every plugin root's skills/, plus the repo-root skills/
+    # in mono mode (the symlink-workaround shape). Symlinks outside skill
+    # trees (e.g. AGENTS.md -> CLAUDE.md) are out of scope.
+    local root dir any=0 links=""
+    local -a dirs=()
+    for root in "${ROOTS[@]}"; do
+        [ -n "$root" ] && dirs+=("$repo/$root/skills")
+    done
+    [ "$MODE" = mono ] && dirs+=("$repo/skills")
+    for dir in "${dirs[@]}"; do
+        [ -e "$dir" ] || [ -L "$dir" ] || continue
+        any=1
+        links="$links $(find "$dir" -type l 2>/dev/null | sed "s|^$repo/||;s|^\./||" | tr '\n' ' ')"
+    done
+    [ "$any" -eq 1 ] || {
+        echo "N/A"
+        return
+    }
+    links="$(tr -s ' ' <<<"$links" | sed 's/^ //;s/ $//')"
+    [ -z "$links" ] && echo PASS || echo "WARN $links"
+}
+
+check_R11() {
+    local dup
+    [ "${#ROOTS[@]}" -ge 2 ] || {
+        echo "N/A"
+        return
+    }
+    # SKILL_PAIRS is "<root> <skill>"; report the first skill seen under 2 roots.
+    dup="$(printf '%s\n' "${SKILL_PAIRS[@]}" | awk 'NF==2 { if (($2 in r) && d=="") d=$2 " (" r[$2] " " $1 ")"; r[$2]=$1 } END { print d }')"
+    [ -z "$dup" ] && echo PASS || echo "WARN $dup"
+}
+
 # ---- emit context lines -----------------------------------------------------
 if [ "$MODE" = single ]; then
     plugins_list="."
@@ -469,12 +522,12 @@ for id in M1 M2 M3 M4 M5 M6 M7 M8 M9 M10; do
     esac
 done
 
-for id in R1 R2 R4 R5 R6 R7 R8; do
+for id in R1 R2 R4 R5 R6 R7 R8 R9 R10 R11; do
     result="$(check_"$id")"
     echo "$id $result"
     case "$result" in
     WARN*) warn=$((warn + 1)) ;;
-    "N/A") na=$((na + 1)) ;;
+    "N/A"*) na=$((na + 1)) ;;
     esac
 done
 

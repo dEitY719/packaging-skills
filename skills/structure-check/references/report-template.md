@@ -29,8 +29,11 @@ claude-plugin structure check — <repo-path>
  WARN  R6 marketplace.json 에 $schema 없음
  PASS  R7 description + plugins[].homepage
  N/A   R8 (README 에 marketplace add 예시 없음)
+ WARN  R9 mono + plugin 1개 — single 로 전환 가능 (루트 skills/)
+ PASS  R10 스킬 트리에 symlink 없음
+ N/A   R11 (plugin root 1개 — 중복 불가)
 
-요약: FAIL (필수 3, 권장 3, N/A 3)
+요약: FAIL (필수 3, 권장 4, N/A 4)
 → Fix: /packaging:structure-refactor <repo-path>  (먼저 dry-run, 이후 --apply)
 
 (install/runtime disclaimer below — always appended, PASS included)
@@ -63,6 +66,9 @@ claude-plugin structure check — <repo-path>
  PASS  R6 $schema 선언
  PASS  R7 description + homepage
  N/A   R8 (README 에 marketplace add 예시 없음)
+ PASS  R9 루트 skills/ (single)
+ PASS  R10 스킬 트리에 symlink 없음
+ N/A   R11 (plugin root 1개 — 중복 불가)
 
 요약: PASS — 표준 구조 준수
 ```
@@ -75,7 +81,7 @@ When the mode was inferred by the ambiguous fallback, append `, 추정` —
 - One line per item: `<RESULT>  <ID> <subject> <note>`.
 - `<RESULT>` is one of `PASS` / `WARN` / `FAIL` / `N/A` (uppercase),
   left-padded so the IDs align.
-- `[필수]` block lists M1-M10 in order; `[권장]` block lists R1-R8 in order.
+- `[필수]` block lists M1-M10 in order; `[권장]` block lists R1-R11 in order.
 - R5 is per-skill: when more than one skill misses a link, emit one R5 line
   naming the first offender (or summarize `<n>개 스킬`); a clean repo → PASS,
   no skills → N/A.

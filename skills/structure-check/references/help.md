@@ -36,7 +36,7 @@ What it checks (read-only — never edits; paths shown for mono | single):
     M9  mono plugin dirs exist                  ./plugins/<name>/ present (mono only)
     M10 plugin.json known fields only           no unsupported key e.g. skills (claude-plugin-jira#65)
 
-  Recommended (R1-R8 — missing → WARN)
+  Recommended (R1-R11 — missing → WARN)
     R1  docs/skill-guides/<skill>.html         per-skill guide
     R2  docs/skill-output/<skill>-usage.{html,md}  per-skill usage sample
     R3  README is "Simple"                     links into docs/, not too long
@@ -45,11 +45,14 @@ What it checks (read-only — never edits; paths shown for mono | single):
     R6  marketplace $schema declared           top-level "$schema" for LSP/IDE
     R7  listing metadata                       description + object plugin homepage
     R8  README add-URL hint                    prefer raw marketplace.json over .git
+    R9  skills at repo-root skills/            mono with 1 plugin → convert to single
+    R10 no symlinks in skill trees             Hermes tap / Windows clones reject them
+    R11 no duplicate skill names across plugins  flat namespace in non-Claude harnesses
 
-M5/M6, M7/M8 and R1-R8 are mode-independent — only the M2/M3/M4/M9/M10 check
+M5/M6, M7/M8 and R1-R8 are mode-independent (R9/R10 look at the mode) — only the M2/M3/M4/M9/M10 check
 paths and skill discovery differ between modes. Each item reports PASS / WARN /
 FAIL / N/A. N/A means the subject does not exist (e.g. a plugin with 0 skills →
-R1/R2/R5 are N/A; M9 → N/A in single mode; M10 → N/A when no valid plugin.json).
+R1/R2/R5 are N/A; M9 → N/A in single mode; R11 → N/A with ≤1 plugin root; M10 → N/A when no valid plugin.json).
 
 Verdict rule: computed by `lib/structure_check.sh`'s own `SUMMARY` line, folded
 with R3's judgment call per SKILL.md Step 3. The "structure-check PASS !=

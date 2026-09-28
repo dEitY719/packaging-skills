@@ -41,7 +41,10 @@ printf '<!-- usage -->' >"$r/docs/skill-output/foo-usage.md"
 printf '# repo\nsee [guide](docs/skill-guides/foo.html) and [usage](docs/skill-output/foo-usage.md)\n' >"$r/README.md"
 out="$(bash "$sc" "$r")"
 code=$?
-assert_line "$out" "SUMMARY PASS fail=0 warn=0 na=2" "single-pass summary"
+assert_line "$out" "SUMMARY PASS fail=0 warn=0 na=3" "single-pass summary"
+assert_line "$out" "R9 PASS" "single-pass R9"
+assert_line "$out" "R10 PASS" "single-pass R10"
+assert_line "$out" "R11 N/A" "single-pass R11"
 assert_exit "$code" 0 "single-pass exit"
 
 # ---- case 2: missing plugin.json (mono) -> M3 FAIL, verdict FAIL, exit 2 ---
@@ -112,6 +115,64 @@ out="$(bash "$sc" "$r")"
 code=$?
 assert_line "$out" "M4 FAIL ./skills/foo/SKILL.md" "fm-bug M4"
 assert_exit "$code" 2 "fm-bug exit"
+
+# ---- case 8: mono with 1 plugin -> R9 WARN (convertible to single) --------
+mono1() {
+    # $1=repo -> mono repo with one plugin "confluence" holding skill "a"
+    mkdir -p "$1/.claude-plugin" "$1/plugins/confluence/.claude-plugin" "$1/plugins/confluence/skills/a"
+    printf '{"plugins":[{"name":"confluence","source":"./plugins/confluence"}]}' >"$1/.claude-plugin/marketplace.json"
+    printf '{"name":"confluence","version":"0.0.0"}' >"$1/plugins/confluence/.claude-plugin/plugin.json"
+    printf -- '---\nname: a\ndescription: test\n---\n' >"$1/plugins/confluence/skills/a/SKILL.md"
+}
+r="$tmp/mono1"
+mono1 "$r"
+out="$(bash "$sc" "$r")"
+grep -q '^R9 WARN convert to single' <<<"$out" || {
+    echo "FAIL: mono1 R9 — expected 'R9 WARN convert to single ...'"
+    echo "$out"
+    fail=1
+}
+assert_line "$out" "R10 PASS" "mono1 R10"
+
+# ---- case 9: mono 1 plugin + root skills/ symlink workaround -> R10 WARN ---
+r="$tmp/mono1-link"
+mono1 "$r"
+mkdir -p "$r/skills"
+ln -s ../plugins/confluence/skills/a "$r/skills/a"
+out="$(bash "$sc" "$r")"
+grep -q '^R9 WARN' <<<"$out" || {
+    echo "FAIL: mono1-link R9 — expected WARN"
+    fail=1
+}
+assert_line "$out" "R10 WARN skills/a" "mono1-link R10"
+
+# ---- case 10: mono 2 plugins sharing a skill name -> R9 N/A, R11 WARN -------
+r="$tmp/mono2-dup"
+mkdir -p "$r/.claude-plugin"
+printf '{"plugins":["./plugins/p1","./plugins/p2"]}' >"$r/.claude-plugin/marketplace.json"
+for p in p1 p2; do
+    mkdir -p "$r/plugins/$p/.claude-plugin" "$r/plugins/$p/skills/dup"
+    printf '{"name":"%s","version":"0.0.0"}' "$p" >"$r/plugins/$p/.claude-plugin/plugin.json"
+    printf -- '---\nname: dup\ndescription: test\n---\n' >"$r/plugins/$p/skills/dup/SKILL.md"
+done
+out="$(bash "$sc" "$r")"
+grep -q '^R9 N/A multi-plugin mono' <<<"$out" || {
+    echo "FAIL: mono2-dup R9 — expected 'R9 N/A multi-plugin mono ...'"
+    echo "$out"
+    fail=1
+}
+assert_line "$out" "R11 WARN dup (plugins/p1 plugins/p2)" "mono2-dup R11"
+
+# ---- case 11: symlink only outside skill trees (AGENTS.md) -> R10 PASS -----
+r="$tmp/agents-link"
+mkdir -p "$r/.claude-plugin" "$r/skills/foo"
+printf '{"plugins":["./"]}' >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"foo-plugin","version":"0.0.0"}' >"$r/.claude-plugin/plugin.json"
+printf -- '---\nname: foo\ndescription: test\n---\n' >"$r/skills/foo/SKILL.md"
+printf '# ctx\n' >"$r/CLAUDE.md"
+ln -s CLAUDE.md "$r/AGENTS.md"
+out="$(bash "$sc" "$r")"
+assert_line "$out" "R10 PASS" "agents-link R10"
 
 if [ "$fail" -eq 0 ]; then
     echo "PASS: all structure_check.sh smoke cases"
