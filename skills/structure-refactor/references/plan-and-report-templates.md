@@ -4,8 +4,8 @@
 
 `lib/refactor_apply.sh` runs Apply rules 1 and 3-8 below — every deterministic
 operation except rule 2 (see its note). It reuses
-`../structure-check/lib/structure_check.sh` for mode-aware plugin/skill
-discovery instead of re-deriving it, and `../rename-repo/lib/parse_remote.sh`
+`structure-check`'s `structure_check.sh` for mode-aware plugin/skill
+discovery instead of re-deriving it, and `rename-repo`'s `parse_remote.sh`
 for host/owner/repo parsing (Pages, R5 link URLs) — one implementation each,
 not a third prose spec of the same rules (packaging-skills#8).
 
@@ -289,13 +289,13 @@ A no-op run (nothing to change) still reports `[OK] refactor complete` with
   history — for the one move this skill still leaves to a human (M4; Apply
   rule 2's note), not something `lib/refactor_apply.sh` itself does today.
 - **Always** discover plugins/skills by scan (repo-agnostic) — the spec in
-  `../structure-check/references/structure-spec.md` is abstract, never
+  `packaging:structure-check`'s `references/structure-spec.md` is abstract, never
   hardcoded to one repo's names.
 - **Always** treat an already-standard repo (within scope) as a no-op —
   idempotency is the skill's whole safety story, not an aspiration.
-- **Assumes** `structure-check` and `rename-repo` are installed as sibling
-  skill directories (`lib/refactor_apply.sh` shells out to
-  `../../structure-check/lib/structure_check.sh` and
-  `../../rename-repo/lib/parse_remote.sh` by relative path). True for every
-  install of this plugin today (`CLAUDE.md`: one plugin, four co-installed
-  skills) — if that ever changes, these two paths are the first thing to fix.
+- **Self-contained**: `lib/refactor_apply.sh` runs byte-for-byte copies of
+  `structure-check`'s `structure_check.sh` and `rename-repo`'s
+  `parse_remote.sh` from `lib/vendor/`, so installing this skill alone (a
+  Hermes tap, `npx skills add`) still works (packaging-skills#29). Edit the
+  originals, then re-copy — the repo's `tests/vendor-drift.sh` fails CI until
+  the copies match.
