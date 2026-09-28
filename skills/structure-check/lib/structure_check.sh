@@ -451,23 +451,22 @@ check_R10() {
     # symlinks under every plugin root's skills/, plus the repo-root skills/
     # in mono mode (the symlink-workaround shape). Symlinks outside skill
     # trees (e.g. AGENTS.md -> CLAUDE.md) are out of scope.
-    local root dir any=0 links=""
-    local -a dirs=()
+    local root dir any=0
+    local -a dirs=() links=()
     for root in "${ROOTS[@]}"; do
-        [ -n "$root" ] && dirs+=("$repo/$root/skills")
+        dirs+=("$repo/$root/skills")
     done
     [ "$MODE" = mono ] && dirs+=("$repo/skills")
     for dir in "${dirs[@]}"; do
         [ -e "$dir" ] || [ -L "$dir" ] || continue
         any=1
-        links="$links $(find "$dir" -type l 2>/dev/null | sed "s|^$repo/||;s|^\./||" | tr '\n' ' ')"
+        mapfile -t -O "${#links[@]}" links < <(find "$dir" -type l 2>/dev/null | sed "s|^$repo/||;s|^\./||")
     done
     [ "$any" -eq 1 ] || {
         echo "N/A"
         return
     }
-    links="$(tr -s ' ' <<<"$links" | sed 's/^ //;s/ $//')"
-    [ -z "$links" ] && echo PASS || echo "WARN $links"
+    [ "${#links[@]}" -eq 0 ] && echo PASS || echo "WARN ${links[*]}"
 }
 
 check_R11() {
