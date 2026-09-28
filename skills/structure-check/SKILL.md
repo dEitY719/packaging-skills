@@ -44,14 +44,14 @@ script must agree.
 Record the detected mode, plugin-root list, and skill list for the report
 header and the per-skill recommended checks (R1/R2/R5).
 
-## Step 3: Evaluate M1-M10 and R1-R8
+## Step 3: Evaluate M1-M10 and R1-R11
 
 Run `bash lib/structure_check.sh "$REPO" ${MODE_FLAG:-}` — the script sits
 next to this SKILL.md (resolve its path from where this skill is installed,
 not from `$REPO`). `$REPO` = Step 1's resolved path; `$MODE_FLAG` =
 `--single`/`--mono` if forced, else omitted. It prints `MODE`/`PLUGINS`/
 `SKILLS`/`GIT` context lines, one `<ID> <RESULT> [detail]` line for every
-M1-M10 and R1/R2/R4-R8 item, and a `SUMMARY` line — see its header comment
+M1-M10 and R1/R2/R4-R11 item, and a `SUMMARY` line — see its header comment
 for the exact contract. Mandatory items FAIL when missing, including M7-M9
 marketplace `plugins[].source` install integrity and M10 `plugin.json`
 known-field schema (dEitY719/dotfiles#1084).

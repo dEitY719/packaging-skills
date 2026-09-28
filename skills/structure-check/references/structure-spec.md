@@ -167,6 +167,9 @@ change.
 | R6 | marketplace `$schema` declared | `marketplace.json` lacks a top-level `$schema` |
 | R7 | listing metadata | no top-level `description`, OR an object plugin lacks `homepage` |
 | R8 | README add-URL hint | a `/plugin marketplace add` example uses a `.git` clone URL |
+| R9 | skills at the repo-root `skills/` | `mono` mode with **exactly one** plugin root (convertible to `single`) |
+| R10 | no symlinks in skill trees | any symlink under a plugin root's `skills/`, or (mono) under the repo-root `skills/` |
+| R11 | no duplicate skill names across plugins | the same `<skill>` basename under two different plugin roots |
 
 **R3 README "Simple" heuristic** — PASS only if all hold; any miss → WARN:
 - at least one link into a `docs/` sub-document (evidence of progressive split);
@@ -219,6 +222,37 @@ clone needed — the claude-plugin-jira#61 success pattern) over a `.git` clone 
 example → **WARN**; a raw-`marketplace.json` (or other) URL → **PASS**; no
 add example, or no README → **N/A** (both forms are valid — this is a nudge,
 not a hard rule).
+
+**R9–R11 multi-harness rules** — Claude Code namespaces skills per plugin and
+installs from any layout; other harnesses (Hermes Agent, `npx skills`,
+Codex-style) do not. These three are WARN only: a Claude-Code-only repo never
+FAILs on them, and the verdict rollup is unchanged.
+
+**R9 root `skills/` location** — `single` mode → **PASS** (the
+`anthropics/skills` / `obra/superpowers` shape; Hermes tap's default `path` is
+`skills/`). `mono` with exactly one plugin root → **WARN**, detail `convert to
+single: marketplace source "./", move plugins/<p>/skills → skills/, plugin.json
+→ .claude-plugin/`. No `skills` array is needed after the move (the root
+`skills/` is auto-scanned) and adding one to `plugin.json` is an M10 FAIL.
+`mono` with two or more plugin roots → **N/A** (a normal multi-plugin layout;
+detail notes Hermes needs an `external_dirs` entry / tap `path` per plugin).
+`mono` with zero plugin roots → **N/A** (M2 owns it).
+
+**R10 no symlinks in skill trees** — `find <root>/skills -type l` over every
+plugin root, plus the repo-root `skills/` in `mono` mode (the "root `skills/`
+symlink workaround" shape). Any hit → **WARN**, detail lists the paths
+relative to the repo. Harmless for a Claude Code local install, but the Hermes
+GitHub tap rejects mode `120000` entries, a Windows clone
+(`core.symlinks=false`) turns them into text files, and Hermes resolves `../`
+relative paths from the link location. Symlinks outside skill trees (e.g. a
+root `AGENTS.md -> CLAUDE.md`) are not checked. No skill tree at all → **N/A**.
+
+**R11 no duplicate skill names across plugins** — Hermes/Codex/OpenCode share
+one flat skill namespace; Hermes refuses to load an ambiguous name. The same
+skill basename under two plugin roots → **WARN**, detail
+`<skill> (<root1> <root2>)` for the first duplicate. One plugin root or fewer →
+**N/A** (duplicates within one plugin are impossible on a filesystem).
+Cross-repo duplicates are out of scope for a single-repo audit.
 
 ## N/A rule
 
