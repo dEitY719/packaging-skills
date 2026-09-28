@@ -146,6 +146,16 @@ grep -q '^R9 WARN' <<<"$out" || {
 }
 assert_line "$out" "R10 WARN skills/a" "mono1-link R10"
 
+# ---- case 9b: root skills/ is itself a symlink (live and dangling) -> R10 WARN
+# find -P reports a symlinked starting point as -type l itself (PR #28 review).
+for target in plugins/confluence/skills nowhere; do
+    r="$tmp/mono1-dirlink-${target##*/}"
+    mono1 "$r"
+    ln -s "$target" "$r/skills"
+    out="$(bash "$sc" "$r")"
+    assert_line "$out" "R10 WARN skills" "mono1-dirlink($target) R10"
+done
+
 # ---- case 10: mono 2 plugins sharing a skill name -> R9 N/A, R11 WARN -------
 r="$tmp/mono2-dup"
 mkdir -p "$r/.claude-plugin"
