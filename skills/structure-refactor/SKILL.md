@@ -40,9 +40,9 @@ fall back to `mv`). Dirty tree → show the plan, require explicit `--apply`.
 
 ## Step 2: Detect Mode + Compute Plugin Roots + Evaluate Current ↔ Target
 
-Read `../structure-check/references/structure-spec.md` (the SSOT this skill
-shares with `structure-check` — one spec, not two drifting copies) for layout
-modes, mode detection/override, and mandatory items by mode.
+Read `packaging:structure-check`'s `references/structure-spec.md` (the SSOT
+this skill shares with `structure-check` — one spec, not two drifting copies)
+for layout modes, mode detection/override, and mandatory items by mode.
 
 1. **Detect the current mode** (priority: flag → manifest `plugins[].source`
    → filesystem → default `mono`).

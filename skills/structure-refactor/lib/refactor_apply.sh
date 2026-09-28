@@ -3,12 +3,14 @@
 # for the M1,M3,M5-M7,M10 / R1,R2,R4,R5 fixes over a claude-plugin marketplace
 # repo (packaging-skills#8).
 #
-# Reuses ../../structure-check/lib/structure_check.sh for mode-aware plugin/
-# skill discovery (its MODE/PLUGINS/SKILLS/GIT context lines) instead of
+# Reuses structure-check's structure_check.sh for mode-aware plugin/skill
+# discovery (its MODE/PLUGINS/SKILLS/GIT context lines) instead of
 # re-deriving that logic here — one implementation scores and fixes a repo,
 # not two prose specs (packaging-skills#8's Check-12 FAIL). It also reuses
-# ../../rename-repo/lib/parse_remote.sh for host/owner/repo parsing (Pages
-# activation + R5 link URLs), the same helper packaging:rename-repo uses.
+# rename-repo's parse_remote.sh for host/owner/repo parsing (Pages
+# activation + R5 link URLs). Both are vendored byte-for-byte into
+# lib/vendor/ so a single-skill install still runs (packaging-skills#29);
+# tests/vendor-drift.sh fails if a copy drifts from its original.
 #
 # R1's real guide content comes from delegating to /visuals:visualize, an AI
 # skill invocation that cannot live in a shell script. SKILL.md Step 4 must
@@ -48,8 +50,8 @@
 set -u
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CHECK="$HERE/../../structure-check/lib/structure_check.sh"
-PARSE_REMOTE="$HERE/../../rename-repo/lib/parse_remote.sh"
+CHECK="$HERE/vendor/structure_check.sh"
+PARSE_REMOTE="$HERE/vendor/parse_remote.sh"
 
 usage() {
     echo "usage: refactor_apply.sh <repo-path> --mode single|mono --scope mp|op [--apply]" >&2
