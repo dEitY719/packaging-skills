@@ -281,7 +281,10 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
             mkdir -p "$repo/$(dirname "$dst")"
             if ! { [ "$is_git" -eq 1 ] && git -C "$repo" mv -- "$src" "$dst" 2>/dev/null; } &&
                 ! mv -- "$repo/$src" "$repo/$dst"; then
-                echo "warn: M11 move failed: $src → $dst — stopping the conversion here" >&2
+                # ponytail: no automatic rollback — the moves already made stay
+                # (visible as renames in `git status`); undo them by hand or
+                # with `git reset --hard` on a clean-before tree.
+                echo "warn: M11 move failed: $src → $dst — conversion stopped half-way; earlier moves are kept (see git status)" >&2
                 ok=0
                 break
             fi
@@ -323,6 +326,12 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
                 # "plugins/<p>/" mention (e.g. a comment naming the old root)
                 # needs a human reading of what it now means.
                 grep -qF -- "$pr/" "$repo/$f" && echo "warn: $f still mentions $pr/ — review by hand" >&2
+            done
+            # Files outside the rewrite scope (docs, CI, configs) are only
+            # reported, never rewritten — their meaning needs a human.
+            (cd "$repo" && grep -rlIF --exclude-dir=.git -- "$pr/" . 2>/dev/null) | while IFS= read -r f; do
+                case " ${ref_files[*]} " in *" ${f#./} "*) continue ;; esac
+                echo "warn: ${f#./} mentions $pr/ (not auto-fixed) — review by hand" >&2
             done
             converted=1
         fi

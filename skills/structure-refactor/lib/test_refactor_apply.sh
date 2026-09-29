@@ -357,6 +357,8 @@ printf -- '---\nname: b\ndescription: t\n---\n' >"$pp/skills/b/SKILL.md"
 printf '# parents[3] -> plugins/conf/scripts/domains.py\n' >"$pp/skills/a/scripts/run.py"
 printf 'DOMAINS = []\n' >"$pp/scripts/domains.py"
 printf '# m\nln -s plugins/conf/skills/a ~/.claude/skills/a\n' >"$r/README.md"
+mkdir -p "$r/docs"
+printf 'see plugins/conf/skills/a\n' >"$r/docs/notes.md"
 git -C "$r" add -A && git -C "$r" -c user.email=t@t -c user.name=t commit -qm init
 
 out="$(bash "$ra" "$r" --mode single --scope mp)"
@@ -373,8 +375,13 @@ assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 ren
 out="$(bash "$ra" "$r" --mode mono --scope mp)"
 assert_no_line "$out" "[M11]" "mono-one --mode mono must not convert"
 
-out="$(bash "$ra" "$r" --mode single --scope mp --apply)"
+out="$(bash "$ra" "$r" --mode single --scope mp --apply 2>"$tmp/m11.err")"
 assert_line "$out" "SUMMARY applied=1 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=1" "mono-one apply summary"
+assert_line "$(cat "$tmp/m11.err")" "warn: docs/notes.md mentions plugins/conf/ (not auto-fixed) — review by hand" "mono-one out-of-scope ref warned"
+grep -qF "plugins/conf/skills/a" "$r/docs/notes.md" || {
+    echo "FAIL: mono-one — out-of-scope docs file must not be rewritten"
+    fail=1
+}
 for f in skills/a/SKILL.md skills/b/SKILL.md .claude-plugin/plugin.json scripts/domains.py; do
     assert_file "$r/$f" "mono-one apply moved $f"
 done
