@@ -32,6 +32,8 @@ Positional `[repo-path]` (default = current dir). Full flag table:
 - `--apply` — execute changes. Absent → dry-run (plan only, no writes).
 - `--mandatory` / `--mp` (default scope) — M1-M10 only; `--recommended` /
   `--op` — M1-M10 + R1-R5 (R6-R8 stay audit-only WARNs, never auto-applied).
+  M11 (mono → repo-root `skills/`) is audit-only too: it needs a layout
+  conversion, which refactor never performs (Step 2 conversion guard).
 - `--single` / `--mono` — force the **target** layout mode, overriding Step 2
   auto-detection (last one wins). `--mp` + `--op` together → error, stop.
 

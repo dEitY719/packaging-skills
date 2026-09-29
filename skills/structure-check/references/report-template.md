@@ -2,7 +2,7 @@
 
 Use this exact format when outputting the audit report.
 
-### Example — mono (multi-plugin bundle)
+### Example — mono (FAILs M11: 1 repo = 1 plugin, skills at root `skills/`)
 
 ```
 claude-plugin structure check — <repo-path>
@@ -19,6 +19,7 @@ claude-plugin structure check — <repo-path>
  PASS  M8 source shape 유효
  PASS  M9 plugins/visuals/ 실재
  N/A   M10 (plugin.json 없음 — M3 소관)
+ FAIL  M11 mono — 루트 skills/ 로 이동 필요 (single 전환: source "./", plugins/visuals/skills → skills/)
 
 [권장]
  WARN  R1 docs/skill-guides/visualize.html 없음
@@ -29,11 +30,10 @@ claude-plugin structure check — <repo-path>
  WARN  R6 marketplace.json 에 $schema 없음
  PASS  R7 description + plugins[].homepage
  N/A   R8 (README 에 marketplace add 예시 없음)
- WARN  R9 mono + plugin 1개 — single 로 전환 가능 (루트 skills/)
  PASS  R10 스킬 트리에 symlink 없음
  N/A   R11 (plugin root 1개 — 중복 불가)
 
-요약: FAIL (필수 3, 권장 4, N/A 4)
+요약: FAIL (필수 4, 권장 3, N/A 4)
 → Fix: /packaging:structure-refactor <repo-path>  (먼저 dry-run, 이후 --apply)
 
 (install/runtime disclaimer below — always appended, PASS included)
@@ -56,6 +56,7 @@ claude-plugin structure check — <repo-path>
  PASS  M8 source shape 유효
  N/A   M9 (single — plugins/ 레이아웃 아님)
  PASS  M10 plugin.json 필드 스키마 준수 (미지원 필드 없음)
+ PASS  M11 루트 skills/ (single)
 
 [권장]
  PASS  R1 docs/skill-guides/<s>.html (4개 모두 존재)
@@ -66,7 +67,6 @@ claude-plugin structure check — <repo-path>
  PASS  R6 $schema 선언
  PASS  R7 description + homepage
  N/A   R8 (README 에 marketplace add 예시 없음)
- PASS  R9 루트 skills/ (single)
  PASS  R10 스킬 트리에 symlink 없음
  N/A   R11 (plugin root 1개 — 중복 불가)
 
@@ -81,7 +81,7 @@ When the mode was inferred by the ambiguous fallback, append `, 추정` —
 - One line per item: `<RESULT>  <ID> <subject> <note>`.
 - `<RESULT>` is one of `PASS` / `WARN` / `FAIL` / `N/A` (uppercase),
   left-padded so the IDs align.
-- `[필수]` block lists M1-M10 in order; `[권장]` block lists R1-R11 in order.
+- `[필수]` block lists M1-M11 in order; `[권장]` block lists R1-R8, R10, R11 in order.
 - R5 is per-skill: when more than one skill misses a link, emit one R5 line
   naming the first offender (or summarize `<n>개 스킬`); a clean repo → PASS,
   no skills → N/A.

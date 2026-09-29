@@ -42,7 +42,7 @@ printf '# repo\nsee [guide](docs/skill-guides/foo.html) and [usage](docs/skill-o
 out="$(bash "$sc" "$r")"
 code=$?
 assert_line "$out" "SUMMARY PASS fail=0 warn=0 na=3" "single-pass summary"
-assert_line "$out" "R9 PASS" "single-pass R9"
+assert_line "$out" "M11 PASS" "single-pass M11"
 assert_line "$out" "R10 PASS" "single-pass R10"
 assert_line "$out" "R11 N/A" "single-pass R11"
 assert_exit "$code" 0 "single-pass exit"
@@ -116,7 +116,7 @@ code=$?
 assert_line "$out" "M4 FAIL ./skills/foo/SKILL.md" "fm-bug M4"
 assert_exit "$code" 2 "fm-bug exit"
 
-# ---- case 8: mono with 1 plugin -> R9 WARN (convertible to single) --------
+# ---- case 8: mono with 1 plugin -> M11 FAIL (convert to single), exit 2 ----
 mono1() {
     # $1=repo -> mono repo with one plugin "confluence" holding skill "a"
     mkdir -p "$1/.claude-plugin" "$1/plugins/confluence/.claude-plugin" "$1/plugins/confluence/skills/a"
@@ -127,11 +127,17 @@ mono1() {
 r="$tmp/mono1"
 mono1 "$r"
 out="$(bash "$sc" "$r")"
-grep -q '^R9 WARN convert to single' <<<"$out" || {
-    echo "FAIL: mono1 R9 — expected 'R9 WARN convert to single ...'"
+code=$?
+grep -q '^M11 FAIL convert to single' <<<"$out" || {
+    echo "FAIL: mono1 M11 — expected 'M11 FAIL convert to single ...'"
     echo "$out"
     fail=1
 }
+grep -q '^SUMMARY FAIL' <<<"$out" || {
+    echo "FAIL: mono1 summary — expected SUMMARY FAIL"
+    fail=1
+}
+assert_exit "$code" 2 "mono1 exit"
 assert_line "$out" "R10 PASS" "mono1 R10"
 
 # ---- case 9: mono 1 plugin + root skills/ symlink workaround -> R10 WARN ---
@@ -140,8 +146,8 @@ mono1 "$r"
 mkdir -p "$r/skills"
 ln -s ../plugins/confluence/skills/a "$r/skills/a"
 out="$(bash "$sc" "$r")"
-grep -q '^R9 WARN' <<<"$out" || {
-    echo "FAIL: mono1-link R9 — expected WARN"
+grep -q '^M11 FAIL' <<<"$out" || {
+    echo "FAIL: mono1-link M11 — expected FAIL"
     fail=1
 }
 assert_line "$out" "R10 WARN skills/a" "mono1-link R10"
@@ -156,7 +162,7 @@ for target in plugins/confluence/skills nowhere; do
     assert_line "$out" "R10 WARN skills" "mono1-dirlink($target) R10"
 done
 
-# ---- case 10: mono 2 plugins sharing a skill name -> R9 N/A, R11 WARN -------
+# ---- case 10: mono 2 plugins sharing a skill name -> M11 FAIL, R11 WARN -----
 r="$tmp/mono2-dup"
 mkdir -p "$r/.claude-plugin"
 printf '{"plugins":["./plugins/p1","./plugins/p2"]}' >"$r/.claude-plugin/marketplace.json"
@@ -166,8 +172,11 @@ for p in p1 p2; do
     printf -- '---\nname: dup\ndescription: test\n---\n' >"$r/plugins/$p/skills/dup/SKILL.md"
 done
 out="$(bash "$sc" "$r")"
-grep -q '^R9 N/A multi-plugin mono' <<<"$out" || {
-    echo "FAIL: mono2-dup R9 — expected 'R9 N/A multi-plugin mono ...'"
+code=$?
+assert_line "$out" "M11 FAIL split into one repo per plugin, each with root skills/ (plugins/p1 plugins/p2)" "mono2-dup M11"
+assert_exit "$code" 2 "mono2-dup exit"
+grep -q '^SUMMARY FAIL' <<<"$out" || {
+    echo "FAIL: mono2-dup summary — expected SUMMARY FAIL"
     echo "$out"
     fail=1
 }

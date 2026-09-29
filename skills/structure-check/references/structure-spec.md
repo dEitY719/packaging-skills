@@ -12,9 +12,12 @@ repo-specific.
 
 ## Layout modes
 
-The official plugin spec allows two valid layouts. **`single` is the more
-common one** in the wild (Superpowers, most OSS/personal plugins); `mono` is
-the team standard (`anthropics/claude-code` bundles 13 plugins this way).
+The official plugin spec allows two layouts, and both are still **detected**.
+**Owner policy: 1 repo = 1 plugin, skills at the repo-root `skills/<s>/`** —
+so `single` is the only passing layout and any `mono` layout FAILs M11
+(below). `single` is also the more common shape in the wild (Superpowers,
+most OSS/personal plugins); `mono` is what `anthropics/claude-code` uses to
+bundle 13 plugins.
 
 | | `mono` | `single` |
 |---|---|---|
@@ -84,11 +87,13 @@ checked **path** changes (M5/M6 are mode-independent).
 | M8 | each source has a valid shape | `.claude-plugin/marketplace.json` | **same** |
 | M9 | declared mono plugin dirs exist on disk | `plugins/<name>/` per source | N/A (single) |
 | M10 | plugin.json has only known top-level fields | `plugins/<p>/.claude-plugin/plugin.json` | root `.claude-plugin/plugin.json` |
+| M11 | skills at the repo-root `skills/` | always FAIL (N/A with 0 plugin roots) | PASS |
 
 FAIL conditions: M1/M3 → missing or invalid JSON; M2 → 0 plugin roots;
 M4 → missing or frontmatter lacks `name`/`description`; M5 → either dir
 missing; M6 → missing; M7-M9 → see "marketplace source integrity" below;
-M10 → see "plugin.json known fields" below.
+M10 → see "plugin.json known fields" below; M11 → see "repo-root `skills/`
+location" below.
 
 ## marketplace `plugins[].source` integrity (M7-M9, dEitY719/dotfiles#1084)
 
@@ -155,6 +160,22 @@ with this plugin at `lib/structure_check.sh`'s `KNOWN_PLUGIN_JSON_FIELDS` —
 bump it (with a "last verified" date) on each Claude Code manifest-schema
 change.
 
+## Repo-root `skills/` location (M11)
+
+**Policy: 1 repo = 1 plugin, skills at the repo-root `skills/<s>/`** (the
+`anthropics/skills` / `obra/superpowers` shape; Hermes tap's default `path`
+is `skills/`, and `npx skills` / Codex-style harnesses look there too).
+
+**M11** — `single` mode → **PASS**. `mono` with exactly one plugin root →
+**FAIL**, detail `convert to single: marketplace source "./", move
+plugins/<p>/skills → skills/, plugin.json → .claude-plugin/ (no skills field —
+M10)`. No `skills` array is needed after the move (the root `skills/` is
+auto-scanned) and adding one to `plugin.json` is an M10 FAIL. `mono` with two
+or more plugin roots → **FAIL**, detail `split into one repo per plugin, each
+with root skills/ (<plugin roots>)`. `mono` with zero plugin roots → **N/A**
+(M2 owns it). `structure-refactor` never auto-fixes M11 — it is a layout
+conversion, which refactor does not perform.
+
 ## Recommended items (WARN when missing)
 
 | ID | Item | WARN condition |
@@ -167,7 +188,6 @@ change.
 | R6 | marketplace `$schema` declared | `marketplace.json` lacks a top-level `$schema` |
 | R7 | listing metadata | no top-level `description`, OR an object plugin lacks `homepage` |
 | R8 | README add-URL hint | a `/plugin marketplace add` example uses a `.git` clone URL |
-| R9 | skills at the repo-root `skills/` | `mono` mode with **exactly one** plugin root (convertible to `single`) |
 | R10 | no symlinks in skill trees | any symlink under a plugin root's `skills/`, or (mono) under the repo-root `skills/` |
 | R11 | no duplicate skill names across plugins | the same `<skill>` basename under two different plugin roots |
 
@@ -223,20 +243,11 @@ example → **WARN**; a raw-`marketplace.json` (or other) URL → **PASS**; no
 add example, or no README → **N/A** (both forms are valid — this is a nudge,
 not a hard rule).
 
-**R9–R11 multi-harness rules** — Claude Code namespaces skills per plugin and
+**R10–R11 multi-harness rules** — Claude Code namespaces skills per plugin and
 installs from any layout; other harnesses (Hermes Agent, `npx skills`,
-Codex-style) do not. These three are WARN only: a Claude-Code-only repo never
-FAILs on them, and the verdict rollup is unchanged.
-
-**R9 root `skills/` location** — `single` mode → **PASS** (the
-`anthropics/skills` / `obra/superpowers` shape; Hermes tap's default `path` is
-`skills/`). `mono` with exactly one plugin root → **WARN**, detail `convert to
-single: marketplace source "./", move plugins/<p>/skills → skills/, plugin.json
-→ .claude-plugin/`. No `skills` array is needed after the move (the root
-`skills/` is auto-scanned) and adding one to `plugin.json` is an M10 FAIL.
-`mono` with two or more plugin roots → **N/A** (a normal multi-plugin layout;
-detail notes Hermes needs an `external_dirs` entry / tap `path` per plugin).
-`mono` with zero plugin roots → **N/A** (M2 owns it).
+Codex-style) do not. These two are WARN only: a Claude-Code-only repo never
+FAILs on them, and the verdict rollup is unchanged. (The repo-root `skills/`
+location rule is mandatory: M11.)
 
 **R10 no symlinks in skill trees** — `find <root>/skills -type l` over every
 plugin root, plus the repo-root `skills/` in `mono` mode (the "root `skills/`

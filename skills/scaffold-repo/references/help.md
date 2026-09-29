@@ -55,13 +55,13 @@ Behavior (split golden layout — 1 repo = 1 plugin, dotfiles#1410 P-1):
   6. git init + checkout -B main.
   7. gh repo create (after gh auth status + user confirmation).
   8. git add + commit "feat: init <repo-name>" + push (after confirmation).
-  9. packaging:structure-check --single -> confirm M1-M10 PASS.
+  9. packaging:structure-check --single -> confirm M1-M11 PASS.
 
 Completion report (Step 9):
   [OK] packaging:scaffold-repo
     Repo  : https://<host>/<owner>/<repo-name>
     Skills: N copied
-    Check : M1-M10 PASS
+    Check : M1-M11 PASS
     Next  : /packaging:structure-check <dest>/<repo-name> --single  (re-verify)
             docs/skill-guides/ 시각 가이드 추가 -> /visuals:visualize
 

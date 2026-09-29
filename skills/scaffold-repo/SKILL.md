@@ -83,7 +83,7 @@ origin git@<host>:<owner>/<repo-name>.git`. On GHES failure, use the web UI.
 
 ## Step 9: Verify & Report
 
-Run `packaging:structure-check <dest>/<repo-name> --single`, confirm M1-M10 PASS,
+Run `packaging:structure-check <dest>/<repo-name> --single`, confirm M1-M11 PASS,
 then emit the `[OK]` report from `references/help.md`.
 
 ## Constraints
