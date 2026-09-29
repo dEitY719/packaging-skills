@@ -216,11 +216,16 @@ _replace_literal() {
 # whole run: the other M/R fixes are computed against the post-conversion
 # layout, so re-run with --mode single afterwards. Never overwrites an
 # existing destination.
-det_out="$(bash "$CHECK" "$repo" 2>/dev/null)"
-det_mode="$(grep -m1 '^MODE ' <<<"$det_out" | cut -d' ' -f2)"
-det_plugins="$(grep -m1 '^PLUGINS ' <<<"$det_out" | cut -d' ' -f2-)"
+# Detection re-runs the checker without a mode flag, so only pay for it when
+# the target is single.
+det_mode="" det_plugins="(none)"
+if [ "$mode" = single ]; then
+    det_out="$(bash "$CHECK" "$repo" 2>/dev/null)"
+    det_mode="$(grep -m1 '^MODE ' <<<"$det_out" | cut -d' ' -f2)"
+    det_plugins="$(grep -m1 '^PLUGINS ' <<<"$det_out" | cut -d' ' -f2-)"
+fi
 read -r -a _det_names <<<"$det_plugins"
-if [ "$mode" = single ] && [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" != "(none)" ]; then
+if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" != "(none)" ]; then
     p="${_det_names[0]}"
     pr="plugins/$p"
     ROOTS=("$pr")
