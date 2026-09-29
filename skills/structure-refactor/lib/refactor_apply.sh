@@ -216,7 +216,7 @@ _replace_bare_root_in_comments() {
     awk -v from="$from" '/^[[:space:]]*(#|\/\/)/ {
         out = ""; s = $0
         while ((i = index(s, from)) > 0) {
-            if (substr(s, i + length(from), 1) ~ /[A-Za-z0-9._*-]/) out = out substr(s, 1, i - 1 + length(from))
+            if (substr(s, i + length(from), 1) ~ /[-A-Za-z0-9._*]/) out = out substr(s, 1, i - 1 + length(from))
             else out = out substr(s, 1, i - 1) "repo root"
             s = substr(s, i + length(from))
         }
@@ -275,7 +275,10 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
     # reference kind is in references/plan-and-report-templates.md (#35).
     ref_files=()
     while IFS= read -r f; do ref_files+=("$f"); done < <(
-        cd "$repo" && grep -rlIF -- "$pr/" "$pr/skills" "$pr/scripts" README.md docs .github 2>/dev/null
+        cd "$repo" || exit
+        ref_scope=()
+        for d in "$pr/skills" "$pr/scripts" README.md docs .github; do [ -e "$d" ] && ref_scope+=("$d"); done
+        [ "${#ref_scope[@]}" -eq 0 ] || grep -rlIF -- "$pr/" "${ref_scope[@]}"
     )
 
     add_plan "[M11] convert  mono → single ($pr)"
