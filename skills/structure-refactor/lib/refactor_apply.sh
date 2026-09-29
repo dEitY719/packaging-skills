@@ -291,6 +291,9 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
                 # returns to its pre-run layout (#34).
                 rb_ok=1
                 for ((j = i - 2; j >= 0; j -= 2)); do
+                    # Recreate the source parent first: a reverse move into a
+                    # vanished parent would fail for git mv and mv alike.
+                    mkdir -p "$repo/$(dirname "${moves[j]}")"
                     _mv "${moves[j + 1]}" "${moves[j]}" || {
                         rb_ok=0
                         echo "warn: M11 rollback failed: ${moves[j + 1]} → ${moves[j]} — restore by hand" >&2
