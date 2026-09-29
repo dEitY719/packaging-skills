@@ -103,12 +103,21 @@ claude-plugin structure refactor — <repo-path>   (mode: mono→single  scope: 
 Apply order: moves (`git mv`, `mv` outside git) → `marketplace.json` rewrite
 with `jq` (only sources naming `plugins/<p>` become `"./"`; url sources are
 kept; every `pluginRoot` is dropped) → `rmdir` of what is now empty (a
-non-empty leftover is warned about and kept) → path-reference fix in the moved
-skill/script files and `README.md` (`plugins/<p>/{skills,scripts,.claude-plugin}/`
-→ the root path; any other `plugins/<p>/` mention is warned about for a human).
+non-empty leftover is warned about and kept) → path-reference fix (rule below).
 If any destination already exists the plan shows `[M11] blocked  destination
 exists: …` and nothing moves. An already-single repo never plans M11 (no-op);
 `converted=1` in the SUMMARY marks a done conversion.
+
+**Path-reference rule.** Rewrite scope: the moved skill/script files,
+`README.md`, `docs/` and `.github/` (CI). Only a mechanical rewrite with one
+meaning is applied; everything else is a `warn:` line for a human.
+
+| Reference kind | Where | Action |
+|---|---|---|
+| `plugins/<p>/{skills,scripts,.claude-plugin}/` | rewrite scope | rewritten to `skills/`, `scripts/`, `.claude-plugin/` |
+| bare `plugins/<p>/` on a comment line (`#` / `//`) | rewrite scope, non-`.md` | rewritten to `repo root` |
+| bare `plugins/<p>/` in prose (`.md`) or code, or any other subpath (`plugins/<p>/NOTES`, `plugins/<p>/**`) | rewrite scope | `warn: <f> still mentions plugins/<p>/` |
+| any `plugins/<p>/` mention | outside scope (configs, other root files) | `warn: <f> mentions plugins/<p>/ (not auto-fixed)` |
 
 **Unsupported: everything else** — single → mono, and mono with 2+ plugin
 roots (M11 says split into one repo per plugin — a human decision). When
