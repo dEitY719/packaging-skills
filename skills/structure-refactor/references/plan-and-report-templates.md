@@ -21,7 +21,7 @@ conversion guard below runs *before* this call and short-circuits the whole
 step when it fires). `$SCOPE` is `mp` or `op`. The script prints the plan
 (context lines, then one `[ID] verb detail` line per pending change) and a
 `SUMMARY applied=… created=… sourced=… pruned=… stubbed=… renamed=… linked=…
-pages=…` line; Step 5's report is built from that output.
+pages=… converted=…` line; Step 5's report is built from that output.
 
 R1's real guide content is the one piece the script cannot produce itself
 (`/visuals:visualize` is an AI skill invocation): under `--op --apply`, Step 4
@@ -75,20 +75,53 @@ claude-plugin structure refactor — <repo-path>   (mode: mono|single[, 추정] 
   auto-fix — Apply rule 2's note explains why. They stay whatever
   structure-check reports; a human resolves them.
 
-### Layout-conversion warning (forced mode ≠ detected mode)
+### Layout conversion
 
-When `--single`/`--mono` forces a **target** mode that differs from the
-detected **current** layout, refactor does **not** convert (single↔mono is a
-whole-plugin relocation + manifest rewrite — out of scope). The plan shows a
-single warning line **in place of** any fix lines, and `--apply` stops
-without writing:
+**Supported: mono → single with exactly one plugin root (M11).** M11 FAILs
+every mono layout; with one plugin root the fix is mechanical, so Step 2 picks
+target `single` for such a repo (a forced `--mono` keeps mono and leaves M11
+standing). `lib/refactor_apply.sh --mode single` sees the detected mono layout
+and plans the conversion **instead of** every other fix line — the M/R fixes
+are computed against the post-conversion layout, so re-run the skill after
+`--apply`:
+
+```
+claude-plugin structure refactor — <repo-path>   (mode: mono→single  scope: mandatory)
+  plugin roots: plugins/<p>   skills: <count>   (git: yes, tree: clean)
+
+  [M11] convert  mono → single (plugins/<p>)
+  [M11] git mv   plugins/<p>/skills/<s> → skills/<s>              (per skill)
+  [M11] git mv   plugins/<p>/.claude-plugin/plugin.json → .claude-plugin/plugin.json
+  [M11] git mv   plugins/<p>/scripts/<f> → scripts/<f>            (if any)
+  [M11] rewrite  marketplace.json: source → "./", remove pluginRoot
+  [M11] rmdir    plugins/<p>/{skills,scripts,.claude-plugin}/ plugins/<p>/ plugins/ (if empty)
+  [M11] fix      path references to plugins/<p>/ in <n> file(s)
+
+총 1 변환  (필수 1)
+```
+
+Apply order: moves (`git mv`, `mv` outside git) → `marketplace.json` rewrite
+with `jq` (only sources naming `plugins/<p>` become `"./"`; url sources are
+kept; every `pluginRoot` is dropped) → `rmdir` of what is now empty (a
+non-empty leftover is warned about and kept) → path-reference fix in the moved
+skill/script files and `README.md` (`plugins/<p>/{skills,scripts,.claude-plugin}/`
+→ the root path; any other `plugins/<p>/` mention is warned about for a human).
+If any destination already exists the plan shows `[M11] blocked  destination
+exists: …` and nothing moves. An already-single repo never plans M11 (no-op);
+`converted=1` in the SUMMARY marks a done conversion.
+
+**Unsupported: everything else** — single → mono, and mono with 2+ plugin
+roots (M11 says split into one repo per plugin — a human decision). When
+`--single`/`--mono` forces such a **target** mode, refactor does **not**
+convert. The plan shows a single warning line **in place of** any fix lines,
+and `--apply` stops without writing:
 
 ```
 claude-plugin structure refactor — <repo-path>   (mode: single→mono  scope: mandatory)
   plugin roots: . (single)   skills: <count>   (git: yes, tree: clean)
 
   [convert] 레이아웃 변환 필요 (single → mono) — 현재 미지원, 변경 없음.
-            single↔mono 변환은 후속 작업(structure-convert)으로 분리됨.
+            지원되는 변환은 mono(plugin 1개) → single 뿐 (M11).
 
 총 0 변경  (변환 미수행)
 ```
@@ -262,7 +295,7 @@ generated before calling it. `moved` is always `0` — M4 is never automated
 fallback stub counts toward `stubbed`, not `visualized`. `layout`/`mode`/
 `scope` are Step 1/2's own resolved values, not part of the script's output.
 
-For a guarded layout-conversion (forced mode ≠ detected) the report is
+For a guarded (unsupported) layout-conversion the report is
 `[OK] no conversion (out of scope)` with `applied=0 layout=<from>→<to>` and
 the verify hint — never `[FAIL]` (refusing an out-of-scope move is a
 safe no-op, not an error).
@@ -281,13 +314,14 @@ A no-op run (nothing to change) still reports `[OK] refactor complete` with
   plan above.
 - **Never** auto-apply on a dirty tree — show the dry-run plan and require an
   explicit `--apply`.
-- **Never** perform a single↔mono conversion — see "Layout-conversion
-  warning" above; `--apply` stops without writing, even when given.
+- **Never** perform a conversion other than mono (1 plugin root) → single —
+  see "Layout conversion" above; `--apply` stops without writing, even when
+  given.
 - **Never** abort the run over a soft-fail step (Pages activation, R5 link
   backfill): warn and continue.
 - **Always** prefer `git mv` over `mv` inside a git repo, to preserve
-  history — for the one move this skill still leaves to a human (M4; Apply
-  rule 2's note), not something `lib/refactor_apply.sh` itself does today.
+  history — the M11 conversion does, and so should the one move this skill
+  still leaves to a human (M4; Apply rule 2's note).
 - **Always** discover plugins/skills by scan (repo-agnostic) — the spec in
   `packaging:structure-check`'s `references/structure-spec.md` is abstract, never
   hardcoded to one repo's names.

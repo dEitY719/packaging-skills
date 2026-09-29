@@ -447,8 +447,9 @@
         </div>
         <div class="card warn" style="margin-top:18px;">
           <span class="tag">변환 가드</span>
-          <h3>single ↔ mono 변환은 하지 않는다</h3>
-          <p>감지된 현재 레이아웃과 다른 모드를 강제하면 <code class="inline">[convert]</code> 경고 한 줄만 찍고,
+          <h3>변환은 mono(plugin 1개) → single 만</h3>
+          <p>plugin 이 하나인 mono repo 는 <code class="inline">--apply</code> 에서 single 로 전환한다 (M11).
+          그 밖의 변환은 <code class="inline">[convert]</code> 경고 한 줄만 찍고,
           <code class="inline">--apply</code> 라도 아무것도 쓰지 않고 멈춘다.</p>
         </div>
       </section>
@@ -563,7 +564,7 @@
           </article>
           <article class="card">
             <span class="tag">범위 밖</span>
-            <h3>single↔mono 변환은 범위 밖</h3>
+            <h3>mono-1 → single 외 변환은 범위 밖</h3>
             <p>유효한 single repo 를 강제로 mono 로 재배치해 업스트림 호환을 깨는 사고를 막는 안전장치다.</p>
           </article>
           <article class="card">
