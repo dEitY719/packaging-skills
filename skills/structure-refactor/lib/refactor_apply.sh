@@ -275,19 +275,37 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
         add_plan "[M11] fix      path references to $pr/ in ${#ref_files[@]} file(s)"
 
     if [ "$apply" -eq 1 ]; then
-        ok=1
+        # _mv src dst: git mv inside a work tree (keeps history), plain mv
+        # as the fallback. Also used, reversed, for the rollback below.
+        _mv() {
+            { [ "$is_git" -eq 1 ] && git -C "$repo" mv -- "$1" "$2" 2>/dev/null; } ||
+                mv -- "$repo/$1" "$repo/$2"
+        }
+        ok=1 done_n=0 made_dirs=()
         for ((i = 0; i < ${#moves[@]}; i += 2)); do
             src="${moves[i]}" dst="${moves[i + 1]}"
-            mkdir -p "$repo/$(dirname "$dst")"
-            if ! { [ "$is_git" -eq 1 ] && git -C "$repo" mv -- "$src" "$dst" 2>/dev/null; } &&
-                ! mv -- "$repo/$src" "$repo/$dst"; then
-                # ponytail: no automatic rollback — the moves already made stay
-                # (visible as renames in `git status`); undo them by hand or
-                # with `git reset --hard` on a clean-before tree.
-                echo "warn: M11 move failed: $src → $dst — conversion stopped half-way; earlier moves are kept (see git status)" >&2
+            d="$(dirname "$dst")"
+            [ -d "$repo/$d" ] || { mkdir -p "$repo/$d" && made_dirs+=("$d"); }
+            if ! _mv "$src" "$dst"; then
+                # Roll back the moves already made, newest first, so the tree
+                # returns to its pre-run layout (#34).
+                rb_ok=1
+                for ((j = done_n - 2; j >= 0; j -= 2)); do
+                    _mv "${moves[j + 1]}" "${moves[j]}" || {
+                        rb_ok=0
+                        echo "warn: M11 rollback failed: ${moves[j + 1]} → ${moves[j]} — restore by hand" >&2
+                    }
+                done
+                for ((j = ${#made_dirs[@]} - 1; j >= 0; j--)); do rmdir "$repo/${made_dirs[j]}" 2>/dev/null; done
+                if [ "$rb_ok" -eq 1 ]; then
+                    echo "warn: M11 move failed: $src → $dst — conversion rolled back, nothing moved (converted=0)" >&2
+                else
+                    echo "warn: M11 move failed: $src → $dst — rollback incomplete, see git status (converted=0)" >&2
+                fi
                 ok=0
                 break
             fi
+            done_n=$((i + 2))
         done
 
         if [ "$ok" -eq 1 ]; then
