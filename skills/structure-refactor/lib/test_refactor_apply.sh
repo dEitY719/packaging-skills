@@ -346,14 +346,14 @@ name_after="$(grep '^name:' "$r/plugins/my:plugin/skills/foo/SKILL.md")"
 # path references in a skill script and the README, a url source untouched.
 r="$tmp/mono-one"
 pp="$r/plugins/conf"
-mkdir -p "$r/.claude-plugin" "$pp/.claude-plugin" "$pp/skills/a/scripts" "$pp/skills/b" "$pp/scripts" \
+mkdir -p "$r/.claude-plugin" "$pp/.claude-plugin" "$pp/skills/a/scripts" "$pp/skills/b c" "$pp/scripts" \
     "$r/docs/skill-guides" "$r/docs/skill-output"
 git -C "$r" init -q
 printf '{"name":"m","metadata":{"pluginRoot":"./plugins"},"plugins":[{"name":"conf","source":"./plugins/conf","pluginRoot":"x"},{"name":"ext","source":{"source":"url","url":"https://x/y.git"}}]}' \
     >"$r/.claude-plugin/marketplace.json"
 printf '{"name":"conf","version":"0.0.0"}' >"$pp/.claude-plugin/plugin.json"
 printf -- '---\nname: a\ndescription: t\n---\n' >"$pp/skills/a/SKILL.md"
-printf -- '---\nname: b\ndescription: t\n---\n' >"$pp/skills/b/SKILL.md"
+printf -- '---\nname: b\ndescription: t\n---\n' >"$pp/skills/b c/SKILL.md" # a space in the name must survive the move
 printf '# parents[3] -> plugins/conf/scripts/domains.py\n' >"$pp/skills/a/scripts/run.py"
 printf 'DOMAINS = []\n' >"$pp/scripts/domains.py"
 printf '# m\nln -s plugins/conf/skills/a ~/.claude/skills/a\n' >"$r/README.md"
@@ -382,7 +382,7 @@ grep -qF "plugins/conf/skills/a" "$r/docs/notes.md" || {
     echo "FAIL: mono-one — out-of-scope docs file must not be rewritten"
     fail=1
 }
-for f in skills/a/SKILL.md skills/b/SKILL.md .claude-plugin/plugin.json scripts/domains.py; do
+for f in skills/a/SKILL.md "skills/b c/SKILL.md" .claude-plugin/plugin.json scripts/domains.py; do
     assert_file "$r/$f" "mono-one apply moved $f"
 done
 [ -e "$r/plugins" ] && {
