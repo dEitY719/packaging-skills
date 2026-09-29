@@ -354,11 +354,17 @@ printf '{"name":"m","metadata":{"pluginRoot":"./plugins"},"plugins":[{"name":"co
 printf '{"name":"conf","version":"0.0.0"}' >"$pp/.claude-plugin/plugin.json"
 printf -- '---\nname: a\ndescription: t\n---\n' >"$pp/skills/a/SKILL.md"
 printf -- '---\nname: b\ndescription: t\n---\n' >"$pp/skills/b c/SKILL.md" # a space in the name must survive the move
-printf '# parents[3] -> plugins/conf/scripts/domains.py\n' >"$pp/skills/a/scripts/run.py"
+# run.py: a subpath (rewritten), a bare root in a comment (-> "repo root") and
+# a non-comment other-subpath mention (warn-only).
+printf '# parents[3] -> plugins/conf/scripts/domains.py\n# parents[3] is plugins/conf/, the old root\nopen("plugins/conf/NOTES")\n' \
+    >"$pp/skills/a/scripts/run.py"
 printf 'DOMAINS = []\n' >"$pp/scripts/domains.py"
 printf '# m\nln -s plugins/conf/skills/a ~/.claude/skills/a\n' >"$r/README.md"
-mkdir -p "$r/docs"
-printf 'see plugins/conf/skills/a\n' >"$r/docs/notes.md"
+mkdir -p "$r/docs" "$r/.github/workflows"
+printf 'see plugins/conf/skills/a\n' >"$r/docs/notes.md"           # docs: subpath rewritten
+printf 'Everything lives under plugins/conf/.\n' >"$r/docs/layout.md" # prose bare root: warn-only
+printf '# lint plugins/conf/\non: {push: {paths: [plugins/conf/skills/**]}}\n' >"$r/.github/workflows/ci.yml"
+printf '{"files":["plugins/conf/skills"]}\n' >"$r/package.json"      # config outside scope: warn-only
 git -C "$r" add -A && git -C "$r" -c user.email=t@t -c user.name=t commit -qm init
 
 out="$(bash "$ra" "$r" --mode single --scope mp)"
@@ -377,9 +383,35 @@ assert_no_line "$out" "[M11]" "mono-one --mode mono must not convert"
 
 out="$(bash "$ra" "$r" --mode single --scope mp --apply 2>"$tmp/m11.err")"
 assert_line "$out" "SUMMARY applied=1 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=1" "mono-one apply summary"
-assert_line "$(cat "$tmp/m11.err")" "warn: docs/notes.md mentions plugins/conf/ (not auto-fixed) — review by hand" "mono-one out-of-scope ref warned"
-grep -qF "plugins/conf/skills/a" "$r/docs/notes.md" || {
-    echo "FAIL: mono-one — out-of-scope docs file must not be rewritten"
+# #35 rewrite rule: every rewritten kind and every warn-only kind.
+err="$(cat "$tmp/m11.err")"
+assert_line "$err" "warn: package.json mentions plugins/conf/ (not auto-fixed) — review by hand" "mono-one config outside scope warned"
+assert_line "$err" "warn: docs/layout.md still mentions plugins/conf/ — review by hand" "mono-one bare root in prose warned"
+assert_line "$err" "warn: skills/a/scripts/run.py still mentions plugins/conf/ — review by hand" "mono-one other subpath warned"
+assert_no_line "$err" "docs/notes.md" "mono-one docs subpath fully rewritten, no warn"
+assert_no_line "$err" "ci.yml" "mono-one CI path fully rewritten, no warn"
+grep -qxF 'see skills/a' "$r/docs/notes.md" || {
+    echo "FAIL: mono-one — docs subpath not rewritten: $(cat "$r/docs/notes.md")"
+    fail=1
+}
+[ "$(cat "$r/.github/workflows/ci.yml")" = $'# lint repo root\non: {push: {paths: [skills/**]}}' ] || {
+    echo "FAIL: mono-one — CI path/comment not rewritten: $(cat "$r/.github/workflows/ci.yml")"
+    fail=1
+}
+grep -qxF 'Everything lives under plugins/conf/.' "$r/docs/layout.md" || {
+    echo "FAIL: mono-one — bare root in prose must not be rewritten"
+    fail=1
+}
+grep -qF 'plugins/conf/skills' "$r/package.json" || {
+    echo "FAIL: mono-one — config outside scope must not be rewritten"
+    fail=1
+}
+grep -qxF '# parents[3] is repo root, the old root' "$r/skills/a/scripts/run.py" || {
+    echo "FAIL: mono-one — bare root in comment not rewritten to repo root"
+    fail=1
+}
+grep -qxF 'open("plugins/conf/NOTES")' "$r/skills/a/scripts/run.py" || {
+    echo "FAIL: mono-one — non-comment other-subpath mention must not be rewritten"
     fail=1
 }
 for f in skills/a/SKILL.md "skills/b c/SKILL.md" .claude-plugin/plugin.json scripts/domains.py; do
@@ -397,7 +429,7 @@ grep -q pluginRoot "$r/.claude-plugin/marketplace.json" && {
     echo "FAIL: mono-one — pluginRoot survived the rewrite"
     fail=1
 }
-if grep -qF "plugins/conf" "$r/skills/a/scripts/run.py" || ! grep -qF "scripts/domains.py" "$r/skills/a/scripts/run.py"; then
+if grep -qF "plugins/conf/scripts" "$r/skills/a/scripts/run.py" || ! grep -qF "scripts/domains.py" "$r/skills/a/scripts/run.py"; then
     echo "FAIL: mono-one — skill script path reference not fixed"
     fail=1
 fi

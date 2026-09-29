@@ -43,7 +43,7 @@ Layout conversion — mono (1 plugin) -> single only:
   The plan lists "[M11]" lines: git mv plugins/<p>/skills/* -> skills/,
   plugin.json -> .claude-plugin/, plugins/<p>/scripts/* -> scripts/, rewrite
   marketplace.json (source "./", pluginRoot removed), rmdir the empty
-  plugins/, fix plugins/<p>/ path references in moved files + README.
+  plugins/, fix plugins/<p>/ path references in moved files, README, docs/, .github/.
   --apply performs it (never over an existing destination); re-run
   afterwards for the remaining fixes. Already single -> no-op. --mono keeps
   the repo mono (M11 stays FAIL).

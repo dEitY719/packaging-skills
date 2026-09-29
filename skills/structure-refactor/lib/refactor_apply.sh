@@ -207,6 +207,24 @@ _replace_literal() {
     rm -f "$t"
 }
 
+# _replace_bare_root_in_comments FILE PR — on comment lines only (first
+# non-blank is "#" or "//"), a bare "PR/" (not followed by a path character)
+# names the old plugin root, which after M11 is the repo root (#35).
+_replace_bare_root_in_comments() {
+    local f="$1" from="$2/" t
+    t="$(mktemp)"
+    awk -v from="$from" '/^[[:space:]]*(#|\/\/)/ {
+        out = ""; s = $0
+        while ((i = index(s, from)) > 0) {
+            if (substr(s, i + length(from), 1) ~ /[A-Za-z0-9._*-]/) out = out substr(s, 1, i - 1 + length(from))
+            else out = out substr(s, 1, i - 1) "repo root"
+            s = substr(s, i + length(from))
+        }
+        $0 = out s
+    } { print }' "$f" >"$t" && ! cmp -s "$t" "$f" && mv "$t" "$f"
+    rm -f "$t"
+}
+
 # ---- M11: mono (exactly 1 plugin root) → single conversion (#32) ------------
 # Runs when the TARGET is single (--mode single: SKILL.md picks it for a
 # detected mono repo with one plugin root, since M11 FAILs every mono layout)
@@ -252,10 +270,12 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
         [ -e "$repo/${moves[i + 1]}" ] && conflicts+=("${moves[i + 1]}")
     done
 
-    # Text files whose path references need fixing (pre-move paths).
+    # Text files whose path references get rewritten (pre-move paths): the
+    # moved skills/scripts, README.md, docs/ and .github/ (CI). The rule per
+    # reference kind is in references/plan-and-report-templates.md (#35).
     ref_files=()
     while IFS= read -r f; do ref_files+=("$f"); done < <(
-        cd "$repo" && grep -rlIF -- "$pr/" "$pr/skills" "$pr/scripts" README.md 2>/dev/null
+        cd "$repo" && grep -rlIF -- "$pr/" "$pr/skills" "$pr/scripts" README.md docs .github 2>/dev/null
     )
 
     add_plan "[M11] convert  mono → single ($pr)"
@@ -345,13 +365,13 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
                 for sub in skills scripts .claude-plugin; do
                     _replace_literal "$repo/$f" "$pr/$sub/" "$sub/" >/dev/null
                 done
-                # ponytail: only the three known subpaths are rewritten; a bare
-                # "plugins/<p>/" mention (e.g. a comment naming the old root)
-                # needs a human reading of what it now means.
+                # Markdown "#" lines are headings, not comments: prose keeps
+                # its bare root mention for a human to reword.
+                case "$f" in *.md) ;; *) _replace_bare_root_in_comments "$repo/$f" "$pr" ;; esac
                 grep -qF -- "$pr/" "$repo/$f" && echo "warn: $f still mentions $pr/ — review by hand" >&2
             done
-            # Files outside the rewrite scope (docs, CI, configs) are only
-            # reported, never rewritten — their meaning needs a human.
+            # Files outside the rewrite scope (configs, other root files) are
+            # only reported, never rewritten — their meaning needs a human.
             (cd "$repo" && grep -rlIF --exclude-dir=.git -- "$pr/" . 2>/dev/null) | while IFS= read -r f; do
                 case " ${ref_files[*]} " in *" ${f#./} "*) continue ;; esac
                 echo "warn: ${f#./} mentions $pr/ (not auto-fixed) — review by hand" >&2
