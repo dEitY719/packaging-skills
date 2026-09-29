@@ -318,6 +318,9 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
             rmdir "$repo/plugins" 2>/dev/null || true
 
             for f in "${ref_files[@]}"; do
+                # ref_files holds PRE-move paths: "plugins/<p>/skills/a/x.py"
+                # minus the "plugins/<p>/" prefix IS its post-move path
+                # ("skills/a/x.py"); README.md carries no prefix.
                 case "$f" in "$pr/"*) f="${f#"$pr/"}" ;; esac
                 for sub in skills scripts .claude-plugin; do
                     _replace_literal "$repo/$f" "$pr/$sub/" "$sub/" >/dev/null
