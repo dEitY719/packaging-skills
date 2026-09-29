@@ -1,6 +1,6 @@
 # structure-check
 
-**산출물** — repo 하나의 디렉터리 구조를 필수 10항목(M1-M10) / 권장 8항목
+**산출물** — repo 하나의 디렉터리 구조를 필수 11항목(M1-M11) / 권장 8항목
 (R1-R8)으로 채점한 PASS·WARN·FAIL·N/A 리포트 1장. 파일은 하나도 바뀌지 않는다.
 
 ## 언제 쓰고, 언제 안 쓰는가
@@ -35,13 +35,14 @@
 | M1-M6 | `marketplace.json` 유효성, plugin root 존재, `plugin.json` 유효성, `SKILL.md` frontmatter, `docs/skill-guides/` + `docs/skill-output/`, `README.md` | FAIL |
 | M7-M9 | `plugins[].source` 설치 무결성 — 각 원소가 자기 source 를 갖는지, shape 이 유효한지, mono 로 선언된 디렉터리가 실재하는지 | FAIL |
 | M10 | `plugin.json` 최상위 필드가 알려진 스키마 화이트리스트 안에 있는지 | FAIL |
+| M11 | 스킬이 repo 루트 `skills/` 에 있는지 — 1 repo = 1 plugin 정책이라 `mono` 레이아웃은 무조건 FAIL (plugin 1개면 single 전환, 2개 이상이면 repo 분리) | FAIL |
 | R1-R8 | 스킬별 guide/usage 문서, README 의 Simple 휴리스틱과 스킬별 링크, 명명 일관성, `$schema`, 리스팅 메타데이터, add URL 힌트 | WARN |
 
 ## 동작 단계
 
 1. 인자 파싱, repo 경로 확인, `.git` 유무 확인(없어도 감사는 진행)
 2. 레이아웃 모드 감지 → plugin root 와 스킬 목록을 **스캔으로** 발견
-3. M1-M10 / R1-R8 채점
+3. M1-M11 / R1-R8 채점
 4. `[필수]` / `[권장]` 블록과 요약 판정 출력
 
 모드 감지 우선순위: 플래그 → `marketplace.json` 의 `plugins[].source`

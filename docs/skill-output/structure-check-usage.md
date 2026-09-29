@@ -1,6 +1,6 @@
 # structure-check 사용 결과
 
-> **한 줄 요약** — repo 경로 하나를 받아 M1-M10 / R1-R8 채점 리포트를 생성합니다.
+> **한 줄 요약** — repo 경로 하나를 받아 M1-M11 / R1-R8 채점 리포트를 생성합니다.
 
 ```
 repo 경로  ──▶  /packaging:structure-check  ──▶  PASS/WARN/FAIL 리포트
@@ -25,7 +25,7 @@ plugin root 는 repo 루트 1개, 스킬은 스캔으로 4개 발견.
 
 ```
 [필수] M1 PASS  M2 PASS  M3 PASS  M4 PASS  M5 FAIL  M6 PASS
-       M7 PASS  M8 PASS  M9 N/A   M10 PASS
+       M7 PASS  M8 PASS  M9 N/A   M10 PASS  M11 PASS
 [권장] R1 WARN  R2 WARN  R3 WARN  R4 PASS  R5 WARN  R6 WARN  R7 WARN  R8 PASS
 ```
 
@@ -33,7 +33,7 @@ plugin root 는 repo 루트 1개, 스킬은 스캔으로 4개 발견.
 - R1/R2/R3/R5 는 전부 M5 에서 파생된 WARN
 - R6 — `marketplace.json` 에 `$schema` 없음
 - R7 — `plugins[0]` 에 `homepage` 없음
-- 설치 필수 항목(M1-M4, M7-M10)은 전부 PASS
+- 설치 필수 항목(M1-M4, M7-M10)과 루트 `skills/` 위치(M11)는 전부 PASS
 
 파일은 하나도 변경되지 않았다 (읽기 전용 스킬).
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# structure_check.sh — deterministic M1-M10 / R1,R2,R4-R11 evaluator for a
+# structure_check.sh — deterministic M1-M11 / R1,R2,R4-R8,R10,R11 evaluator for a
 # claude-plugin marketplace repo.
 #
 # Ported from the SSOT bats fixture at
@@ -30,6 +30,7 @@
 #   M8 <PASS|FAIL|N/A> [detail]
 #   M9 <PASS|FAIL|N/A> [detail]
 #   M10 <PASS|FAIL|N/A> [detail]
+#   M11 <PASS|FAIL|N/A> [detail]
 #   R1 <PASS|WARN|N/A> [detail]
 #   R2 <PASS|WARN|N/A> [detail]
 #   R4 <PASS|WARN|N/A> [detail]
@@ -37,7 +38,6 @@
 #   R6 <PASS|WARN|N/A>
 #   R7 <PASS|WARN|N/A>
 #   R8 <PASS|WARN|N/A>
-#   R9 <PASS|WARN|N/A> [detail]
 #   R10 <PASS|WARN|N/A> [detail]
 #   R11 <PASS|WARN|N/A> [detail]
 #   SUMMARY <FAIL|WARN|PASS> fail=<n> warn=<n> na=<n>
@@ -207,7 +207,7 @@ EOF
     done
 )
 
-# ---- mandatory checks (M1-M10) ---------------------------------------------
+# ---- mandatory checks (M1-M11) ---------------------------------------------
 check_M1() { _json_ok "$repo/.claude-plugin/marketplace.json" && echo PASS || echo FAIL; }
 
 check_M2() { [ "${#ROOTS[@]}" -ge 1 ] && echo PASS || echo FAIL; }
@@ -326,6 +326,20 @@ check_M10() {
     [ "$any" -eq 1 ] && echo PASS || echo "N/A"
 }
 
+# M11 — skills at repo-root skills/. Policy: 1 repo = 1 plugin, so any mono
+# layout (plugins/<p>/skills/<s>/) FAILs and must move to the single shape.
+check_M11() {
+    [ "$MODE" = single ] && {
+        echo PASS
+        return
+    }
+    case "${#ROOTS[@]}" in
+    0) echo "N/A" ;;
+    1) echo "FAIL convert to single: marketplace source \"./\", move ${ROOTS[0]}/skills → skills/, plugin.json → .claude-plugin/ (no skills field — M10)" ;;
+    *) echo "FAIL split into one repo per plugin, each with root skills/ (${ROOTS[*]})" ;;
+    esac
+}
+
 # ---- recommended checks (R1,R2,R4-R8; R3 is a model judgment call) ---------
 check_R1() {
     local pair s
@@ -431,22 +445,11 @@ check_R8() {
     esac
 }
 
-# ---- multi-harness checks (R9-R11) ------------------------------------------
-# Other harnesses (Hermes, `npx skills`, Codex-style) look for skills at the
-# repo-root skills/, reject symlinks in a skill bundle, and share one flat
-# skill namespace. WARN only — a Claude-Code-only repo never FAILs on these.
-check_R9() {
-    [ "$MODE" = single ] && {
-        echo PASS
-        return
-    }
-    case "${#ROOTS[@]}" in
-    0) echo "N/A" ;;
-    1) echo "WARN convert to single: marketplace source \"./\", move ${ROOTS[0]}/skills → skills/, plugin.json → .claude-plugin/ (no skills field — M10)" ;;
-    *) echo "N/A multi-plugin mono: Hermes needs external_dirs/tap path per plugin" ;;
-    esac
-}
-
+# ---- multi-harness checks (R10-R11) -----------------------------------------
+# Other harnesses (Hermes, `npx skills`, Codex-style) reject symlinks in a
+# skill bundle and share one flat skill namespace. WARN only — a
+# Claude-Code-only repo never FAILs on these. (The repo-root skills/ location
+# rule is mandatory: M11.)
 check_R10() {
     # symlinks under every plugin root's skills/, plus the repo-root skills/
     # in mono mode (the symlink-workaround shape). Symlinks outside skill
@@ -512,7 +515,7 @@ fail=0
 warn=0
 na=0
 
-for id in M1 M2 M3 M4 M5 M6 M7 M8 M9 M10; do
+for id in M1 M2 M3 M4 M5 M6 M7 M8 M9 M10 M11; do
     result="$(check_"$id")"
     echo "$id $result"
     case "$result" in
@@ -521,7 +524,7 @@ for id in M1 M2 M3 M4 M5 M6 M7 M8 M9 M10; do
     esac
 done
 
-for id in R1 R2 R4 R5 R6 R7 R8 R9 R10 R11; do
+for id in R1 R2 R4 R5 R6 R7 R8 R10 R11; do
     result="$(check_"$id")"
     echo "$id $result"
     case "$result" in

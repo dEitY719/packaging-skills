@@ -20,6 +20,10 @@ Flags:
 | `--mono` | force the MONO target layout (repo bundles many plugins; source `"./plugins/<name>"`, skills at `plugins/<p>/skills/<s>/`) | off (auto-detect) |
 | `-h` / `--help` | print help and stop | — |
 
+M11 (skills at repo-root `skills/`; any mono layout FAILs it in
+/packaging:structure-check) is never auto-fixed — it is a mono→single
+conversion, which refactor does not perform (see below).
+
 `--single` / `--mono` override auto-detection (last one wins) and name the
 **target** mode — see "Layout conversion is NOT supported" below when it
 differs from the detected current one. `--mp` and `--op` together → error.

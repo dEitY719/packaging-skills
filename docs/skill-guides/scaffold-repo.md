@@ -45,7 +45,7 @@ LICENSE, `.gitignore`, 그리고 초기 커밋이 올라간 GitHub 원격 저장
 6. `git init` + `git checkout -B main`
 7. `gh auth status` 후 **사용자 확인**을 받고 `gh repo create`
 8. 초기 커밋 후 **사용자 확인**을 받고 `git push -u origin main`
-9. `packaging:structure-check` 로 M1-M10 PASS 확인 후 `[OK]` 리포트
+9. `packaging:structure-check` 로 M1-M11 PASS 확인 후 `[OK]` 리포트
 
 ## 주의사항 / 제약
 

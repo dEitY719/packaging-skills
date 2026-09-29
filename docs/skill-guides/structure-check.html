@@ -407,7 +407,7 @@
         <h1 class="animate delay-1">structure-check</h1>
         <div class="hero-rule animate delay-2"></div>
         <p class="lead animate delay-3">
-          <strong>산출물</strong> — repo 하나의 디렉터리 구조를 필수 10항목(M1-M10) / 권장 8항목(R1-R8)으로
+          <strong>산출물</strong> — repo 하나의 디렉터리 구조를 필수 11항목(M1-M11) / 권장 8항목(R1-R8)으로
           채점한 PASS·WARN·FAIL·N/A 리포트 1장. 파일은 하나도 바뀌지 않는다.
         </p>
       </header>
@@ -453,7 +453,7 @@
         <p class="sec-sub">필수 항목은 위반하면 FAIL, 권장 항목은 위반하면 WARN 이다. 각 그룹을 눌러 내용을 펼친다.</p>
 
         <div class="tabs" role="tablist" aria-label="채점 항목 그룹">
-          <button class="tab-btn" id="tab-must" role="tab" aria-selected="true" aria-controls="panel-must" onclick="showTab('must')">필수 · M1-M10 · FAIL</button>
+          <button class="tab-btn" id="tab-must" role="tab" aria-selected="true" aria-controls="panel-must" onclick="showTab('must')">필수 · M1-M11 · FAIL</button>
           <button class="tab-btn" id="tab-rec" role="tab" aria-selected="false" aria-controls="panel-rec" onclick="showTab('rec')">권장 · R1-R8 · WARN</button>
         </div>
 
@@ -500,6 +500,19 @@
               <code>plugin.json</code> 최상위 필드가 알려진 스키마 화이트리스트 안에 있는지.
             </div>
           </details>
+
+          <details class="item-row st-fail" name="must">
+            <summary>
+              <span class="item-code">M11</span>
+              <span class="item-title">루트 skills/ 위치</span>
+              <span class="badge">FAIL</span>
+              <span class="chev">&#9654;</span>
+            </summary>
+            <div class="item-body">
+              스킬이 repo 루트 <code>skills/</code> 에 있는지. 1 repo = 1 plugin 정책이라 <code>mono</code> 레이아웃은 무조건 FAIL
+              (plugin 1개면 single 전환, 2개 이상이면 repo 분리).
+            </div>
+          </details>
         </div>
 
         <div class="tab-panel" id="panel-rec" role="tabpanel" aria-labelledby="tab-rec">
@@ -538,7 +551,7 @@
           </div>
           <div class="legend-item st-fail">
             <span class="legend-key">FAIL</span>
-            <span class="legend-text">필수 항목(M1-M10) 위반. 하나라도 있으면 전체 판정이 FAIL.</span>
+            <span class="legend-text">필수 항목(M1-M11) 위반. 하나라도 있으면 전체 판정이 FAIL.</span>
           </div>
           <div class="legend-item st-na">
             <span class="legend-key">N/A</span>
@@ -566,7 +579,7 @@
           </article>
           <article class="card step">
             <div class="step-n">STEP 3</div>
-            <p>M1-M10 / R1-R8 채점</p>
+            <p>M1-M11 / R1-R8 채점</p>
           </article>
           <article class="card step">
             <div class="step-n">STEP 4</div>
