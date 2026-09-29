@@ -356,7 +356,7 @@ printf -- '---\nname: a\ndescription: t\n---\n' >"$pp/skills/a/SKILL.md"
 printf -- '---\nname: b\ndescription: t\n---\n' >"$pp/skills/b c/SKILL.md" # a space in the name must survive the move
 # run.py: a subpath (rewritten), a bare root in a comment (-> "repo root") and
 # a non-comment other-subpath mention (warn-only).
-printf '# parents[3] -> plugins/conf/scripts/domains.py\n# parents[3] is plugins/conf/, the old root\nopen("plugins/conf/NOTES")\n' \
+printf '# parents[3] -> plugins/conf/scripts/domains.py\n# parents[3] is plugins/conf/, the old root\nopen("plugins/conf/NOTES")\n// plugins/conf/+plugins/conf/-x\n' \
     >"$pp/skills/a/scripts/run.py"
 printf 'DOMAINS = []\n' >"$pp/scripts/domains.py"
 printf '# m\nln -s plugins/conf/skills/a ~/.claude/skills/a\n' >"$r/README.md"
@@ -408,6 +408,11 @@ grep -qF 'plugins/conf/skills' "$r/package.json" || {
 }
 grep -qxF '# parents[3] is repo root, the old root' "$r/skills/a/scripts/run.py" || {
     echo "FAIL: mono-one — bare root in comment not rewritten to repo root"
+    fail=1
+}
+# "-" is a path character, "+" is not; two mentions on one line each judged.
+grep -qxF '// repo root+plugins/conf/-x' "$r/skills/a/scripts/run.py" || {
+    echo "FAIL: mono-one — per-mention bare-root judgement on one comment line"
     fail=1
 }
 grep -qxF 'open("plugins/conf/NOTES")' "$r/skills/a/scripts/run.py" || {
@@ -485,6 +490,21 @@ assert_line "$(cat "$tmp/m11rb.err")" "warn: M11 move failed: plugins/conf/.clau
 }
 [ "$(cd "$r" && find . -path ./.git -prune -o -print | sort)" = "$before" ] || {
     echo "FAIL: rollback — tree differs from pre-run layout (leftover skills/ dir?)"
+    fail=1
+}
+
+# ---- case 16: a repo with no README.md, docs/ or .github/ still gets its
+# in-skill references rewritten (missing scope paths are skipped, #35 review)
+r="$tmp/mono-one-bare"
+pp="$r/plugins/conf"
+mkdir -p "$r/.claude-plugin" "$pp/.claude-plugin" "$pp/skills/a"
+git -C "$r" init -q
+printf '{"plugins":[{"name":"conf","source":"./plugins/conf"}]}' >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"conf"}' >"$pp/.claude-plugin/plugin.json"
+printf -- '---\nname: a\ndescription: t\n---\nsee plugins/conf/skills/a\n' >"$pp/skills/a/SKILL.md"
+bash "$ra" "$r" --mode single --scope mp --apply >/dev/null 2>&1
+grep -qxF 'see skills/a' "$r/skills/a/SKILL.md" || {
+    echo "FAIL: mono-one-bare — skill reference not rewritten without docs/.github/README"
     fail=1
 }
 
