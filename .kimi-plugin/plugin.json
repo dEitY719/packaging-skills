@@ -1,6 +1,6 @@
 {
   "name": "packaging",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Build and maintain agent skill marketplace repos: scaffold, rename, audit, refactor.",
   "author": {
     "name": "dEitY719",
