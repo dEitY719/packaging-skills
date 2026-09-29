@@ -281,7 +281,7 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
             { [ "$is_git" -eq 1 ] && git -C "$repo" mv -- "$1" "$2" 2>/dev/null; } ||
                 mv -- "$repo/$1" "$repo/$2"
         }
-        ok=1 done_n=0 made_dirs=()
+        ok=1 made_dirs=()
         for ((i = 0; i < ${#moves[@]}; i += 2)); do
             src="${moves[i]}" dst="${moves[i + 1]}"
             d="$(dirname "$dst")"
@@ -290,7 +290,7 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
                 # Roll back the moves already made, newest first, so the tree
                 # returns to its pre-run layout (#34).
                 rb_ok=1
-                for ((j = done_n - 2; j >= 0; j -= 2)); do
+                for ((j = i - 2; j >= 0; j -= 2)); do
                     _mv "${moves[j + 1]}" "${moves[j]}" || {
                         rb_ok=0
                         echo "warn: M11 rollback failed: ${moves[j + 1]} → ${moves[j]} — restore by hand" >&2
@@ -305,7 +305,6 @@ if [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" !
                 ok=0
                 break
             fi
-            done_n=$((i + 2))
         done
 
         if [ "$ok" -eq 1 ]; then
