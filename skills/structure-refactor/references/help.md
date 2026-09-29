@@ -21,8 +21,8 @@ Flags:
 | `-h` / `--help` | print help and stop | — |
 
 M11 (skills at repo-root `skills/`; any mono layout FAILs it in
-/packaging:structure-check) is never auto-fixed — it is a mono→single
-conversion, which refactor does not perform (see below).
+/packaging:structure-check) is auto-fixed only for a mono repo with exactly
+one plugin root: refactor converts it to single (see below).
 
 `--single` / `--mono` override auto-detection (last one wins) and name the
 **target** mode — see "Layout conversion is NOT supported" below when it
@@ -38,14 +38,19 @@ Layout modes & auto-detection:
   Refactor fixes toward the detected mode's golden layout and prints the
   mode in the plan/report header.
 
-Layout conversion is NOT supported (safety guard):
-  When --single/--mono names a TARGET mode different from the detected
-  CURRENT layout, that is a single<->mono conversion (relocate the whole
-  plugin + rewrite the manifest). Refactor does NOT perform it — the plan
-  shows a "[convert] ... 현재 미지원" line and --apply stops without writing.
-  Conversion is deferred to a follow-up (structure-convert). This guard
-  stops refactor from force-restructuring a valid single repo (e.g.
-  Superpowers) into mono and breaking upstream compatibility.
+Layout conversion — mono (1 plugin) -> single only:
+  A detected mono repo with exactly one plugin root targets single (M11).
+  The plan lists "[M11]" lines: git mv plugins/<p>/skills/* -> skills/,
+  plugin.json -> .claude-plugin/, plugins/<p>/scripts/* -> scripts/, rewrite
+  marketplace.json (source "./", pluginRoot removed), rmdir the empty
+  plugins/, fix plugins/<p>/ path references in moved files + README.
+  --apply performs it (never over an existing destination); re-run
+  afterwards for the remaining fixes. Already single -> no-op. --mono keeps
+  the repo mono (M11 stays FAIL).
+  Any other conversion (single -> mono, mono with 2+ plugins) is NOT
+  performed: the plan shows a "[convert] ... 현재 미지원" line and --apply
+  stops without writing. This guard stops refactor from force-restructuring
+  a valid single repo (e.g. Superpowers) into mono.
 
 Behavior:
 

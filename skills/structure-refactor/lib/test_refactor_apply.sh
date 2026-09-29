@@ -86,7 +86,7 @@ jq empty "$r/.claude-plugin/plugin.json" || {
 
 # re-run: idempotent -> empty plan, applied=0
 out2="$(bash "$ra" "$r" --mode single --scope mp --apply)"
-assert_line "$out2" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "single-empty idempotent re-run"
+assert_line "$out2" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "single-empty idempotent re-run"
 
 # ---- case 4: M7 source injection on an existing marketplace.json ----------
 r="$tmp/m7-fix"
@@ -98,7 +98,7 @@ printf '{"name":"bar-plugin","version":"0.0.0"}' >"$r/plugins/bar/.claude-plugin
 printf -- '---\nname: baz\ndescription: test\n---\n' >"$r/plugins/bar/skills/baz/SKILL.md"
 printf '# repo\n' >"$r/README.md"
 out="$(bash "$ra" "$r" --mode mono --scope mp --apply)"
-assert_line "$out" "SUMMARY applied=1 created=0 sourced=1 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "m7-fix summary"
+assert_line "$out" "SUMMARY applied=1 created=0 sourced=1 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "m7-fix summary"
 src="$(jq -r '.plugins[0].source' "$r/.claude-plugin/marketplace.json")"
 [ "$src" = "./plugins/bar" ] || {
     echo "FAIL: m7-fix — expected source ./plugins/bar, got $src"
@@ -117,7 +117,7 @@ printf '{"name":"bar-plugin","version":"0.0.0"}' >"$r/plugins/bar/.claude-plugin
 printf -- '---\nname: baz\ndescription: test\n---\n' >"$r/plugins/bar/skills/baz/SKILL.md"
 printf '# repo\n' >"$r/README.md"
 out="$(bash "$ra" "$r" --mode mono --scope mp --apply 2>/dev/null)"
-assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "m7-nameless summary (no false credit)"
+assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "m7-nameless summary (no false credit)"
 src="$(jq -r '.plugins[0].source // "MISSING"' "$r/.claude-plugin/marketplace.json")"
 [ "$src" = "MISSING" ] || {
     echo "FAIL: m7-nameless — expected no source injected, got '$src'"
@@ -133,7 +133,7 @@ printf '{"name":"foo-plugin","version":"0.0.0","skills":["foo"]}' >"$r/.claude-p
 printf -- '---\nname: foo\ndescription: test\n---\n' >"$r/skills/foo/SKILL.md"
 printf '# repo\n' >"$r/README.md"
 out="$(bash "$ra" "$r" --mode single --scope mp --apply)"
-assert_line "$out" "SUMMARY applied=1 created=0 sourced=0 pruned=1 stubbed=0 renamed=0 linked=0 pages=n/a" "m10-fix summary"
+assert_line "$out" "SUMMARY applied=1 created=0 sourced=0 pruned=1 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "m10-fix summary"
 assert_file "$r/.claude-plugin/plugin.json.bak" "m10-fix .bak kept"
 grep -q '"skills"' "$r/.claude-plugin/plugin.json" && {
     echo "FAIL: m10-fix — unknown field 'skills' survived the prune"
@@ -186,7 +186,7 @@ out_op2="$(bash "$ra" "$r" --mode single --scope op --apply)"
 # no `origin` remote in this test repo -> Pages step's precondition never
 # fires, so pages stays n/a (not skip/active/activated) -- that path is
 # covered by parse_remote.sh's own test suite, not re-tested here.
-assert_line "$out_op2" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "op-fix idempotent re-run"
+assert_line "$out_op2" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "op-fix idempotent re-run"
 
 # ---- case 7: with an origin remote + a stubbed `gh` — Pages activation and
 # the R5 guide link both use the derived Pages URL ---------------------------
@@ -233,7 +233,7 @@ GH_FAKE_STATE="$tmp/pages-active-flag"
 GH_FAKE_POST_BRANCH_FILE="$tmp/pages-post-branch"
 export GH_FAKE_STATE GH_FAKE_POST_BRANCH_FILE
 out="$(PATH="$fakebin:$PATH" bash "$ra" "$r" --mode single --scope op --apply)"
-assert_line "$out" "SUMMARY applied=5 created=0 sourced=0 pruned=0 stubbed=2 renamed=0 linked=2 pages=activated" "pages-fix summary"
+assert_line "$out" "SUMMARY applied=5 created=0 sourced=0 pruned=0 stubbed=2 renamed=0 linked=2 pages=activated converted=0" "pages-fix summary"
 [ "$(cat "$GH_FAKE_POST_BRANCH_FILE" 2>/dev/null)" = "trunk" ] || {
     echo "FAIL: pages-fix — Pages activation should use the repo's real default branch (trunk), not a hardcoded main"
     fail=1
@@ -256,7 +256,7 @@ git -C "$r" init -q
 chmod 555 "$r/.claude-plugin"
 out="$(bash "$ra" "$r" --mode single --scope mp --apply 2>/dev/null)"
 chmod 755 "$r/.claude-plugin" # restore before the trap's rm -rf can run
-assert_line "$out" "SUMMARY applied=1 created=1 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "write-fail: only the one real success (README) counts, not all 3 plan lines"
+assert_line "$out" "SUMMARY applied=1 created=1 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "write-fail: only the one real success (README) counts, not all 3 plan lines"
 [ -e "$r/.claude-plugin/marketplace.json" ] && {
     echo "FAIL: write-fail — marketplace.json should not exist (write into a read-only dir can't have succeeded)"
     fail=1
@@ -281,7 +281,7 @@ plugin_json_before="$(cat "$r/.claude-plugin/plugin.json")"
 chmod 555 "$r/.claude-plugin"
 out="$(bash "$ra" "$r" --mode single --scope mp --apply 2>/dev/null)"
 chmod 755 "$r/.claude-plugin"
-assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a" "m10-backup-fail: no prune without a verified backup"
+assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "m10-backup-fail: no prune without a verified backup"
 [ "$(cat "$r/.claude-plugin/plugin.json")" = "$plugin_json_before" ] || {
     echo "FAIL: m10-backup-fail — plugin.json changed despite the backup failing"
     fail=1
@@ -340,6 +340,85 @@ name_after="$(grep '^name:' "$r/plugins/my:plugin/skills/foo/SKILL.md")"
     echo "FAIL: colon-plugin-name — expected 'name: foo' at the correctly-resolved path, got '$name_after'"
     fail=1
 }
+
+# ---- case 13: M11 mono (1 plugin) → single conversion (#32) ---------------
+# The claude-plugin-confluence shape: 2 skills, a shared scripts/domains.py,
+# path references in a skill script and the README, a url source untouched.
+r="$tmp/mono-one"
+pp="$r/plugins/conf"
+mkdir -p "$r/.claude-plugin" "$pp/.claude-plugin" "$pp/skills/a/scripts" "$pp/skills/b" "$pp/scripts" \
+    "$r/docs/skill-guides" "$r/docs/skill-output"
+git -C "$r" init -q
+printf '{"name":"m","metadata":{"pluginRoot":"./plugins"},"plugins":[{"name":"conf","source":"./plugins/conf","pluginRoot":"x"},{"name":"ext","source":{"source":"url","url":"https://x/y.git"}}]}' \
+    >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"conf","version":"0.0.0"}' >"$pp/.claude-plugin/plugin.json"
+printf -- '---\nname: a\ndescription: t\n---\n' >"$pp/skills/a/SKILL.md"
+printf -- '---\nname: b\ndescription: t\n---\n' >"$pp/skills/b/SKILL.md"
+printf '# parents[3] -> plugins/conf/scripts/domains.py\n' >"$pp/skills/a/scripts/run.py"
+printf 'DOMAINS = []\n' >"$pp/scripts/domains.py"
+printf '# m\nln -s plugins/conf/skills/a ~/.claude/skills/a\n' >"$r/README.md"
+git -C "$r" add -A && git -C "$r" -c user.email=t@t -c user.name=t commit -qm init
+
+out="$(bash "$ra" "$r" --mode single --scope mp)"
+assert_line "$out" "MODE mono→single" "mono-one dry-run MODE"
+assert_line "$out" "[M11] convert  mono → single (plugins/conf)" "mono-one dry-run convert line"
+assert_line "$out" "[M11] git mv  plugins/conf/skills/a → skills/a" "mono-one dry-run skill move"
+assert_line "$out" "[M11] git mv  plugins/conf/scripts/domains.py → scripts/domains.py" "mono-one dry-run scripts move"
+assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "mono-one dry-run summary"
+[ -d "$pp/skills/a" ] || {
+    echo "FAIL: mono-one dry-run moved files"
+    fail=1
+}
+# --mode mono (forced) never converts
+out="$(bash "$ra" "$r" --mode mono --scope mp)"
+assert_no_line "$out" "[M11]" "mono-one --mode mono must not convert"
+
+out="$(bash "$ra" "$r" --mode single --scope mp --apply)"
+assert_line "$out" "SUMMARY applied=1 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=1" "mono-one apply summary"
+for f in skills/a/SKILL.md skills/b/SKILL.md .claude-plugin/plugin.json scripts/domains.py; do
+    assert_file "$r/$f" "mono-one apply moved $f"
+done
+[ -e "$r/plugins" ] && {
+    echo "FAIL: mono-one — empty plugins/ should be removed"
+    fail=1
+}
+[ "$(jq -c '[.plugins[].source]' "$r/.claude-plugin/marketplace.json")" = '["./",{"source":"url","url":"https://x/y.git"}]' ] || {
+    echo "FAIL: mono-one — marketplace sources not rewritten as expected: $(cat "$r/.claude-plugin/marketplace.json")"
+    fail=1
+}
+grep -q pluginRoot "$r/.claude-plugin/marketplace.json" && {
+    echo "FAIL: mono-one — pluginRoot survived the rewrite"
+    fail=1
+}
+if grep -qF "plugins/conf" "$r/skills/a/scripts/run.py" || ! grep -qF "scripts/domains.py" "$r/skills/a/scripts/run.py"; then
+    echo "FAIL: mono-one — skill script path reference not fixed"
+    fail=1
+fi
+grep -qF "ln -s skills/a" "$r/README.md" || {
+    echo "FAIL: mono-one — README path reference not fixed"
+    fail=1
+}
+[ "$(git -C "$r" status --porcelain | grep -c '^R')" -ge 4 ] || {
+    echo "FAIL: mono-one — moves should be git renames (history kept)"
+    fail=1
+}
+chk="$(bash "$here/vendor/structure_check.sh" "$r")"
+assert_line "$chk" "M11 PASS" "mono-one structure-check M11 after conversion"
+# idempotent: already single -> no M11 line, nothing applied
+out="$(bash "$ra" "$r" --mode single --scope mp --apply)"
+assert_no_line "$out" "[M11]" "mono-one re-run is a no-op for M11"
+assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "mono-one idempotent re-run"
+
+# ---- case 14: M11 conversion never overwrites an existing destination ------
+r="$tmp/mono-one-conflict"
+mkdir -p "$r/plugins/conf/.claude-plugin" "$r/plugins/conf/skills/a" "$r/skills/a" "$r/.claude-plugin"
+git -C "$r" init -q
+printf '{"plugins":[{"name":"conf","source":"./plugins/conf"}]}' >"$r/.claude-plugin/marketplace.json"
+printf -- '---\nname: a\ndescription: t\n---\n' >"$r/plugins/conf/skills/a/SKILL.md"
+out="$(bash "$ra" "$r" --mode single --scope mp --apply 2>/dev/null)"
+assert_line "$out" "[M11] blocked  destination exists: skills/a — resolve by hand, nothing moved" "conflict blocked line"
+assert_file "$r/plugins/conf/skills/a/SKILL.md" "conflict: source left in place"
+assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "conflict summary"
 
 if [ "$fail" -eq 0 ]; then
     echo "PASS: all refactor_apply.sh smoke cases"

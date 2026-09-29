@@ -173,8 +173,8 @@ M10)`. No `skills` array is needed after the move (the root `skills/` is
 auto-scanned) and adding one to `plugin.json` is an M10 FAIL. `mono` with two
 or more plugin roots → **FAIL**, detail `split into one repo per plugin, each
 with root skills/ (<plugin roots>)`. `mono` with zero plugin roots → **N/A**
-(M2 owns it). `structure-refactor` never auto-fixes M11 — it is a layout
-conversion, which refactor does not perform.
+(M2 owns it). `structure-refactor` auto-fixes M11 only for mono with exactly
+one plugin root (mono→single conversion); 2+ roots need a human split.
 
 ## Recommended items (WARN when missing)
 

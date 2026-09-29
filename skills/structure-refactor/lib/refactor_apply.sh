@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # skills/structure-refactor/lib/refactor_apply.sh — deterministic apply engine
-# for the M1,M3,M5-M7,M10 / R1,R2,R4,R5 fixes over a claude-plugin marketplace
-# repo (packaging-skills#8).
+# for the M1,M3,M5-M7,M10,M11 (mono-1 -> single) / R1,R2,R4,R5 fixes over a
+# claude-plugin marketplace repo (packaging-skills#8, #32).
 #
 # Reuses structure-check's structure_check.sh for mode-aware plugin/skill
 # discovery (its MODE/PLUGINS/SKILLS/GIT context lines) instead of
@@ -34,7 +34,7 @@
 #   ROOTS <root ...>            (repo-relative, or "(none)")
 #   [<ID>] <verb>  <detail>     one line per pending change, in apply order
 #   ...
-#   SUMMARY applied=<n> created=<n> sourced=<n> pruned=<n> stubbed=<n> renamed=<n> linked=<n> pages=<activated|active|warn|skip|n/a>
+#   SUMMARY applied=<n> created=<n> sourced=<n> pruned=<n> stubbed=<n> renamed=<n> linked=<n> pages=<activated|active|warn|skip|n/a> converted=<0|1>
 #
 # `applied` is the sum of the per-category counts below — actual changes
 # made, not plan lines attempted (0 on a dry run, and a plan line whose write
@@ -167,9 +167,164 @@ pruned=0
 stubbed=0
 renamed=0
 linked=0
+converted=0
 pages_status="n/a"
 
 add_plan() { plan+=("$1"); }
+
+emit() {
+    echo "MODE $mode"
+    echo "SCOPE $scope"
+    if [ "${#ROOTS[@]}" -gt 0 ]; then
+        echo "ROOTS ${ROOTS[*]}"
+    else
+        echo "ROOTS (none)"
+    fi
+    if [ "${#plan[@]}" -gt 0 ]; then
+        printf '%s\n' "${plan[@]}"
+    fi
+    # `applied` sums what actually changed, not `${#plan[@]}` (plan lines
+    # attempted) — a plan line whose write failed, or whose fix skipped a
+    # specific element (the M7 nameless-element case below), must not report
+    # a success that didn't happen (codex review, PR #20 round 3).
+    local pages_applied=0
+    [ "$pages_status" = "activated" ] && pages_applied=1
+    applied=$((created + sourced + pruned + stubbed + renamed + linked + pages_applied + converted))
+    echo "SUMMARY applied=$applied created=$created sourced=$sourced pruned=$pruned stubbed=$stubbed renamed=$renamed linked=$linked pages=$pages_status converted=$converted"
+}
+
+# Literal (non-regex) substring replace over a file — plugin names may carry
+# regex metacharacters, so sed/awk gsub would need escaping. Prints 1 when the
+# file changed.
+_replace_literal() {
+    local f="$1" from="$2" to="$3" t
+    t="$(mktemp)"
+    awk -v from="$from" -v to="$to" '{
+        out = ""; s = $0
+        while ((i = index(s, from)) > 0) { out = out substr(s, 1, i - 1) to; s = substr(s, i + length(from)) }
+        print out s
+    }' "$f" >"$t" && ! cmp -s "$t" "$f" && mv "$t" "$f" && echo 1
+    rm -f "$t"
+}
+
+# ---- M11: mono (exactly 1 plugin root) → single conversion (#32) ------------
+# Runs when the TARGET is single (--mode single: SKILL.md picks it for a
+# detected mono repo with one plugin root, since M11 FAILs every mono layout)
+# but the DETECTED layout (structure_check.sh, no mode flag) is mono with
+# exactly one plugin root. mono with 2+ roots needs a repo split (human); an
+# already-single repo never enters this block (no-op). Conversion is the
+# whole run: the other M/R fixes are computed against the post-conversion
+# layout, so re-run with --mode single afterwards. Never overwrites an
+# existing destination.
+det_out="$(bash "$CHECK" "$repo" 2>/dev/null)"
+det_mode="$(grep -m1 '^MODE ' <<<"$det_out" | cut -d' ' -f2)"
+det_plugins="$(grep -m1 '^PLUGINS ' <<<"$det_out" | cut -d' ' -f2-)"
+read -r -a _det_names <<<"$det_plugins"
+if [ "$mode" = single ] && [ "$det_mode" = mono ] && [ "${#_det_names[@]}" -eq 1 ] && [ "$det_plugins" != "(none)" ]; then
+    p="${_det_names[0]}"
+    pr="plugins/$p"
+    ROOTS=("$pr")
+    mode="mono→single"
+    is_git=0
+    git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1 && is_git=1
+    mv_verb="mv    "
+    [ "$is_git" -eq 1 ] && mv_verb="git mv"
+
+    # (src dst) pairs, in apply order: skills, plugin.json, shared scripts.
+    moves=()
+    _dir_moves() {
+        [ -d "$repo/$pr/$1" ] || return 0
+        local e
+        while IFS= read -r e; do moves+=("$pr/$1/$e" "$1/$e"); done < <(ls -A "$repo/$pr/$1")
+    }
+    _dir_moves skills
+    [ -f "$repo/$pr/.claude-plugin/plugin.json" ] &&
+        moves+=("$pr/.claude-plugin/plugin.json" ".claude-plugin/plugin.json")
+    _dir_moves scripts
+
+    conflicts=()
+    for ((i = 0; i < ${#moves[@]}; i += 2)); do
+        [ -e "$repo/${moves[i + 1]}" ] && conflicts+=("${moves[i + 1]}")
+    done
+
+    # Text files whose path references need fixing (pre-move paths).
+    ref_files=()
+    while IFS= read -r f; do ref_files+=("$f"); done < <(
+        cd "$repo" && grep -rlIF -- "$pr/" "$pr/skills" "$pr/scripts" README.md 2>/dev/null
+    )
+
+    add_plan "[M11] convert  mono → single ($pr)"
+    if [ "${#conflicts[@]}" -gt 0 ]; then
+        add_plan "[M11] blocked  destination exists: ${conflicts[*]} — resolve by hand, nothing moved"
+        echo "warn: M11 conversion blocked — destination(s) already exist: ${conflicts[*]}" >&2
+        emit
+        exit 0
+    fi
+    for ((i = 0; i < ${#moves[@]}; i += 2)); do
+        add_plan "[M11] $mv_verb  ${moves[i]} → ${moves[i + 1]}"
+    done
+    [ -e "$repo/.claude-plugin/marketplace.json" ] &&
+        add_plan "[M11] rewrite  marketplace.json: source → \"./\", remove pluginRoot"
+    add_plan "[M11] rmdir    $pr/{skills,scripts,.claude-plugin}/ $pr/ plugins/ (if empty)"
+    [ "${#ref_files[@]}" -gt 0 ] &&
+        add_plan "[M11] fix      path references to $pr/ in ${#ref_files[@]} file(s)"
+
+    if [ "$apply" -eq 1 ]; then
+        ok=1
+        for ((i = 0; i < ${#moves[@]}; i += 2)); do
+            src="${moves[i]}" dst="${moves[i + 1]}"
+            mkdir -p "$repo/$(dirname "$dst")"
+            if ! { [ "$is_git" -eq 1 ] && git -C "$repo" mv -- "$src" "$dst" 2>/dev/null; } &&
+                ! mv -- "$repo/$src" "$repo/$dst"; then
+                echo "warn: M11 move failed: $src → $dst — stopping the conversion here" >&2
+                ok=0
+                break
+            fi
+        done
+
+        if [ "$ok" -eq 1 ]; then
+            mfj="$repo/.claude-plugin/marketplace.json"
+            if [ -e "$mfj" ] && jq empty "$mfj" >/dev/null 2>&1; then
+                tmp="$(mktemp)"
+                # Only sources naming this plugin dir become "./"; url sources
+                # and anything else are left alone.
+                jq --arg pr "$pr" '
+                  def islocal: type == "string" and ((ltrimstr("./") | rtrimstr("/")) == $pr);
+                  del(.pluginRoot, .metadata.pluginRoot)
+                  | if (.plugins | type) == "array" then
+                      .plugins |= map(
+                        if islocal then "./"
+                        elif type == "object" then
+                          del(.pluginRoot) | if (.source | islocal) then .source = "./" else . end
+                        else . end)
+                    else . end
+                ' "$mfj" >"$tmp" && mv "$tmp" "$mfj" || echo "warn: M11 marketplace.json rewrite failed: $mfj" >&2
+                rm -f "$tmp"
+            fi
+
+            for sub in skills scripts .claude-plugin; do
+                [ -d "$repo/$pr/$sub" ] && { rmdir "$repo/$pr/$sub" 2>/dev/null ||
+                    echo "warn: $pr/$sub/ not empty — left in place" >&2; }
+            done
+            rmdir "$repo/$pr" 2>/dev/null || echo "warn: $pr/ not empty (unmoved files) — left in place" >&2
+            rmdir "$repo/plugins" 2>/dev/null || true
+
+            for f in "${ref_files[@]}"; do
+                case "$f" in "$pr/"*) f="${f#"$pr/"}" ;; esac
+                for sub in skills scripts .claude-plugin; do
+                    _replace_literal "$repo/$f" "$pr/$sub/" "$sub/" >/dev/null
+                done
+                # ponytail: only the three known subpaths are rewritten; a bare
+                # "plugins/<p>/" mention (e.g. a comment naming the old root)
+                # needs a human reading of what it now means.
+                grep -qF -- "$pr/" "$repo/$f" && echo "warn: $f still mentions $pr/ — review by hand" >&2
+            done
+            converted=1
+        fi
+    fi
+    emit
+    exit 0
+fi
 
 # Drop trailing blank lines before an R5 append, so N separate appends across
 # N skills (or across repeated runs that each still had something missing)
@@ -514,24 +669,5 @@ if [ "$scope" = op ]; then
 fi
 
 # ---- emit ---------------------------------------------------------------
-echo "MODE $mode"
-echo "SCOPE $scope"
-if [ "${#ROOTS[@]}" -gt 0 ]; then
-    echo "ROOTS ${ROOTS[*]}"
-else
-    echo "ROOTS (none)"
-fi
-
-if [ "${#plan[@]}" -gt 0 ]; then
-    printf '%s\n' "${plan[@]}"
-fi
-
-# `applied` sums what actually changed, not `${#plan[@]}` (plan lines
-# attempted) — a plan line whose write failed, or whose fix skipped a
-# specific element (the M7 nameless-element case above), must not report
-# a success that didn't happen (codex review, PR #20 round 3).
-pages_applied=0
-[ "$pages_status" = "activated" ] && pages_applied=1
-applied=$((created + sourced + pruned + stubbed + renamed + linked + pages_applied))
-echo "SUMMARY applied=$applied created=$created sourced=$sourced pruned=$pruned stubbed=$stubbed renamed=$renamed linked=$linked pages=$pages_status"
+emit
 exit 0

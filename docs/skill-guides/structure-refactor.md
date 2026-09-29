@@ -10,9 +10,11 @@
 스킬이 편집한다. 반대로 repo 를 처음부터 만드는 건 `scaffold-repo`, 이름을 바꾸는 건
 `rename-repo` 다.
 
-single 레이아웃과 mono 레이아웃 사이의 **변환은 하지 않는다**. 감지된 현재
-레이아웃과 다른 모드를 강제하면 `[convert]` 경고 한 줄만 찍고, `--apply` 라도
-아무것도 쓰지 않고 멈춘다.
+레이아웃 변환은 **mono(plugin 1개) → single 하나만** 한다 (M11). plugin 이 하나인
+mono repo 는 `plugins/<p>/skills/*` → `skills/*`, `plugin.json` → 루트
+`.claude-plugin/`, 공유 `scripts/` 를 `git mv` 로 옮기고 marketplace source 를
+`"./"` 로 바꾼다 (`--apply` 에서만). 그 밖의 변환(single → mono, plugin 2개 이상
+mono)은 `[convert]` 경고 한 줄만 찍고, `--apply` 라도 아무것도 쓰지 않고 멈춘다.
 
 ## 호출 형식
 
@@ -51,8 +53,8 @@ R5 README 링크 보강이 더해진다.
   스켈레톤은 기존 파일을 덮어쓰지 않고, 링크 보강은 중복을 만들지 않으며,
   Pages 가 이미 켜져 있으면 건너뛴다.
 - git repo 안에서는 이동에 `git mv` 를 써서 히스토리를 보존한다.
-- single↔mono 변환은 범위 밖이다 — 유효한 single repo 를 강제로 mono 로 재배치해
-  업스트림 호환을 깨는 사고를 막는 안전장치다.
+- mono(plugin 1개) → single 외의 변환은 범위 밖이다 — 유효한 single repo 를 강제로
+  mono 로 재배치해 업스트림 호환을 깨는 사고를 막는 안전장치다.
 - Pages 활성화와 R5 링크 보강은 soft-fail 이다. 토큰 스코프가 없거나 호스트에
   못 닿으면 경고만 하고 계속 진행한다.
 - R1 가이드는 실제 내용이지만 R2 usage 는 stub 수준이다. `/visuals:excalidraw-diagram`
