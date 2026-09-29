@@ -427,6 +427,35 @@ assert_line "$out" "[M11] blocked  destination exists: skills/a — resolve by h
 assert_file "$r/plugins/conf/skills/a/SKILL.md" "conflict: source left in place"
 assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "conflict summary"
 
+# ---- case 15: a mid-run move failure rolls back the moves already made (#34)
+# Moves run skills -> plugin.json -> scripts; a read-only root .claude-plugin/
+# lets both skill moves succeed, then fails plugin.json. The two skill moves
+# must be undone so the tree is exactly its pre-run layout.
+r="$tmp/mono-one-rollback"
+pp="$r/plugins/conf"
+mkdir -p "$r/.claude-plugin" "$pp/.claude-plugin" "$pp/skills/a" "$pp/skills/b" "$pp/scripts"
+git -C "$r" init -q
+printf '{"plugins":[{"name":"conf","source":"./plugins/conf"}]}' >"$r/.claude-plugin/marketplace.json"
+printf '{"name":"conf"}' >"$pp/.claude-plugin/plugin.json"
+printf -- '---\nname: a\ndescription: t\n---\n' >"$pp/skills/a/SKILL.md"
+printf -- '---\nname: b\ndescription: t\n---\n' >"$pp/skills/b/SKILL.md"
+printf 'X = 1\n' >"$pp/scripts/x.py"
+git -C "$r" add -A && git -C "$r" -c user.email=t@t -c user.name=t commit -qm init
+before="$(cd "$r" && find . -path ./.git -prune -o -print | sort)"
+chmod 555 "$r/.claude-plugin"
+out="$(bash "$ra" "$r" --mode single --scope mp --apply 2>"$tmp/m11rb.err")"
+chmod 755 "$r/.claude-plugin"
+assert_line "$out" "SUMMARY applied=0 created=0 sourced=0 pruned=0 stubbed=0 renamed=0 linked=0 pages=n/a converted=0" "rollback summary"
+assert_line "$(cat "$tmp/m11rb.err")" "warn: M11 move failed: plugins/conf/.claude-plugin/plugin.json → .claude-plugin/plugin.json — conversion rolled back, nothing moved (converted=0)" "rollback warning"
+[ -z "$(git -C "$r" status --porcelain)" ] || {
+    echo "FAIL: rollback — git status not clean: $(git -C "$r" status --porcelain)"
+    fail=1
+}
+[ "$(cd "$r" && find . -path ./.git -prune -o -print | sort)" = "$before" ] || {
+    echo "FAIL: rollback — tree differs from pre-run layout (leftover skills/ dir?)"
+    fail=1
+}
+
 if [ "$fail" -eq 0 ]; then
     echo "PASS: all refactor_apply.sh smoke cases"
     exit 0
