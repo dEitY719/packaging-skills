@@ -44,7 +44,8 @@ Use `<new-name>` if given: `<domain>-skills`, lowercase + hyphens only; a
 missing `-skills` suffix is auto-appended (tell the user). A `claude-plugin-`
 prefix is refused: `[FAIL] claude-plugin- prefix is the pre-#1410 naming — use
 <domain>-skills`. Otherwise inspect the plugin composition and propose 1-2
-`<domain>-skills` names — the user picks; never rename before their choice. Detail: `references/playbook.md` 1단계.
+`<domain>-skills` names — the user picks; never rename before their choice.
+Detail: `references/playbook.md` 1단계.
 
 ## Step 2: Rename the Repo (DESTRUCTIVE — confirm first)
 
