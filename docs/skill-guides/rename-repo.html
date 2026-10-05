@@ -377,7 +377,7 @@
             <h3>이름만 컨벤션을 벗어난 repo</h3>
             <p>
               repo 는 이미 있고 <strong>이름만</strong> 팀 컨벤션
-              <code class="inl">claude-plugin-&lt;domain&gt;</code> 에서 벗어난 경우에 쓴다.
+              <code class="inl">&lt;domain&gt;-skills</code> 에서 벗어난 경우에 쓴다.
             </p>
           </article>
 
@@ -445,7 +445,7 @@
               </summary>
               <div class="step-body">
                 <ul>
-                  <li>인자를 쓰거나, plugin 구성을 보고 <code class="inl">claude-plugin-&lt;domain&gt;</code> 후보 1-2개 제안</li>
+                  <li>인자를 쓰거나, plugin 구성을 보고 <code class="inl">&lt;domain&gt;-skills</code> 후보 1-2개 제안</li>
                   <li>사용자가 고를 때까지 rename 하지 않음</li>
                 </ul>
               </div>
@@ -557,8 +557,10 @@
 
         <div class="note warn" style="margin-top:20px;">
           <p>
-            <code class="inl">&lt;new-name&gt;</code> 은 <code class="inl">claude-plugin-</code>
-            prefix 를 포함한 <strong>소문자 + 하이픈</strong> 형태여야 한다.
+            <code class="inl">&lt;new-name&gt;</code> 은 <code class="inl">&lt;domain&gt;-skills</code>
+            형태의 <strong>소문자 + 하이픈</strong>이어야 한다. <code class="inl">-skills</code>
+            접미어가 없으면 자동으로 붙이고 알려 주며, <code class="inl">claude-plugin-</code>
+            prefix 는 pre-#1410 옛 규칙이라 거부한다.
             대문자나 언더스코어는 <code class="inl">gh repo rename</code> 을 깨거나 컨벤션을 위반한다.
           </p>
         </div>
@@ -593,7 +595,7 @@
           </div>
           <div class="note">
             <p>
-              <code class="inl">source</code> 가 <code class="inl">./plugins/...</code> 같은
+              <code class="inl">source</code> 가 <code class="inl">./...</code> 같은
               <strong>상대경로인 필드는 건드리지 않는다</strong> — repo 이름과 무관하기 때문이다.
             </p>
           </div>

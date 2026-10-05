@@ -28,26 +28,26 @@ check() {
 }
 
 # https, with and without .git, github.com
-check "https://github.com/dEitY719/claude-plugin-visuals.git" \
-  github.com dEitY719 claude-plugin-visuals
-check "https://github.com/dEitY719/claude-plugin-visuals" \
-  github.com dEitY719 claude-plugin-visuals
+check "https://github.com/dEitY719/visuals-skills.git" \
+  github.com dEitY719 visuals-skills
+check "https://github.com/dEitY719/visuals-skills" \
+  github.com dEitY719 visuals-skills
 
 # git@ (SSH, scp-like) form
-check "git@github.com:dEitY719/claude-plugin-visuals.git" \
-  github.com dEitY719 claude-plugin-visuals
+check "git@github.com:dEitY719/visuals-skills.git" \
+  github.com dEitY719 visuals-skills
 
 # ssh:// URL form
-check "ssh://git@github.com/dEitY719/claude-plugin-visuals.git" \
-  github.com dEitY719 claude-plugin-visuals
+check "ssh://git@github.com/dEitY719/visuals-skills.git" \
+  github.com dEitY719 visuals-skills
 
 # ssh:// URL form with an explicit port — HOST must drop the :port
 check "ssh://git@github.our-company.com:2222/team/company-skills.git" \
   github.our-company.com team company-skills
 
 # trailing slash, no .git
-check "https://github.com/dEitY719/claude-plugin-visuals/" \
-  github.com dEitY719 claude-plugin-visuals
+check "https://github.com/dEitY719/visuals-skills/" \
+  github.com dEitY719 visuals-skills
 
 # GHES host, https
 check "https://github.our-company.com/team/company-skills.git" \

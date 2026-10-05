@@ -1,4 +1,4 @@
-/packaging:rename-repo — Rename a claude-plugin repo to the team convention
+/packaging:rename-repo — Rename a skill marketplace repo to the team convention
 
 Usage:
   /packaging:rename-repo <new-name>   Rename to an explicit name
@@ -9,13 +9,13 @@ Arguments:
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `<new-name>` | new repo name, `claude-plugin-<domain>` form, lowercase + hyphens | inferred from plugin composition, user picks |
+| `<new-name>` | new repo name, `<domain>-skills` form, lowercase + hyphens; missing `-skills` auto-appended; `claude-plugin-` prefix rejected | inferred from plugin composition, user picks |
 | `-h`/`--help`/`help` | print this help and stop — no git/gh calls | — |
 
 Behavior (per-step — full detail in SKILL.md / references/playbook.md):
   0  Env/host check     parse_remote.sh (eval-safe) + gh auth status --hostname;
                         refuse default branch
-  1  Name decision      use the arg, or propose claude-plugin-<domain> names
+  1  Name decision      use the arg, or propose <domain>-skills names
   2  gh repo rename     DESTRUCTIVE — confirm first (--repo <host>/<org>/<repo>;
                         web UI fallback on GHES)
   3  Remote URL update  git remote set-url origin + ls-remote verification
@@ -43,12 +43,12 @@ Safety:
   - Relative `source` paths are repo-name-independent — left untouched.
 
 Examples:
-  /packaging:rename-repo claude-plugin-visuals
+  /packaging:rename-repo visuals-skills
   /packaging:rename-repo
   /packaging:rename-repo help
 
 Sister skills:
-  /packaging:structure-check     — audit a claude-plugin repo's layout
+  /packaging:structure-check     — audit a skill marketplace repo's layout
   /packaging:structure-refactor  — fix that layout toward the standard
 
 Not this skill:
