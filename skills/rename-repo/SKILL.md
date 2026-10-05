@@ -1,9 +1,9 @@
 ---
 name: rename-repo
 description: >-
-  Rename a claude-plugin marketplace repo to the team convention
-  (claude-plugin-<domain>) and fix every hardcoded reference. Rename and push
-  need confirmation. Use for "rename this plugin repo", "이 레포 이름 바꿔",
+  Rename a skill marketplace repo to <domain>-skills (claude-plugin- prefix
+  rejected) and fix every hardcoded reference. Rename and push need
+  confirmation. Use for "rename this plugin repo", "이 레포 이름 바꿔",
   "/packaging:rename-repo <name>".
 license: MIT
 compatibility:
@@ -17,10 +17,10 @@ metadata:
     non_claude: advisory-only
 ---
 
-# claude-plugin Repo Renamer
+# Skill-marketplace Repo Renamer
 
-Rename an existing `claude-plugin-*` marketplace repo to the team naming
-convention `claude-plugin-<domain>`, then fix every hardcoded reference.
+Rename an existing skill marketplace repo to the team naming convention
+`<domain>-skills`, then fix every hardcoded reference.
 Full procedure (the embedded SSOT): `references/playbook.md`.
 
 ## Help
@@ -40,10 +40,11 @@ refuse to work on the default branch. Detail: `references/playbook.md` 0단계.
 
 ## Step 1: Decide the New Name
 
-Use `<new-name>` verbatim if given (must carry the `claude-plugin-` prefix,
-lowercase + hyphens only). Otherwise inspect the plugin composition and
-propose 1-2 `claude-plugin-<domain>` names — the user picks; never rename
-before their choice. Detail: `references/playbook.md` 1단계.
+Use `<new-name>` if given: `<domain>-skills`, lowercase + hyphens only; a
+missing `-skills` suffix is auto-appended (tell the user). A `claude-plugin-`
+prefix is refused: `[FAIL] claude-plugin- prefix is the pre-#1410 naming — use
+<domain>-skills`. Otherwise inspect the plugin composition and propose 1-2
+`<domain>-skills` names — the user picks; never rename before their choice. Detail: `references/playbook.md` 1단계.
 
 ## Step 2: Rename the Repo (DESTRUCTIVE — confirm first)
 
@@ -61,9 +62,9 @@ web UI fallback if `gh` can't reach it). Detail: `references/playbook.md`
 ## Step 4: Scan + Fix Hardcoded Old Names
 
 `git grep -Fn "<OLD_REPO>"` (literal match — repo names can contain `.`),
-fix every hit (`marketplace.json` `name`, `plugin.json`
+fix every hit (`marketplace.json` `name`, the root manifests'
 `homepage`/`repository`, README + skill-README install commands), skip
-relative `./plugins/...` sources, then re-grep for 0 hits (`git grep` exits
+relative `./...` `source` paths, then re-grep for 0 hits (`git grep` exits
 1 with no output on 0 hits — that exit code IS the pass, not a script
 failure). Detail: `references/playbook.md` 4단계.
 

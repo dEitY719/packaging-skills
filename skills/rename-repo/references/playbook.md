@@ -1,19 +1,21 @@
 # rename-repo 플레이북 (embedded SSOT)
 
 출처: [dotfiles discussions #886](https://github.com/dEitY719/dotfiles/discussions/886)
-— `xxx-yyy-zzz` 형태의 기존 레포 이름을 팀 컨벤션 `claude-plugin-<domain>`
-으로 rename 하는 범용 작업 지시서. SKILL.md 의 각 Step 은 이 절차를 실행한다.
+— `xxx-yyy-zzz` 형태의 기존 레포 이름을 팀 컨벤션 `<domain>-skills`
+로 rename 하는 범용 작업 지시서. SKILL.md 의 각 Step 은 이 절차를 실행한다.
 github.com / 사내 GHES 양쪽 모두 동작한다.
 
 ## 합의된 네이밍 컨벤션
 
-- 새 레포 이름 형식: `claude-plugin-<domain>` (예: `xxx-yyy-zzz` →
-  `claude-plugin-visuals`). `<domain>` 은 GitHub 레포 네이밍 규칙에 따라
+- 새 레포 이름 형식: `<domain>-skills` (예: `xxx-yyy-zzz` →
+  `visuals-skills`). `<domain>` 은 GitHub 레포 네이밍 규칙에 따라
   반드시 소문자와 하이픈(-)만 사용 (대문자/언더스코어 금지).
-- 이유:
-  - `plugin-` 이 `skills-` 보다 상위/범용 개념 — plugin 은 skills·commands·
-    agents·hooks 를 모두 번들하며 `.claude-plugin/` 디렉터리 구조와 일치한다.
-  - `claude-` prefix 로 프로필/조직에서 "무엇의 플러그인인지" 식별성을 확보한다.
+- `-skills` 접미어가 없으면 자동으로 붙이고 사용자에게 알린다
+  (`visuals` → `visuals-skills`).
+- `claude-plugin-` 접두어는 거부한다:
+  `[FAIL] claude-plugin- prefix is the pre-#1410 naming — use <domain>-skills`.
+  `packaging:scaffold-repo` 와 같은 규칙이다 (#1410 의 레포 분리 이후 레포당
+  플러그인 1개, 루트 `skills/`).
 - marketplace `name` 1:1 일치: `.claude-plugin/marketplace.json` 의 `name` 을
   새 레포 이름과 동일하게 맞춘다.
 
@@ -40,11 +42,11 @@ github.com / 사내 GHES 양쪽 모두 동작한다.
 
 ### 1단계 — 새 이름 결정
 
-- 레포 안의 plugin 구성을 살핀다 (`.claude-plugin/marketplace.json` 의
-  `plugins[]` 와 `plugins/` 디렉터리 구조).
-- 그걸 근거로 `claude-plugin-<domain>` 형식의 새 이름을 1~2개 제안한다.
-  - plugin 이 하나의 도메인이면: `claude-plugin-<그도메인>`.
-  - 여러 도메인을 담은 marketplace 면: `claude-plugin-<팀/제품명>` 처럼 묶는 이름.
+- 레포 안의 plugin 구성을 살핀다 (루트 `.claude-plugin/marketplace.json` 의
+  plugin 항목과 `skills/` 디렉터리 구성).
+- 그걸 근거로 `<domain>-skills` 형식의 새 이름을 1~2개 제안한다.
+  - plugin 의 도메인 하나로: `<그도메인>-skills`.
+  - 도메인을 더 명시하고 싶으면: `<수식어>-<도메인>-skills` 처럼 좁힌 이름.
 - 최종 이름은 사용자가 고른다. 선택을 받기 전에는 rename 하지 않는다.
 
 ### 2단계 — 레포 rename (파괴적 — 확인 필수)
@@ -69,10 +71,13 @@ github.com / 사내 GHES 양쪽 모두 동작한다.
   리터럴 매치 — 레포 이름에 `.` 이 있으면 정규식 와일드카드로 오탐한다).
 - 아래 위치를 빠짐없이 점검하고 새 이름으로 교체:
   - `.claude-plugin/marketplace.json` 의 `name` → 새 레포 이름과 1:1 일치.
-  - `plugins/<plugin>/.claude-plugin/plugin.json` 의 `homepage` / `repository`.
+  - 루트 매니페스트 7종(`.claude-plugin/{marketplace,plugin}.json`,
+    `.codex-plugin/plugin.json`, `.kimi-plugin/plugin.json`,
+    `.hermes-plugin/plugin.yaml`, `gemini-extension.json`, `package.json`) 의
+    `homepage` / `repository` 등 URL 필드.
   - `README.md` 의 제목과 `/plugin marketplace add <org>/<OLD_REPO>` 설치 명령.
   - 각 skill 의 README 안의 marketplace 링크 / 설치 명령.
-- 단, `source` 가 `./plugins/...` 같은 상대경로면 레포명과 무관하니 건드리지 않는다.
+- 단, `source` 가 `./` 로 시작하는 상대경로면 레포명과 무관하니 건드리지 않는다.
 - 수정 후 `git grep -Fn "<OLD_REPO>"` 가 0건인지 확인 — 이 결과가 SKILL.md
   Step 6 의 `[OK]`/`[FAIL]` 판정 근거다. (`git grep` 은 매치가 0건이면 종료
   코드 1, 출력 없음을 반환한다 — 그 1이 통과 조건이지, 스크립트 실패가

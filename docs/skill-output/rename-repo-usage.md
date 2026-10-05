@@ -27,8 +27,8 @@ Step 0 통과 — 호스트 `github.com`, `gh auth status` 는
 Step 1 이 도메인 1개(`packaging`)를 근거로 후보 2건을 제안했다.
 
 ```
-1) claude-plugin-packaging        (plugin key 그대로)
-2) claude-plugin-skill-packaging  (도메인을 더 명시)
+1) packaging-skills        (plugin key 그대로)
+2) skill-packaging-skills  (도메인을 더 명시)
 ```
 
 Step 2 는 파괴적이라 확인 게이트에서 정지. **`gh repo rename` 은 호출되지 않았고
