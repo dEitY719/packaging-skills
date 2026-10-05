@@ -9,6 +9,7 @@ LICENSE, `.gitignore`, 그리고 초기 커밋이 올라간 GitHub 원격 저장
 | 상황 | 쓸 스킬 |
 |---|---|
 | repo 가 아직 **없다**. 흩어진 스킬을 묶어 새로 만든다 | `scaffold-repo` |
+| 외부 repo 가 github.com 에는 **있는데 GHES 에는 없다** | `mirror-repo` |
 | repo 는 있는데 **이름**이 컨벤션에 안 맞는다 | `rename-repo` |
 | repo 는 있는데 **구조**가 표준에서 벗어났는지 알고 싶다 | `structure-check` |
 | 그 구조를 실제로 **고친다** | `structure-refactor` |

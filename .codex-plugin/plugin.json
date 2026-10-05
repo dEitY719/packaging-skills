@@ -1,7 +1,7 @@
 {
   "name": "packaging",
   "version": "0.1.8",
-  "description": "Build and maintain agent skill marketplace repos: scaffold a new one, rename it to convention, audit its layout, and refactor it into shape.",
+  "description": "Build and maintain agent skill marketplace repos: scaffold a new one, mirror an external one onto GHES (mirror-repo), rename it to convention, audit its layout, and refactor it into shape.",
   "author": {
     "name": "dEitY719",
     "url": "https://github.com/dEitY719"
@@ -23,7 +23,7 @@
   "interface": {
     "displayName": "Packaging",
     "shortDescription": "Create, rename, audit, and refactor agent skill marketplace repos",
-    "longDescription": "Packaging bundles the four skills used to build and maintain skill marketplace repos: scaffold-repo scaffolds a new repo end to end, rename-repo moves an existing one onto the naming convention and fixes every hardcoded reference, structure-check audits a repo's layout read-only, and structure-refactor applies the fixes.",
+    "longDescription": "Packaging bundles the five skills used to build and maintain skill marketplace repos: scaffold-repo scaffolds a new repo end to end, mirror-repo mirrors an existing external repo onto GHES, rename-repo moves an existing one onto the naming convention and fixes every hardcoded reference, structure-check audits a repo's layout read-only, and structure-refactor applies the fixes.",
     "developerName": "dEitY719",
     "category": "Developer Tools",
     "capabilities": [

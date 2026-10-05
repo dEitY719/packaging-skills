@@ -1,8 +1,8 @@
 # packaging-skills
 
-Four skills for building and maintaining agent skill marketplace repos —
-scaffold a new one, rename it to convention, audit its layout, refactor it into
-shape. Packaged as a single plugin named `packaging`, installable on six
+Five skills for building and maintaining agent skill marketplace repos —
+scaffold a new one, mirror an external one onto GHES, rename it to convention,
+audit its layout, refactor it into shape. Packaged as a single plugin named `packaging`, installable on six
 coding-agent harnesses.
 
 ## Skills
@@ -10,6 +10,7 @@ coding-agent harnesses.
 | Skill | Invoke | What it does |
 |-------|--------|--------------|
 | `scaffold-repo` | `/packaging:scaffold-repo <name>` | Scaffolds a new marketplace repo from scratch: structure, manifests, copy-only skill import, `git init`, repo create, push. New repos only. |
+| `mirror-repo` | `/packaging:mirror-repo <name>` | Mirrors an external `*-skills` repo to GHES: clone from github.com, create GHES repo, set up origin+upstream remotes, push. New mirrors only. |
 | `rename-repo` | `/packaging:rename-repo <name>` | Renames an existing plugin repo to the team convention and fixes every hardcoded reference. Rename and push each need confirmation. |
 | `structure-check` | `/packaging:structure-check` | Audits a repo's directory layout against the standard. Read-only — it reports, it never edits. |
 | `structure-refactor` | `/packaging:structure-refactor` | Applies the fixes `structure-check` found. Prints a plan and stops unless you pass `--apply`. |
@@ -19,6 +20,7 @@ coding-agent harnesses.
 Each page is generated from a Markdown source under [`docs/skill-guides/`](docs/skill-guides) and [`docs/skill-output/`](docs/skill-output).
 
 - `scaffold-repo` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/scaffold-repo.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/scaffold-repo-usage.html) (skill source tree to repo creation plan)
+- `mirror-repo` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/mirror-repo.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/mirror-repo-usage.html) (repo name to GHES mirror plan)
 - `rename-repo` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/rename-repo.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/rename-repo-usage.html) (git remote to rename proposal)
 - `structure-check` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/structure-check.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/structure-check-usage.html) (repo path to PASS/WARN/FAIL report)
 - `structure-refactor` — [visual guide](https://deity719.github.io/packaging-skills/skill-guides/structure-refactor.html) · [usage example](https://deity719.github.io/packaging-skills/skill-output/structure-refactor-usage.html) (repo path to dry-run change plan)
@@ -66,7 +68,7 @@ Manifests live at the repo root and all point at one flat `skills/` directory:
 
 ```
 .
-├── skills/{scaffold-repo,rename-repo,structure-check,structure-refactor}/
+├── skills/{scaffold-repo,mirror-repo,rename-repo,structure-check,structure-refactor}/
 │   ├── SKILL.md
 │   └── references/
 ├── .claude-plugin/{marketplace,plugin}.json   Claude Code

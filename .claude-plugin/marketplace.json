@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "packaging-skills",
-  "description": "Claude plugin packaging skills — create, rename, audit, and refactor skill marketplace repos",
+  "description": "Claude plugin packaging skills — create, mirror, rename, audit, and refactor skill marketplace repos",
   "owner": {
     "name": "dEitY719",
     "url": "https://github.com/dEitY719"
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "packaging",
-      "description": "Build and maintain agent skill marketplace repos: scaffold a new one, rename it to convention, audit its layout, and refactor it into shape",
+      "description": "Build and maintain agent skill marketplace repos: scaffold a new one, mirror an external one onto GHES (mirror-repo), rename it to convention, audit its layout, and refactor it into shape",
       "version": "0.1.8",
       "source": "./",
       "homepage": "https://github.com/dEitY719/packaging-skills",

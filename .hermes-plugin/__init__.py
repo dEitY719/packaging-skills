@@ -1,6 +1,6 @@
 """Hermes Agent registration for the `packaging` skills plugin.
 
-Registers the four packaging skills with Hermes' native skill loader so
+Registers the five packaging skills with Hermes' native skill loader so
 `skill_view("packaging:<name>")` can load them on demand.
 
 Unlike superpowers, this plugin injects no session bootstrap context: the
