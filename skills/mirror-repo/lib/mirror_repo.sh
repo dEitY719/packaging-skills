@@ -23,6 +23,8 @@
 set -euo pipefail
 
 die() { printf '[ABORT] packaging:mirror-repo: %s\n' "$*" >&2; exit 1; }
+valid_id() { [[ "$2" =~ ^[A-Za-z0-9._-]+$ ]] || die "invalid $1 '$2'"; }
+repo_exists() { GH_HOST="$1" gh repo view "$2" --json name >/dev/null 2>&1; }
 
 mirror_repo_help() {
   echo "Usage: $0 <repo-name> [--owner <o>] [--ghes-owner <o>] [--dest <path>]" >&2
@@ -63,9 +65,8 @@ case "$NAME" in
   *-skills) ;;
   *) NAME="$NAME-skills"; printf '[INFO] -skills suffix auto-appended: %s\n' "$NAME" ;;
 esac
-for v in "$OWNER" "$HOST"; do
-  [[ "$v" =~ ^[A-Za-z0-9._-]+$ ]] || die "invalid owner/host value '$v'"
-done
+valid_id owner "$OWNER"
+valid_id host "$HOST"
 DEST="${DEST%/}"
 TARGET="$DEST/$NAME"
 [ ! -e "$TARGET" ] || die "$TARGET already exists — this skill creates new mirrors only; refresh with git-pull-skills.sh"
@@ -80,7 +81,7 @@ if [ -z "$GHES_HOST" ]; then
   GHES_HOST=$(timeout 20 bash -c '. "$1" >/dev/null 2>&1; _gh_resolve_host' _ "$helper" 2>/dev/null) \
     || die "_gh_resolve_host failed — pass --ghes-host <host>"
 fi
-[[ "$GHES_HOST" =~ ^[A-Za-z0-9._-]+$ ]] || die "invalid GHES host '$GHES_HOST'"
+valid_id "GHES host" "$GHES_HOST"
 [ "$GHES_HOST" != "$HOST" ] \
   || die "GHES host resolved to the upstream host ($HOST) — pass --ghes-host <host>"
 
@@ -92,12 +93,11 @@ if [ -z "$GHES_OWNER" ]; then
   GHES_OWNER=$(gh api --hostname "$GHES_HOST" user --jq .login 2>/dev/null) \
     || die "cannot detect the active $GHES_HOST login — pass --ghes-owner <owner>"
 fi
-[[ "$GHES_OWNER" =~ ^[A-Za-z0-9._-]+$ ]] || die "invalid GHES owner '$GHES_OWNER'"
+valid_id "GHES owner" "$GHES_OWNER"
 
 # --- Step 1 (online half): upstream must exist, GHES repo must not --------
-GH_HOST="$HOST" gh repo view "$OWNER/$NAME" --json name >/dev/null 2>&1 \
-  || die "upstream repo $HOST/$OWNER/$NAME not found"
-if GH_HOST="$GHES_HOST" gh repo view "$GHES_OWNER/$NAME" --json name >/dev/null 2>&1; then
+repo_exists "$HOST" "$OWNER/$NAME" || die "upstream repo $HOST/$OWNER/$NAME not found"
+if repo_exists "$GHES_HOST" "$GHES_OWNER/$NAME"; then
   die "$GHES_HOST/$GHES_OWNER/$NAME already exists — refresh it with git-pull-skills.sh instead"
 fi
 
@@ -143,7 +143,7 @@ git -C "$TARGET" remote add upstream "$SRC_URL"
 # --- Step 6: push (confirm first; never --force) ---------------------------
 confirm "Push $BRANCH to $ORIGIN_URL?" \
   || die "push declined — GHES repo exists but is empty; push later with: git -C $TARGET push -u origin $BRANCH"
-# push -u also sets $BRANCH's tracking to origin/$BRANCH (Step 5's
+# push -u also sets $BRANCH's tracking to origin/$BRANCH (a separate
 # --set-upstream-to cannot run before origin/$BRANCH exists).
 git -C "$TARGET" push -u origin "$BRANCH" || die "push to $ORIGIN_URL rejected"
 
@@ -151,7 +151,7 @@ git -C "$TARGET" push -u origin "$BRANCH" || die "push to $ORIGIN_URL rejected"
 REMOTES=$(git -C "$TARGET" remote -v)
 grep -qF "$ORIGIN_URL" <<<"$REMOTES" || die "origin is not $ORIGIN_URL after setup"
 grep -qF "$SRC_URL" <<<"$REMOTES" || die "upstream is not $SRC_URL after setup"
-GH_HOST="$GHES_HOST" gh repo view "$GHES_OWNER/$NAME" --json name >/dev/null 2>&1 \
+repo_exists "$GHES_HOST" "$GHES_OWNER/$NAME" \
   || die "GHES repo $GHES_OWNER/$NAME not visible after create"
 
 cat <<EOF
