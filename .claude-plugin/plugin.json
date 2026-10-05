@@ -1,7 +1,7 @@
 {
   "name": "packaging",
   "description": "Build and maintain agent skill marketplace repos: scaffold a new one, mirror an external one onto GHES (mirror-repo), rename it to convention, audit its layout, and refactor it into shape",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "author": {
     "name": "dEitY719",
     "url": "https://github.com/dEitY719"

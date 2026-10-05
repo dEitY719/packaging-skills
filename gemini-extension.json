@@ -1,6 +1,6 @@
 {
   "name": "packaging",
   "description": "Create, mirror, rename, audit, and refactor agent skill marketplace repos",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "contextFileName": "GEMINI.md"
 }
