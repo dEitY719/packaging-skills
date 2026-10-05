@@ -16,7 +16,7 @@ project-level):
 ```
 
 Restart OpenCode. The plugin installs through OpenCode's plugin manager and
-registers all four skills.
+registers all five skills.
 
 OpenCode uses its own plugin install. If you also use Claude Code, Codex, or
 another harness, install this plugin separately for each one.

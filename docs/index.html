@@ -138,18 +138,18 @@
     <header class="page animate">
       <span class="eyebrow">packaging plugin &middot; skill docs</span>
       <h1>packaging skills</h1>
-      <p class="lede">스킬이 아니라 <strong>스킬을 담는 저장소</strong>를 다루는 스킬 4개 &mdash; 새 마켓플레이스 repo 를 조립하고, 규약대로 이름을 바꾸고, 디렉터리 배치를 감사하고, 그 감사 결과를 실제로 고칩니다. 스킬마다 설명서 1건과 사용 예시 1건이 있습니다.</p>
+      <p class="lede">스킬이 아니라 <strong>스킬을 담는 저장소</strong>를 다루는 스킬 5개 &mdash; 새 마켓플레이스 repo 를 조립하고, 외부 repo 를 GHES 로 미러하고, 규약대로 이름을 바꾸고, 디렉터리 배치를 감사하고, 그 감사 결과를 실제로 고칩니다. 스킬마다 설명서 1건과 사용 예시 1건이 있습니다.</p>
 
-      <div class="flow"><span class="node out">scaffold-repo</span><span class="arrow">&#9472;&#9654;</span> <span class="node">structure-check</span><span class="arrow">&#9472;&#9654;</span> <span class="node mid">structure-refactor</span><span class="arrow">&#9472;&#9654;</span> <span class="node">structure-check</span> <span class="arrow">재확인</span></div>
+      <div class="flow"><span class="node out">scaffold-repo</span> <span class="arrow">/</span> <span class="node out">mirror-repo</span><span class="arrow">&#9472;&#9654;</span> <span class="node">structure-check</span><span class="arrow">&#9472;&#9654;</span> <span class="node mid">structure-refactor</span><span class="arrow">&#9472;&#9654;</span> <span class="node">structure-check</span> <span class="arrow">재확인</span></div>
 
       <div class="warn">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-        <span><strong>읽기 전용은 <code>structure-check</code> 하나뿐입니다.</strong> 나머지 셋은 파일이나 원격 저장소에 씁니다 &mdash; 그래서 각각 앞에 게이트가 하나씩 있습니다. <code>structure-refactor</code> 는 <code>--apply</code> 가 없으면 계획만 찍고, <code>scaffold-repo</code> 는 repo 생성과 push 앞에서, <code>rename-repo</code> 는 rename 과 push 앞에서 확인을 받습니다.</span>
+        <span><strong>읽기 전용은 <code>structure-check</code> 하나뿐입니다.</strong> 나머지 넷은 파일이나 원격 저장소에 씁니다 &mdash; 그래서 각각 앞에 게이트가 하나씩 있습니다. <code>structure-refactor</code> 는 <code>--apply</code> 가 없으면 계획만 찍고, <code>scaffold-repo</code> 와 <code>mirror-repo</code> 는 repo 생성과 push 앞에서, <code>rename-repo</code> 는 rename 과 push 앞에서 확인을 받습니다.</span>
       </div>
     </header>
 
     <section data-reveal>
-      <h2><span class="num">1</span>스킬 4개</h2>
+      <h2><span class="num">1</span>스킬 5개</h2>
       <div class="skill-grid">
       <article class="card" data-reveal>
         <h3>scaffold-repo</h3>
@@ -158,6 +158,15 @@
         <div class="links">
           <a href="skill-guides/scaffold-repo.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg><span>설명서</span></a>
           <a class="usage" href="skill-output/scaffold-repo-usage.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v12H4z"/><path d="M2 20h20M10 9l4 2-4 2z"/></svg><span>사용 예시</span></a>
+        </div>
+      </article>
+      <article class="card" data-reveal>
+        <h3>mirror-repo</h3>
+        <code class="inv">/packaging:mirror-repo &lt;repo-name&gt;</code>
+        <p>github.com 에는 있지만 GHES 에는 없는 기존 <code>*-skills</code> repo 를 GHES 로 미러한다 &mdash; HTTPS 클론, GHES private repo 생성, <code>origin</code>=GHES / <code>upstream</code>=github.com remote, push. <strong>신규 미러 전용</strong>이라 대상 경로나 GHES repo 가 이미 있으면 중단하고, <code>--force</code> push 는 하지 않는다.</p>
+        <div class="links">
+          <a href="skill-guides/mirror-repo.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg><span>설명서</span></a>
+          <a class="usage" href="skill-output/mirror-repo-usage.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v12H4z"/><path d="M2 20h20M10 9l4 2-4 2z"/></svg><span>사용 예시</span></a>
         </div>
       </article>
       <article class="card" data-reveal>
@@ -192,7 +201,7 @@
 
     <section data-reveal>
       <h2><span class="num">2</span>같은 항목표, 다른 권한</h2>
-      <p>네 스킬은 하나의 구조 표준을 공유합니다. 그 표준을 읽기만 하는 쪽과 쓰는 쪽이 갈리고, 저장소가 이미 존재하느냐로 한 번 더 갈립니다.</p>
+      <p>다섯 스킬은 하나의 구조 표준을 공유합니다. 그 표준을 읽기만 하는 쪽과 쓰는 쪽이 갈리고, 저장소가 이미 존재하느냐로 한 번 더 갈립니다.</p>
       <div class="pair">
         <article class="card">
           <h3>읽는 쪽 &mdash; structure-check</h3>
@@ -208,7 +217,7 @@
         </article>
         <article class="card">
           <h3>새 repo 와 있는 repo</h3>
-          <p><code>scaffold-repo</code> 는 신규 전용이라 대상 경로가 있으면 중단하고, <code>rename-repo</code> 는 이미 클론된 저장소에서만 동작하며 기본 브랜치 위에서는 작업을 거부한다. 둘의 적용 대상은 겹치지 않는다.</p>
+          <p><code>scaffold-repo</code> 는 신규 전용이라 대상 경로가 있으면 중단하고, <code>mirror-repo</code> 는 GHES 에 아직 없는 외부 repo 만 미러하며 대상 경로나 GHES repo 가 있으면 중단한다. <code>rename-repo</code> 는 이미 클론된 저장소에서만 동작하며 기본 브랜치 위에서는 작업을 거부한다. 셋의 적용 대상은 겹치지 않는다.</p>
         </article>
       </div>
     </section>

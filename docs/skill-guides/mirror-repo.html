@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>scaffold-repo — packaging skill guide</title>
+  <title>mirror-repo — packaging skill guide</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -359,12 +359,12 @@
 
       <header class="hero">
         <p class="eyebrow animate">packaging</p>
-        <h1 class="animate delay-1">scaffold-repo</h1>
+        <h1 class="animate delay-1">mirror-repo</h1>
         <div class="hero-rule animate delay-2"></div>
         <p class="lead animate delay-3">
-          <strong>산출물</strong> — <code>&lt;domain&gt;-skills</code> 형태의 마켓플레이스 repo 한 벌.
-          루트 매니페스트(7개 harness) + 평면 <code>skills/&lt;name&gt;/</code> 분리형 구조,
-          README, LICENSE, <code>.gitignore</code>, 그리고 초기 커밋이 올라간 GitHub 원격 저장소까지.
+          <strong>산출물</strong> — github.com 에만 있던 기존 <code>&lt;domain&gt;-skills</code> repo 의 GHES 미러 한 벌.
+          GHES 위의 private repo, 로컬 클론(<code>origin</code>=GHES over SSH, <code>upstream</code>=github.com over HTTPS),
+          그리고 그 GHES repo 로 push 된 기본 브랜치까지.
         </p>
       </header>
 
@@ -374,7 +374,7 @@
           <span class="sec-num">01</span>
           <h2 id="sec-when">언제 쓰고, 언제 안 쓰는가</h2>
         </div>
-        <p class="sec-sub">상황에 따라 다섯 개의 스킬 중 하나를 고른다.</p>
+        <p class="sec-sub">상황에 따라 다섯 개의 스킬(과 갱신 스크립트) 중 하나를 고른다.</p>
 
         <div class="table-wrap">
           <table>
@@ -383,19 +383,23 @@
             </thead>
             <tbody>
               <tr>
-                <td>repo 가 아직 <strong>없다</strong>. 흩어진 스킬을 묶어 새로 만든다</td>
-                <td class="pick"><span class="skill-tag is-this">scaffold-repo</span></td>
+                <td>외부 repo 가 github.com 에는 <strong>있는데 GHES 에는 없다</strong> (<code>git-clone-skills.sh</code> 가 실패한다)</td>
+                <td class="pick"><span class="skill-tag is-this">mirror-repo</span></td>
               </tr>
               <tr>
-                <td>외부 repo 가 github.com 에는 <strong>있는데 GHES 에는 없다</strong></td>
-                <td class="pick"><span class="skill-tag">mirror-repo</span></td>
+                <td>이미 미러된 repo 를 <strong>최신으로 당긴다</strong></td>
+                <td class="pick"><code>git-pull-skills.sh</code> (스킬 아님)</td>
+              </tr>
+              <tr>
+                <td>repo 가 아직 <strong>없다</strong>. 흩어진 스킬을 묶어 새로 만든다</td>
+                <td class="pick"><span class="skill-tag">scaffold-repo</span></td>
               </tr>
               <tr>
                 <td>repo 는 있는데 <strong>이름</strong>이 컨벤션에 안 맞는다</td>
                 <td class="pick"><span class="skill-tag">rename-repo</span></td>
               </tr>
               <tr>
-                <td>repo 는 있는데 <strong>구조</strong>가 표준에서 벗어났는지 알고 싶다</td>
+                <td>미러한 repo 의 <strong>구조</strong>가 표준에서 벗어났는지 알고 싶다</td>
                 <td class="pick"><span class="skill-tag">structure-check</span></td>
               </tr>
               <tr>
@@ -407,7 +411,7 @@
         </div>
 
         <div class="note">
-          <strong>scaffold-repo 는 신규 repo 전용이다.</strong> 대상 디렉터리가 이미 존재하면 덮어쓰지 않고 중단한다 — 멱등하지 않다.
+          <strong>mirror-repo 는 신규 미러 전용이다.</strong> 대상 디렉터리나 GHES repo 가 이미 존재하면 덮어쓰지 않고 중단한다 — 멱등하지 않다. 기존 미러 갱신은 <code>git-pull-skills.sh</code> 의 몫이다.
         </div>
       </section>
 
@@ -417,11 +421,11 @@
           <span class="sec-num">02</span>
           <h2 id="sec-usage">호출 형식</h2>
         </div>
-        <p class="sec-sub"><code>&lt;repo-name&gt;</code> 와 <code>--src</code> 가 필수이고, 나머지는 모두 기본값이 있다.</p>
+        <p class="sec-sub"><code>&lt;repo-name&gt;</code> 만 필수이고, 나머지는 모두 기본값이 있다.</p>
 
-<pre class="code">/packaging:scaffold-repo &lt;repo-name&gt; [skill ...] --src &lt;path&gt; [--dest &lt;path&gt;]
-                  [--host &lt;host&gt;] [--owner &lt;owner&gt;] [--plugin &lt;name&gt;] [--dry-run]
-/packaging:scaffold-repo help</pre>
+<pre class="code">/packaging:mirror-repo &lt;repo-name&gt; [--owner &lt;owner&gt;] [--ghes-owner &lt;owner&gt;]
+                       [--dest &lt;path&gt;] [--host &lt;host&gt;] [--ghes-host &lt;host&gt;] [--dry-run]
+/packaging:mirror-repo help</pre>
 
         <div class="table-wrap" style="margin-top:20px;">
           <table>
@@ -435,42 +439,41 @@
                 <td class="dash">—</td>
               </tr>
               <tr>
-                <td><code>[skill ...]</code></td>
-                <td>복사할 스킬 디렉터리 이름들</td>
-                <td>대화에서 추론, 안 되면 질문</td>
+                <td><code>--owner &lt;owner&gt;</code></td>
+                <td>upstream owner</td>
+                <td><code>dEitY719</code></td>
               </tr>
               <tr>
-                <td><code>--src &lt;path&gt;</code></td>
-                <td>스킬 원본 디렉터리 (<strong>필수</strong> — 기본값 없음)</td>
-                <td class="dash">—</td>
+                <td><code>--ghes-owner &lt;owner&gt;</code></td>
+                <td>미러를 만들 GHES owner</td>
+                <td>활성 GHES 로그인 (<code>gh api --hostname &lt;ghes-host&gt; user</code>)</td>
               </tr>
               <tr>
                 <td><code>--dest &lt;path&gt;</code></td>
-                <td>repo 를 만들 위치</td>
+                <td>클론할 부모 디렉터리</td>
                 <td><code>~/para/project/skills/</code></td>
               </tr>
               <tr>
                 <td><code>--host &lt;host&gt;</code></td>
-                <td>GitHub 호스트 (GHES 지원)</td>
+                <td>upstream 호스트</td>
                 <td><code>github.com</code></td>
               </tr>
               <tr>
-                <td><code>--owner &lt;owner&gt;</code></td>
-                <td>GitHub owner</td>
-                <td><code>dEitY719</code></td>
-              </tr>
-              <tr>
-                <td><code>--plugin &lt;name&gt;</code></td>
-                <td>내부 plugin key</td>
-                <td><code>&lt;repo-name&gt;</code> 에서 <code>-skills</code> 를 뗀 부분</td>
+                <td><code>--ghes-host &lt;host&gt;</code></td>
+                <td>GHES 호스트</td>
+                <td>dotfiles SSOT <code>_gh_resolve_host</code></td>
               </tr>
               <tr>
                 <td><code>--dry-run</code></td>
-                <td>계획만 출력, 아무것도 쓰지 않음</td>
+                <td>계획만 출력, 클론 / repo 생성 / push 없음</td>
                 <td>off</td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="note">
+          엔진 스크립트 <code>lib/mirror_repo.sh</code> 에는 사용자 플래그가 아닌 <code>--yes</code> 가 하나 더 있다. 사용자가 repo 생성과 push <strong>둘 다</strong> 승낙했을 때만 스킬이 붙여 넘긴다.
         </div>
       </section>
 
@@ -481,8 +484,8 @@
           <h2 id="sec-steps">동작 단계</h2>
         </div>
         <p class="sec-sub">
-          단계를 눌러 펼치면 상세가 보인다. 하드 중단 지점은 3곳뿐이다 — 1단계 검증 실패,
-          7단계 <code>gh auth status</code> 실패, push 거부.
+          단계를 눌러 펼치면 상세가 보인다. 하드 중단 지점은 4곳이다 — 0단계 인증 실패,
+          1단계 검증 실패, 4단계 <code>gh repo create</code> 실패, push 거부.
         </p>
 
         <div class="steps-bar">
@@ -494,16 +497,28 @@
 
           <details class="step is-halt" name="steps" open>
             <summary>
-              <span class="step-n">1</span>
-              <span class="step-title">인자 검증</span>
+              <span class="step-n">0</span>
+              <span class="step-title">호스트 해석 + 인증</span>
               <span class="badges"><span class="badge halt">중단 지점</span></span>
               <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </summary>
             <div class="step-body">
-              <p><code>-skills</code> 접미어 보정, <code>claude-plugin-</code> prefix 거부, 소문자-하이픈 강제. <code>--src</code> 누락 / dest 중복 시 중단.</p>
+              <p>upstream 호스트는 <code>--host</code> (기본 <code>github.com</code>), GHES 호스트는 <code>--ghes-host</code>, 없으면 dotfiles SSOT <code>_gh_resolve_host</code>. 양쪽 모두 <code>gh auth status</code> 를 통과해야 하고, GHES owner 는 <code>--ghes-owner</code> 가 없으면 활성 GHES 로그인으로 정한다.</p>
+              <p>GHES 호스트를 못 찾거나 upstream 호스트와 같으면 중단. 인증 실패도 하드 중단 지점이다.</p>
             </div>
           </details>
-
+          <details class="step is-halt" name="steps">
+            <summary>
+              <span class="step-n">1</span>
+              <span class="step-title">검증</span>
+              <span class="badges"><span class="badge halt">중단 지점</span></span>
+              <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
+            </summary>
+            <div class="step-body">
+              <p><code>-skills</code> 접미어 보정, <code>claude-plugin-</code> prefix 거부, 소문자-하이픈 강제.</p>
+              <p><code>&lt;dest&gt;/&lt;repo-name&gt;</code> 이 이미 있거나, upstream repo 가 없거나, GHES repo 가 이미 있으면 중단.</p>
+            </div>
+          </details>
           <details class="step" name="steps">
             <summary>
               <span class="step-n">2</span>
@@ -512,89 +527,62 @@
               <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </summary>
             <div class="step-body">
-              <p><code>[PLAN]</code> 블록은 항상 출력된다. <code>--dry-run</code> 이면 여기서 정지.</p>
+              <p><code>[PLAN]</code> 블록은 항상 출력된다. <code>--dry-run</code> 이면 여기서 정지 — 클론도, repo 생성도, push 도 없다.</p>
             </div>
           </details>
-
           <details class="step" name="steps">
             <summary>
               <span class="step-n">3</span>
-              <span class="step-title">분리형 골든 구조 생성</span>
+              <span class="step-title">upstream 클론</span>
               <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </summary>
             <div class="step-body">
-              <p>루트 매니페스트 + 평면 <code>skills/</code> 구조를 만든다. <code>plugins/</code> 디렉터리는 만들지 않는다.</p>
+              <p><code>git clone https://&lt;host&gt;/&lt;owner&gt;/&lt;repo-name&gt;.git &lt;dest&gt;/&lt;repo-name&gt;</code> — HTTPS 로 클론한다.</p>
             </div>
           </details>
-
-          <details class="step" name="steps">
+          <details class="step is-halt" name="steps">
             <summary>
               <span class="step-n">4</span>
-              <span class="step-title">스킬 복사</span>
-              <span class="badges"><span class="badge">읽기 전용 원본</span></span>
+              <span class="step-title">GHES repo 생성</span>
+              <span class="badges"><span class="badge confirm">사용자 확인</span><span class="badge halt">중단 지점</span></span>
               <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </summary>
             <div class="step-body">
-              <p><code>cp -r</code>, 원본은 읽기 전용.</p>
+              <p><strong>사용자 확인</strong>을 받고 GHES 에서 <code>gh repo create &lt;ghes-owner&gt;/&lt;repo-name&gt; --private</code>.</p>
+              <p><code>gh repo create</code> 실패는 하드 중단 지점이다. 여기서 거절하면 로컬 클론만 남는다.</p>
             </div>
           </details>
-
           <details class="step" name="steps">
             <summary>
               <span class="step-n">5</span>
-              <span class="step-title">매니페스트 / README / LICENSE / <code>.gitignore</code> 작성</span>
+              <span class="step-title">remote 설정</span>
               <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </summary>
             <div class="step-body">
-              <p>매니페스트, README, LICENSE, <code>.gitignore</code> 를 작성한다.</p>
+              <p><code>origin</code> -&gt; <code>git@&lt;ghes-host&gt;:&lt;ghes-owner&gt;/&lt;repo-name&gt;.git</code> (SSH)</p>
+              <p><code>upstream</code> -&gt; <code>https://&lt;host&gt;/&lt;owner&gt;/&lt;repo-name&gt;.git</code> (HTTPS)</p>
             </div>
           </details>
-
-          <details class="step" name="steps">
+          <details class="step is-halt" name="steps">
             <summary>
               <span class="step-n">6</span>
-              <span class="step-title">git 초기화</span>
-              <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
-            </summary>
-            <div class="step-body">
-              <p><code>git init</code> + <code>git checkout -B main</code></p>
-            </div>
-          </details>
-
-          <details class="step is-halt" name="steps">
-            <summary>
-              <span class="step-n">7</span>
-              <span class="step-title">원격 repo 생성</span>
+              <span class="step-title">push</span>
               <span class="badges"><span class="badge confirm">사용자 확인</span><span class="badge halt">중단 지점</span></span>
               <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </summary>
             <div class="step-body">
-              <p><code>gh auth status</code> 후 <strong>사용자 확인</strong>을 받고 <code>gh repo create</code>.</p>
-              <p><code>gh auth status</code> 실패는 하드 중단 지점이다.</p>
+              <p><strong>사용자 확인</strong>을 받고 <code>git push -u origin &lt;branch&gt;</code>. <code>&lt;branch&gt;</code> 는 클론된 기본 브랜치다.</p>
+              <p>push 거부는 하드 중단 지점이다. 여기서 거절하면 GHES repo 는 비어 있는 채로 남는다.</p>
             </div>
           </details>
-
-          <details class="step is-halt" name="steps">
-            <summary>
-              <span class="step-n">8</span>
-              <span class="step-title">초기 커밋 + push</span>
-              <span class="badges"><span class="badge confirm">사용자 확인</span><span class="badge halt">중단 지점</span></span>
-              <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
-            </summary>
-            <div class="step-body">
-              <p>초기 커밋 후 <strong>사용자 확인</strong>을 받고 <code>git push -u origin main</code>.</p>
-              <p>push 거부는 하드 중단 지점이다.</p>
-            </div>
-          </details>
-
           <details class="step" name="steps">
             <summary>
-              <span class="step-n">9</span>
-              <span class="step-title">구조 검증 후 <code>[OK]</code> 리포트</span>
+              <span class="step-n">7</span>
+              <span class="step-title">재확인 후 <code>[OK]</code> 리포트</span>
               <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </summary>
             <div class="step-body">
-              <p><code>packaging:structure-check</code> 로 M1-M11 PASS 확인 후 <code>[OK]</code> 리포트.</p>
+              <p><code>git remote -v</code> 와 GHES 쪽 <code>gh repo view</code> 로 다시 확인한 뒤 <code>[OK]</code> 리포트를 출력한다.</p>
             </div>
           </details>
 
@@ -607,38 +595,43 @@
           <span class="sec-num">04</span>
           <h2 id="sec-caution">주의사항 / 제약</h2>
         </div>
-        <p class="sec-sub">다섯 가지 제약을 그대로 지킨다.</p>
+        <p class="sec-sub">여섯 가지 제약을 그대로 지킨다.</p>
 
         <div class="grid">
-          <article class="card info">
-            <h3>원본은 복사 전용</h3>
-            <p><code>--src</code> 를 수정 / 이동 / 삭제 / 심볼릭 링크 하지 않는다.</p>
-          </article>
-
           <article class="card stop">
-            <h3>멱등하지 않다</h3>
-            <p><code>&lt;dest&gt;/&lt;repo-name&gt;</code> 이 이미 있으면 무조건 중단한다.</p>
+            <h3>신규 미러 전용</h3>
+            <p><code>&lt;dest&gt;/&lt;repo-name&gt;</code> 이나 GHES repo 가 이미 있으면 무조건 중단한다. 기존 미러 갱신은 <code>git-pull-skills.sh</code> 를 쓴다.</p>
           </article>
 
           <article class="card warn">
-            <h3>복사 대상은 부모 디렉터리</h3>
-            <p>스킬 복사는 부모 <code>skills/</code> 디렉터리를 대상으로 한다. <code>skills/&lt;skill&gt;</code> 을 대상으로 잡으면 <code>skills/&lt;skill&gt;/&lt;skill&gt;/</code> 로 중첩된다.</p>
+            <h3>호스트는 추측하지 않는다</h3>
+            <p><code>--ghes-host</code> 도 없고 <code>_gh_resolve_host</code> 도 못 읽으면 중단, GHES 호스트가 upstream 호스트와 같아도(공용 PC 에서 <code>github.com</code> 이 나오는 경우) 중단한다. GHES 호스트나 사용자를 하드코딩하지 않는다.</p>
           </article>
 
           <article class="card warn">
             <h3>외부 영향 단계는 각각 확인</h3>
-            <p>7단계(repo 생성)와 8단계(push)는 외부에 영향을 주므로 각각 확인을 받는다. <code>git push --force</code> 는 절대 쓰지 않는다.</p>
+            <p>4단계(repo 생성)와 6단계(push)는 외부에 영향을 주므로 각각 확인을 받는다. <code>[y/N]</code> 에서 EOF 는 거절로 친다. <code>git push --force</code> 는 절대 쓰지 않는다.</p>
+          </article>
+
+          <article class="card info">
+            <h3>--dry-run 은 아무것도 쓰지 않는다</h3>
+            <p>클론도, repo 생성도, push 도 없다. <code>[PLAN]</code> 블록만 출력한다.</p>
           </article>
 
           <article class="card stop">
-            <h3>하드 중단 지점은 3곳</h3>
-            <p>1단계 검증 실패, 7단계 <code>gh auth status</code> 실패, push 거부. 나머지는 부분 정리 없이 크게 실패한다.</p>
+            <h3>하드 중단 지점은 4곳</h3>
+            <p>0단계 인증 실패, 1단계 검증 실패, 4단계 <code>gh repo create</code> 실패, push 거부.</p>
+          </article>
+
+          <article class="card info">
+            <h3>marketplaces.json 은 건드리지 않는다</h3>
+            <p>매니페스트에 추가할지는 사용자 선택이다.</p>
           </article>
         </div>
       </section>
 
       <footer class="page-foot">
-        <span>packaging / scaffold-repo</span>
+        <span>packaging / mirror-repo</span>
         <span>skill guide</span>
       </footer>
 
@@ -699,7 +692,7 @@
       menu.style.display = '';
     }
 
-    // === Step list: highlight the three hard-stop points ===
+    // === Step list: highlight the hard-stop points ===
     var haltOn = false;
     function toggleHalt() {
       haltOn = !haltOn;

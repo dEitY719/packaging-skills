@@ -1,13 +1,14 @@
 # packaging — skill index
 
-Four skills for building and maintaining agent skill marketplace repos. Each
+Five skills for building and maintaining agent skill marketplace repos. Each
 lives in this extension's `skills/` directory. They are task-triggered: load the
 one that matches the job by reading its `SKILL.md`, then follow it. Do not load
-all four.
+all five.
 
 | Skill | Read | Use when |
 |-------|------|----------|
 | `scaffold-repo` | `@./skills/scaffold-repo/SKILL.md` | Scaffolding a brand-new marketplace repo — structure, manifests, skill import, `git init`, repo create, push. New repos only. |
+| `mirror-repo` | `@./skills/mirror-repo/SKILL.md` | Mirroring an existing external `*-skills` repo onto GHES — clone, GHES repo create, origin+upstream remotes, push. New mirrors only. |
 | `rename-repo` | `@./skills/rename-repo/SKILL.md` | Renaming an existing plugin repo to the team convention and fixing every hardcoded reference. |
 | `structure-check` | `@./skills/structure-check/SKILL.md` | Auditing an existing repo's layout. Read-only — it reports, it does not fix. |
 | `structure-refactor` | `@./skills/structure-refactor/SKILL.md` | Applying the fixes `structure-check` found. Dry-run unless `--apply`. |
@@ -32,5 +33,5 @@ The skills speak in actions. On Gemini CLI these resolve to:
 - `structure-check` is strictly read-only. Never write, edit, or run a mutating
   shell command while following it.
 - `structure-refactor` prints a plan and stops unless the user passed `--apply`.
-- `scaffold-repo` and `rename-repo` both reach `gh repo create` / `git push`. Confirm
-  with the user before either.
+- `scaffold-repo`, `mirror-repo` and `rename-repo` all reach `gh repo create` /
+  `git push`. Confirm with the user before either.

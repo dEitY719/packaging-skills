@@ -7,11 +7,12 @@ text. Edit `CLAUDE.md`; never replace the symlink with a second copy.
 ## What this repo is
 
 A single-plugin skill marketplace. The plugin is named `packaging` and it
-bundles four skills used to build and maintain *other* skill marketplace repos:
+bundles five skills used to build and maintain *other* skill marketplace repos:
 
 | Skill | Role |
 |-------|------|
 | `scaffold-repo` | Scaffold a new marketplace repo end to end. New repos only. |
+| `mirror-repo` | Mirror an existing external `*-skills` repo onto GHES. New mirrors only. |
 | `rename-repo` | Rename an existing repo to convention, fixing every hardcoded reference. |
 | `structure-check` | Audit a repo's layout. Read-only. |
 | `structure-refactor` | Apply the fixes. Dry-run unless `--apply`. |
@@ -55,8 +56,8 @@ manifests under a `plugins/` directory.**
   `references/` file to read and when. Detail lives in `references/`. Do not
   inline a reference file back into `SKILL.md`.
 - **Honour each skill's safety contract.** `structure-check` is read-only.
-  `structure-refactor` is dry-run unless `--apply`. `scaffold-repo` and `rename-repo`
-  both push to a remote and must confirm with the user first.
+  `structure-refactor` is dry-run unless `--apply`. `scaffold-repo`, `mirror-repo` and
+  `rename-repo` all push to a remote and must confirm with the user first.
 
 ## Version bumps
 
