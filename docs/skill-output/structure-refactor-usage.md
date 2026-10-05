@@ -27,8 +27,8 @@ claude-plugin structure refactor — packaging-skills   (mode: single  scope: re
   plugin roots: . (single)   skills: 4   (git: yes, tree: clean)
 
 계획 (현재 → 목표):
-  [R1] visualize  docs/skill-guides/{create,rename-repo,structure-check,structure-refactor}.html
-  [R2] stub       docs/skill-output/{create,rename-repo,structure-check,structure-refactor}-usage.md
+  [R1] visualize  docs/skill-guides/{scaffold-repo,rename-repo,structure-check,structure-refactor}.html
+  [R2] stub       docs/skill-output/{scaffold-repo,rename-repo,structure-check,structure-refactor}-usage.md
   [Pages] enable  GitHub Pages (branch=main, path=/docs)
   [R5] link       README.md <- 스킬 4개 guide Pages URL 링크 추가
 

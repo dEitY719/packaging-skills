@@ -153,7 +153,7 @@
       <div class="skill-grid">
       <article class="card" data-reveal>
         <h3>scaffold-repo</h3>
-        <code class="inv">/packaging:scaffold-repo &lt;plugin-name&gt; [skill ...]</code>
+        <code class="inv">/packaging:scaffold-repo &lt;repo-name&gt; [skill ...]</code>
         <p>빈 자리에서 마켓플레이스 repo 하나를 끝까지 조립한다 &mdash; 골든 레이아웃, 매니페스트, 스킬 복사, <code>git init</code>, repo 생성, push. 원본 스킬은 <strong>복사만 하고 건드리지 않으며</strong>, 대상 경로가 이미 있으면 중단한다.</p>
         <div class="links">
           <a href="skill-guides/scaffold-repo.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg><span>설명서</span></a>
@@ -163,7 +163,7 @@
       <article class="card" data-reveal>
         <h3>rename-repo</h3>
         <code class="inv">/packaging:rename-repo [new-name]</code>
-        <p>이미 있는 repo 를 <code>claude-plugin-&lt;domain&gt;</code> 규약으로 개명하고, <code>marketplace.json</code> 의 <code>name</code> 부터 README 의 설치 명령까지 <strong>하드코딩된 옛 이름을 전부</strong> 고친다. 상대 경로 <code>source</code> 필드는 이름과 무관하므로 손대지 않는다.</p>
+        <p>이미 있는 repo 를 <code>&lt;domain&gt;-skills</code> 규약으로 개명하고, <code>marketplace.json</code> 의 <code>name</code> 부터 README 의 설치 명령까지 <strong>하드코딩된 옛 이름을 전부</strong> 고친다. 상대 경로 <code>source</code> 필드는 이름과 무관하므로 손대지 않는다.</p>
         <div class="links">
           <a href="skill-guides/rename-repo.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg><span>설명서</span></a>
           <a class="usage" href="skill-output/rename-repo-usage.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v12H4z"/><path d="M2 20h20M10 9l4 2-4 2z"/></svg><span>사용 예시</span></a>
