@@ -1,7 +1,7 @@
 {
   "name": "packaging-skills",
   "version": "0.1.8",
-  "description": "Skills for creating, renaming, auditing, and refactoring agent skill marketplace repos",
+  "description": "Skills for creating, mirroring, renaming, auditing, and refactoring agent skill marketplace repos",
   "type": "module",
   "main": ".opencode/plugins/packaging.js",
   "license": "MIT",
