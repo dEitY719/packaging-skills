@@ -362,8 +362,8 @@
         <h1 class="animate delay-1">scaffold-repo</h1>
         <div class="hero-rule animate delay-2"></div>
         <p class="lead animate delay-3">
-          <strong>산출물</strong> — <code>claude-plugin-&lt;domain&gt;</code> 형태의 마켓플레이스 repo 한 벌.
-          골든 <code>mono</code> 디렉터리 구조, 매니페스트(<code>marketplace.json</code> / <code>plugin.json</code>),
+          <strong>산출물</strong> — <code>&lt;domain&gt;-skills</code> 형태의 마켓플레이스 repo 한 벌.
+          루트 매니페스트(7개 harness) + 평면 <code>skills/&lt;name&gt;/</code> 분리형 구조,
           README, LICENSE, <code>.gitignore</code>, 그리고 초기 커밋이 올라간 GitHub 원격 저장소까지.
         </p>
       </header>
@@ -413,9 +413,9 @@
           <span class="sec-num">02</span>
           <h2 id="sec-usage">호출 형식</h2>
         </div>
-        <p class="sec-sub"><code>&lt;plugin-name&gt;</code> 와 <code>--src</code> 가 필수이고, 나머지는 모두 기본값이 있다.</p>
+        <p class="sec-sub"><code>&lt;repo-name&gt;</code> 와 <code>--src</code> 가 필수이고, 나머지는 모두 기본값이 있다.</p>
 
-<pre class="code">/packaging:scaffold-repo &lt;plugin-name&gt; [skill ...] --src &lt;path&gt; [--dest &lt;path&gt;]
+<pre class="code">/packaging:scaffold-repo &lt;repo-name&gt; [skill ...] --src &lt;path&gt; [--dest &lt;path&gt;]
                   [--host &lt;host&gt;] [--owner &lt;owner&gt;] [--plugin &lt;name&gt;] [--dry-run]
 /packaging:scaffold-repo help</pre>
 
@@ -426,8 +426,8 @@
             </thead>
             <tbody>
               <tr>
-                <td><code>&lt;plugin-name&gt;</code></td>
-                <td><code>claude-plugin-&lt;domain&gt;</code> 형식 repo 이름 (필수). prefix 없으면 자동으로 붙이고 알려 준다</td>
+                <td><code>&lt;repo-name&gt;</code></td>
+                <td><code>&lt;domain&gt;-skills</code> 형식 repo 이름 (필수). <code>-skills</code> 접미어가 없으면 자동으로 붙이고 알려 준다. <code>claude-plugin-</code> prefix 는 pre-#1410 옛 규칙이라 거부한다</td>
                 <td class="dash">—</td>
               </tr>
               <tr>
@@ -443,7 +443,7 @@
               <tr>
                 <td><code>--dest &lt;path&gt;</code></td>
                 <td>repo 를 만들 위치</td>
-                <td><code>~/para/project/</code></td>
+                <td><code>~/para/project/skills/</code></td>
               </tr>
               <tr>
                 <td><code>--host &lt;host&gt;</code></td>
@@ -458,7 +458,7 @@
               <tr>
                 <td><code>--plugin &lt;name&gt;</code></td>
                 <td>내부 plugin key</td>
-                <td><code>&lt;plugin-name&gt;</code> 의 domain 부분</td>
+                <td><code>&lt;repo-name&gt;</code> 에서 <code>-skills</code> 를 뗀 부분</td>
               </tr>
               <tr>
                 <td><code>--dry-run</code></td>
@@ -496,7 +496,7 @@
               <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </summary>
             <div class="step-body">
-              <p>prefix 보정, 소문자-하이픈 강제. <code>--src</code> 누락 / dest 중복 시 중단.</p>
+              <p><code>-skills</code> 접미어 보정, <code>claude-plugin-</code> prefix 거부, 소문자-하이픈 강제. <code>--src</code> 누락 / dest 중복 시 중단.</p>
             </div>
           </details>
 
@@ -515,11 +515,11 @@
           <details class="step" name="steps">
             <summary>
               <span class="step-n">3</span>
-              <span class="step-title">골든 <code>mono</code> 구조 생성</span>
+              <span class="step-title">분리형 골든 구조 생성</span>
               <svg class="step-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </summary>
             <div class="step-body">
-              <p>골든 <code>mono</code> 디렉터리 구조를 만든다.</p>
+              <p>루트 매니페스트 + 평면 <code>skills/</code> 구조를 만든다. <code>plugins/</code> 디렉터리는 만들지 않는다.</p>
             </div>
           </details>
 
@@ -613,7 +613,7 @@
 
           <article class="card stop">
             <h3>멱등하지 않다</h3>
-            <p><code>&lt;dest&gt;/&lt;plugin-name&gt;</code> 이 이미 있으면 무조건 중단한다.</p>
+            <p><code>&lt;dest&gt;/&lt;repo-name&gt;</code> 이 이미 있으면 무조건 중단한다.</p>
           </article>
 
           <article class="card warn">

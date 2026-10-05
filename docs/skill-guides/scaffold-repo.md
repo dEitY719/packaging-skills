@@ -1,7 +1,7 @@
 # scaffold-repo
 
-**산출물** — `claude-plugin-<domain>` 형태의 마켓플레이스 repo 한 벌. 골든
-`mono` 디렉터리 구조, 매니페스트(`marketplace.json` / `plugin.json`), README,
+**산출물** — `<domain>-skills` 형태의 마켓플레이스 repo 한 벌. 루트 매니페스트
+(7개 harness) + 평면 `skills/<name>/` 분리형 구조, README,
 LICENSE, `.gitignore`, 그리고 초기 커밋이 올라간 GitHub 원격 저장소까지.
 
 ## 언제 쓰고, 언제 안 쓰는가
@@ -19,27 +19,27 @@ LICENSE, `.gitignore`, 그리고 초기 커밋이 올라간 GitHub 원격 저장
 ## 호출 형식
 
 ```
-/packaging:scaffold-repo <plugin-name> [skill ...] --src <path> [--dest <path>]
+/packaging:scaffold-repo <repo-name> [skill ...] --src <path> [--dest <path>]
                   [--host <host>] [--owner <owner>] [--plugin <name>] [--dry-run]
 /packaging:scaffold-repo help
 ```
 
 | 인자 / 플래그 | 의미 | 기본값 |
 |---|---|---|
-| `<plugin-name>` | `claude-plugin-<domain>` 형식 repo 이름 (필수). prefix 없으면 자동으로 붙이고 알려 준다 | — |
+| `<repo-name>` | `<domain>-skills` 형식 repo 이름 (필수). `-skills` 접미어가 없으면 자동으로 붙이고 알려 준다. `claude-plugin-` prefix 는 pre-#1410 옛 규칙이라 거부한다 | — |
 | `[skill ...]` | 복사할 스킬 디렉터리 이름들 | 대화에서 추론, 안 되면 질문 |
 | `--src <path>` | 스킬 원본 디렉터리 (**필수** — 기본값 없음) | — |
-| `--dest <path>` | repo 를 만들 위치 | `~/para/project/` |
+| `--dest <path>` | repo 를 만들 위치 | `~/para/project/skills/` |
 | `--host <host>` | GitHub 호스트 (GHES 지원) | `github.com` |
 | `--owner <owner>` | GitHub owner | `dEitY719` |
-| `--plugin <name>` | 내부 plugin key | `<plugin-name>` 의 domain 부분 |
+| `--plugin <name>` | 내부 plugin key | `<repo-name>` 에서 `-skills` 를 뗀 부분 |
 | `--dry-run` | 계획만 출력, 아무것도 쓰지 않음 | off |
 
 ## 동작 단계
 
-1. 인자 검증 — prefix 보정, 소문자-하이픈 강제, `--src` 누락 / dest 중복 시 중단
+1. 인자 검증 — `-skills` 접미어 보정, `claude-plugin-` prefix 거부, 소문자-하이픈 강제, `--src` 누락 / dest 중복 시 중단
 2. `[PLAN]` 블록 출력 (항상). `--dry-run` 이면 여기서 정지
-3. 골든 `mono` 구조 생성
+3. 분리형 골든 구조 생성 — 루트 매니페스트 + 평면 `skills/` (`plugins/` 디렉터리는 만들지 않는다)
 4. 스킬 복사 — `cp -r`, 원본은 읽기 전용
 5. 매니페스트 / README / LICENSE / `.gitignore` 작성
 6. `git init` + `git checkout -B main`
@@ -50,7 +50,7 @@ LICENSE, `.gitignore`, 그리고 초기 커밋이 올라간 GitHub 원격 저장
 ## 주의사항 / 제약
 
 - **원본은 복사 전용.** `--src` 를 수정 / 이동 / 삭제 / 심볼릭 링크 하지 않는다.
-- **멱등하지 않다.** `<dest>/<plugin-name>` 이 이미 있으면 무조건 중단한다.
+- **멱등하지 않다.** `<dest>/<repo-name>` 이 이미 있으면 무조건 중단한다.
 - 스킬 복사는 부모 `skills/` 디렉터리를 대상으로 한다. `skills/<skill>` 을
   대상으로 잡으면 `skills/<skill>/<skill>/` 로 중첩된다.
 - 7단계(repo 생성)와 8단계(push)는 외부에 영향을 주므로 각각 확인을 받는다.

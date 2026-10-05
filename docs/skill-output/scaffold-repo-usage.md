@@ -1,6 +1,6 @@
 # scaffold-repo 사용 결과
 
-> **한 줄 요약** — 스킬 원본 디렉터리와 새 repo 이름을 받아 골든 `mono` 구조의
+> **한 줄 요약** — 스킬 원본 디렉터리와 새 repo 이름을 받아 분리형 골든 구조(루트 매니페스트 + 평면 `skills/`)의
 > 마켓플레이스 repo 생성 계획을 산출합니다.
 
 ```
@@ -10,8 +10,8 @@
 ## 1. 실행한 명령
 
 ```
-범용:  /packaging:scaffold-repo <plugin-name> [skill ...] --src <path> --dest <path> [--dry-run]
-이번:  /packaging:scaffold-repo claude-plugin-demo structure-check \
+범용:  /packaging:scaffold-repo <repo-name> [skill ...] --src <path> --dest <path> [--dry-run]
+이번:  /packaging:scaffold-repo demo-skills structure-check \
          --src skills --dest <scratchpad> --owner dEitY719 --host github.com --dry-run
 ```
 
@@ -26,12 +26,12 @@ Step 2 에서 `[PLAN]` 이 출력되고 `--dry-run` 이라 그 자리에서 정�
 
 ```
 [PLAN] packaging:scaffold-repo
-  Plugin name : claude-plugin-demo
+  Repo name   : demo-skills
   Plugin key  : demo
-  Destination : <scratchpad>/claude-plugin-demo/
+  Destination : <scratchpad>/demo-skills/
   Skills to copy (1):
-    skills/structure-check  -> plugins/demo/skills/structure-check
-  GH repo     : github.com/dEitY719/claude-plugin-demo
+    skills/structure-check  -> skills/structure-check
+  GH repo     : github.com/dEitY719/demo-skills
   Dry-run     : on
 ```
 
