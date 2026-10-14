@@ -67,6 +67,13 @@ The version appears in six manifests: `.claude-plugin/marketplace.json`,
 `gemini-extension.json`, and `package.json`. CI checks that they agree — bump
 all of them together.
 
+## Tests
+
+- `tests/*.sh` and `skills/*/lib/test_*.sh`: plain shell checks (`bash <file>`).
+- `tests/bats/`: bats suite pinning the shipped `structure_check.sh` /
+  `refactor_apply.sh` (CI: `.github/workflows/bats.yml`). Run locally with
+  `BATS_LIB_PATH=<path with bats-support,bats-assert> bats -r tests/bats`.
+
 ## No emojis
 
 Anywhere in this repo. Token efficiency.
