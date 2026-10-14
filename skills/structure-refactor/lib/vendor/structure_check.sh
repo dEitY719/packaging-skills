@@ -2,10 +2,8 @@
 # structure_check.sh — deterministic M1-M11 / R1,R2,R4-R8,R10,R11 evaluator for a
 # claude-plugin marketplace repo.
 #
-# Ported from the SSOT bats fixture at
-#   dEitY719/dotfiles:tests/bats/skills/_fixtures/claude_plugin_structure.sh
-# Keep the check logic in sync with that fixture and with
-#   ../references/structure-spec.md (the full behavioral spec).
+# Behavioral spec: ../references/structure-spec.md. Pinned by
+#   tests/bats/claude_plugin_structure.bats (runs this script directly).
 #
 # R3 ("README is Simple") is intentionally NOT evaluated here — its heuristic
 # needs model judgment (length + semantic "mentions", see structure-spec.md
@@ -302,9 +300,7 @@ EOF
 
 # Known top-level plugin.json fields (Claude Code manifest schema). Last
 # verified 2026-09 against Claude Code 2.1.263 — SSOT mirror of
-# ../references/structure-spec.md -> "plugin.json known fields (M10)" and
-# dotfiles:tests/bats/skills/_fixtures/claude_plugin_structure.sh
-# (_CPS_PLUGIN_JSON_KNOWN_FIELDS). `skills` is intentionally NOT here — the
+# ../references/structure-spec.md -> "plugin.json known fields (M10)". `skills` is intentionally NOT here — the
 # runtime auto-scans skills/, and a skills field fails manifest validation.
 KNOWN_PLUGIN_JSON_FIELDS='["name","version","description","author","homepage","repository","license","keywords"]'
 
