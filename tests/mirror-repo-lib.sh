@@ -68,6 +68,7 @@ run "" test-skills --dry-run
 grep -q '^\[PLAN\] packaging:mirror-repo' "$TMP/out" || fail "dry-run: no [PLAN]"
 grep -q 'origin    -> git@ghes.example:ghes-user/test-skills.git' "$TMP/out" || fail "dry-run: origin url"
 grep -q 'Dry-run     : on' "$TMP/out" || fail "dry-run: flag line"
+grep -q 'Visibility  : private' "$TMP/out" || fail "dry-run: default visibility line"
 [ -z "$(ls -A "$TMP/dest")" ] || fail "dry-run wrote into dest"
 log_has 'clone|repo create|push' && fail "dry-run ran a mutating call"
 ok "dry-run writes nothing"
@@ -120,7 +121,7 @@ ok "create gated on confirmation"
 
 # 10. create confirmed, push declined -> create yes, push no
 run $'y\nn\n' test-skills
-[ "$RC" -ne 0 ] && log_has 'repo create ghes-user/test-skills --private' || fail "create after y missing"
+[ "$RC" -ne 0 ] && log_has 'repo create ghes-user/test-skills --visibility private' || fail "create after y missing"
 log_has ' push' && fail "push ran after 'n'"
 ok "push gated on its own confirmation"
 
@@ -128,7 +129,7 @@ ok "push gated on its own confirmation"
 run $'y\ny\n' test-skills
 [ "$RC" -eq 0 ] || fail "confirmed run exit $RC"
 log_has '^git clone https://github.com/dEitY719/test-skills.git ' || fail "clone not via HTTPS"
-log_has 'GH_HOST=ghes.example repo create ghes-user/test-skills --private' || fail "create call"
+log_has 'GH_HOST=ghes.example repo create ghes-user/test-skills --visibility private' || fail "create call"
 log_has 'remote set-url origin git@ghes.example:ghes-user/test-skills.git' || fail "origin set-url"
 log_has 'remote add upstream https://github.com/dEitY719/test-skills.git' || fail "upstream add"
 log_has 'push -u origin main$' || fail "push call"
@@ -148,7 +149,23 @@ SHELL_COMMON="$TMP/none" "$SCRIPT" test-skills --dest "$TMP/dest" --dry-run >"$T
 [ "$RC" -ne 0 ] && grep -q 'pass --ghes-host' "$TMP/out" || fail "unresolvable GHES host not aborted"
 ok "unresolvable GHES host aborts"
 
-# 14. host-agnostic: no github.<corp>.<tld> host literal in the skill
+# 14. --visibility public: shown in [PLAN] and confirm, passed to gh repo create
+run "" test-skills --visibility public --dry-run
+[ "$RC" -eq 0 ] && grep -q 'Visibility  : public' "$TMP/out" || fail "dry-run: public visibility line"
+run $'y\nn\n' test-skills --visibility public
+log_has 'repo create ghes-user/test-skills --visibility public' || fail "create not public"
+grep -q 'Create public repo ghes.example/ghes-user/test-skills?' "$TMP/out" || fail "confirm text lacks visibility"
+ok "--visibility public reaches plan, confirm and create"
+
+# 15. invalid or missing --visibility value aborts before any network call
+run "" test-skills --visibility internal --dry-run
+[ "$RC" -ne 0 ] && grep -q 'public|private' "$TMP/out" && [ ! -s "$LOG" ] || fail "invalid visibility accepted"
+rm -rf "$TMP/state"; mkdir -p "$TMP/state"; : >"$LOG"; RC=0
+"$SCRIPT" test-skills --visibility >"$TMP/out" 2>&1 || RC=$?
+[ "$RC" -ne 0 ] && grep -q 'needs a value' "$TMP/out" && [ ! -s "$LOG" ] || fail "missing visibility value accepted"
+ok "invalid/missing --visibility aborts offline"
+
+# 16. host-agnostic: no github.<corp>.<tld> host literal in the skill
 if grep -rqE 'github\.[A-Za-z0-9-]+\.[a-z]+' "$ROOT/skills/mirror-repo"; then
   fail "hardcoded github.<corp>.<tld> GHES host in skills/mirror-repo"
 fi

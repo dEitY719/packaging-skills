@@ -7,7 +7,8 @@
 #
 # Usage:
 #   mirror_repo.sh <repo-name> [--owner <o>] [--ghes-owner <o>] [--dest <path>]
-#                  [--host <h>] [--ghes-host <h>] [--dry-run] [--yes]
+#                  [--host <h>] [--ghes-host <h>] [--visibility public|private]
+#                  [--dry-run] [--yes]
 #
 # Safety contract:
 #   - --dry-run stops after the [PLAN] block: no clone, no create, no push.
@@ -28,20 +29,22 @@ repo_exists() { GH_HOST="$1" gh repo view "$2" --json name >/dev/null 2>&1; }
 
 mirror_repo_help() {
   echo "Usage: $0 <repo-name> [--owner <o>] [--ghes-owner <o>] [--dest <path>]" >&2
-  echo "          [--host <h>] [--ghes-host <h>] [--dry-run] [--yes]" >&2
+  echo "          [--host <h>] [--ghes-host <h>] [--visibility public|private]" >&2
+  echo "          [--dry-run] [--yes]    (--visibility defaults to private)" >&2
   exit 1
 }
 
 NAME="" OWNER="dEitY719" GHES_OWNER="" DEST="$HOME/para/project/skills"
-HOST="github.com" GHES_HOST="" DRY_RUN=0 YES=0
+HOST="github.com" GHES_HOST="" VISIBILITY="private" DRY_RUN=0 YES=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --owner|--ghes-owner|--dest|--host|--ghes-host)
+    --owner|--ghes-owner|--dest|--host|--ghes-host|--visibility)
       [ $# -ge 2 ] || die "$1 needs a value"
       case "$1" in
         --owner) OWNER="$2" ;; --ghes-owner) GHES_OWNER="$2" ;;
         --dest) DEST="$2" ;; --host) HOST="$2" ;; --ghes-host) GHES_HOST="$2" ;;
+        --visibility) VISIBILITY="$2" ;;
       esac
       shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
@@ -53,6 +56,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -n "$NAME" ] || mirror_repo_help
+case "$VISIBILITY" in
+  public|private) ;;
+  *) die "invalid --visibility '$VISIBILITY': allowed values are public|private" ;;
+esac
 
 # --- Step 1 (offline half): name validation --------------------------------
 case "$NAME" in
@@ -113,6 +120,7 @@ cat <<EOF
   Remotes:
     origin    -> $ORIGIN_URL
     upstream  -> $SRC_URL
+  Visibility  : $VISIBILITY
   Dry-run     : $([ "$DRY_RUN" -eq 1 ] && echo on || echo off)
 EOF
 [ "$DRY_RUN" -eq 0 ] || exit 0
@@ -131,9 +139,9 @@ git clone "$SRC_URL" "$TARGET" || die "git clone $SRC_URL failed"
 BRANCH=$(git -C "$TARGET" symbolic-ref --short HEAD) || die "cannot read the cloned default branch"
 
 # --- Step 4: create the GHES repo (confirm first) --------------------------
-confirm "Create private repo $GHES_HOST/$GHES_OWNER/$NAME?" \
+confirm "Create $VISIBILITY repo $GHES_HOST/$GHES_OWNER/$NAME?" \
   || die "GHES repo create declined — nothing created; the clone at $TARGET is local only (delete it to retry)"
-GH_HOST="$GHES_HOST" gh repo create "$GHES_OWNER/$NAME" --private \
+GH_HOST="$GHES_HOST" gh repo create "$GHES_OWNER/$NAME" --visibility "$VISIBILITY" \
   || die "gh repo create $GHES_OWNER/$NAME on $GHES_HOST failed"
 
 # --- Step 5: remotes -------------------------------------------------------

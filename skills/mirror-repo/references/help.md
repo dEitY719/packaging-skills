@@ -2,7 +2,8 @@
 
 Usage:
   /packaging:mirror-repo <repo-name> [--owner <owner>] [--ghes-owner <owner>]
-                         [--dest <path>] [--host <host>] [--ghes-host <host>] [--dry-run]
+                         [--dest <path>] [--host <host>] [--ghes-host <host>]
+                         [--visibility public|private] [--dry-run]
   /packaging:mirror-repo help
 
 Arguments:
@@ -16,6 +17,7 @@ Flags:
   --dest <path>        Clone parent directory.   default ~/para/project/skills/
   --host <host>        Upstream host.            default github.com
   --ghes-host <host>   GHES host.                default = _gh_resolve_host
+  --visibility <v>     GHES repo visibility.    default private (public|private only)
   --dry-run            Print the plan only — no clone, no repo, no push.
   -h | --help          Print this help and stop. No filesystem or network calls.
 
@@ -27,6 +29,7 @@ Plan output (Step 2, always printed):
     Remotes:
       origin    -> git@<ghes-host>:<ghes-owner>/video-skills.git
       upstream  -> https://<host>/<owner>/video-skills.git
+    Visibility  : private
     Dry-run     : off
   (--dry-run stops here.)
 
@@ -36,7 +39,7 @@ Behavior:
      missing, or the GHES repo already exists.
   2. Print the plan (stop if --dry-run).
   3. git clone https://<host>/<owner>/<repo-name>.git <dest>/<repo-name>
-  4. gh repo create <ghes-owner>/<repo-name> --private   (after confirmation)
+  4. gh repo create <ghes-owner>/<repo-name> --visibility <v>   (after confirmation)
   5. origin -> GHES over SSH, upstream -> source over HTTPS.
   6. git push -u origin <branch>                         (after confirmation)
   7. Verify remotes + GHES repo, print the report.
@@ -59,6 +62,7 @@ Safety:
 Examples:
   /packaging:mirror-repo video-skills --dry-run
   /packaging:mirror-repo video
+  /packaging:mirror-repo herdr-skills --visibility public
   /packaging:mirror-repo notes-skills --ghes-owner my-team --ghes-host ghes.example.com
   /packaging:mirror-repo help
 

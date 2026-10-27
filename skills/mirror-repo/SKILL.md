@@ -35,7 +35,8 @@ Every step below runs inside one script — never re-implement it in prose:
 
 ```
 bash skills/mirror-repo/lib/mirror_repo.sh <repo-name> [--owner <o>] [--ghes-owner <o>]
-     [--dest <path>] [--host <h>] [--ghes-host <h>] [--dry-run] [--yes]
+     [--dest <path>] [--host <h>] [--ghes-host <h>] [--visibility public|private]
+     [--dry-run] [--yes]
 ```
 
 Full flag table, defaults and validation rules: `references/options.md`.
@@ -59,10 +60,10 @@ Run the script with `--dry-run` first and show the user the `[PLAN]` block.
 
 ## Steps 3-6: Clone, Create, Remotes, Push (confirm first)
 
-Ask the user two explicit questions from the plan: create the private GHES
-repo? push to it? Only when **both** are yes, re-run without `--dry-run` and
+Ask the user two explicit questions from the plan: create the GHES repo with
+the `Visibility` the plan shows (`--visibility`, default `private`)? push to it? Only when **both** are yes, re-run without `--dry-run` and
 with `--yes`. Without `--yes` the script asks `[y/N]` on stdin and EOF counts
-as no. It then clones, runs `gh repo create --private`, sets the remotes and
+as no. It then clones, runs `gh repo create --visibility <public|private>`, sets the remotes and
 runs `git push -u origin <branch>`. **Never `git push --force`.**
 
 ## Step 7: Verify + Report
