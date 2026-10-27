@@ -63,7 +63,7 @@ Run the script with `--dry-run` first and show the user the `[PLAN]` block.
 Ask the user two explicit questions from the plan: create the GHES repo with
 the `Visibility` the plan shows (`--visibility`, default `private`)? push to it? Only when **both** are yes, re-run without `--dry-run` and
 with `--yes`. Without `--yes` the script asks `[y/N]` on stdin and EOF counts
-as no. It then clones, runs `gh repo create --visibility <public|private>`, sets the remotes and
+as no. It then clones, runs `gh repo create --public|--private`, sets the remotes and
 runs `git push -u origin <branch>`. **Never `git push --force`.**
 
 ## Step 7: Verify + Report

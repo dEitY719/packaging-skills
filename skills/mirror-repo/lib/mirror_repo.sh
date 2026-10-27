@@ -141,7 +141,7 @@ BRANCH=$(git -C "$TARGET" symbolic-ref --short HEAD) || die "cannot read the clo
 # --- Step 4: create the GHES repo (confirm first) --------------------------
 confirm "Create $VISIBILITY repo $GHES_HOST/$GHES_OWNER/$NAME?" \
   || die "GHES repo create declined — nothing created; the clone at $TARGET is local only (delete it to retry)"
-GH_HOST="$GHES_HOST" gh repo create "$GHES_OWNER/$NAME" --visibility "$VISIBILITY" \
+GH_HOST="$GHES_HOST" gh repo create "$GHES_OWNER/$NAME" "--$VISIBILITY" \
   || die "gh repo create $GHES_OWNER/$NAME on $GHES_HOST failed"
 
 # --- Step 5: remotes -------------------------------------------------------
