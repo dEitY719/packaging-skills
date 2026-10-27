@@ -17,7 +17,7 @@ Flags:
   --dest <path>        Clone parent directory.   default ~/para/project/skills/
   --host <host>        Upstream host.            default github.com
   --ghes-host <host>   GHES host.                default = _gh_resolve_host
-  --visibility <v>     GHES repo visibility.    default private (public|private only)
+  --visibility <v>     GHES repo visibility.     default private (public|private only)
   --dry-run            Print the plan only — no clone, no repo, no push.
   -h | --help          Print this help and stop. No filesystem or network calls.
 
@@ -39,7 +39,7 @@ Behavior:
      missing, or the GHES repo already exists.
   2. Print the plan (stop if --dry-run).
   3. git clone https://<host>/<owner>/<repo-name>.git <dest>/<repo-name>
-  4. gh repo create <ghes-owner>/<repo-name> --visibility <v>   (after confirmation)
+  4. gh repo create <ghes-owner>/<repo-name> --public|--private   (after confirmation)
   5. origin -> GHES over SSH, upstream -> source over HTTPS.
   6. git push -u origin <branch>                         (after confirmation)
   7. Verify remotes + GHES repo, print the report.
