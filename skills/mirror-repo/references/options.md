@@ -37,6 +37,8 @@ Online:
 
 - `gh auth status --hostname <h>` must pass for both hosts.
 - `GH_HOST=<host> gh repo view <owner>/<repo-name>` must succeed (upstream exists).
+- `--visibility public` requires the upstream to be `PUBLIC`; a private or
+  internal upstream aborts, so a mirror never publishes code kept private.
 - `GH_HOST=<ghes-host> gh repo view <ghes-owner>/<repo-name>` must fail
   (mirror does not exist yet) — otherwise abort and point at `git-pull-skills.sh`.
 
