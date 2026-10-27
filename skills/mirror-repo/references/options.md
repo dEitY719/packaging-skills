@@ -11,6 +11,7 @@ onto `lib/mirror_repo.sh`; `--yes` is the script-only confirmation hand-off.
 | `--dest <path>` | no | `~/para/project/skills/` | Parent directory the repo is cloned into. |
 | `--host <host>` | no | `github.com` | Upstream host. |
 | `--ghes-host <host>` | no | `_gh_resolve_host` | GHES host. Read from the dotfiles SSOT `shell-common/functions/gh_host.sh` (honours `$SHELL_COMMON`). |
+| `--visibility <public\|private>` | no | `private` | Visibility of the created GHES repo, passed to `gh repo create --visibility`. Any other value, or a missing value, aborts offline. |
 | `--dry-run` | no | off | Steps 0-2 only: plan, no clone, no repo, no push. |
 | `--yes` | no | off | Script only. Answers both confirmations — pass it only after the user said yes to create **and** push. |
 | `-h` / `--help` / `help` | no | — | Print `references/help.md` verbatim and stop. |
@@ -23,6 +24,7 @@ Offline, before any network call:
   the `<domain>-skills` rewrite.
 - Lowercase letters, digits and single hyphens only (`^[a-z0-9]+(-[a-z0-9]+)*$`).
 - Append `-skills` when missing (`video` -> `video-skills`), with an `[INFO]` line.
+- `--visibility` must be `public` or `private` (default `private`); anything else aborts.
 - Abort if `<dest>/<repo-name>` already exists — not idempotent.
 
 Host resolution:
