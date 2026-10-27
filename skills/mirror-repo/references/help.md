@@ -57,6 +57,7 @@ Safety:
     refreshing a mirror is git-pull-skills.sh's job.
   - GHES repo create and push are each confirmed first; never git push --force.
   - --dry-run writes nothing and creates nothing.
+  - --visibility public is refused when the upstream repo is not PUBLIC.
   - marketplaces.json is never edited.
 
 Examples:

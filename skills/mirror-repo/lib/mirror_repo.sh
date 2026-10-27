@@ -103,7 +103,12 @@ fi
 valid_id "GHES owner" "$GHES_OWNER"
 
 # --- Step 1 (online half): upstream must exist, GHES repo must not --------
-repo_exists "$HOST" "$OWNER/$NAME" || die "upstream repo $HOST/$OWNER/$NAME not found"
+SRC_VIS=$(GH_HOST="$HOST" gh repo view "$OWNER/$NAME" --json visibility --jq .visibility 2>/dev/null) \
+  || die "upstream repo $HOST/$OWNER/$NAME not found"
+# A public mirror of a non-public source would publish code its owner kept private.
+if [ "$VISIBILITY" = public ] && [ "$SRC_VIS" != PUBLIC ]; then
+  die "upstream $HOST/$OWNER/$NAME is ${SRC_VIS:-of unknown visibility}, not PUBLIC — refusing --visibility public"
+fi
 if repo_exists "$GHES_HOST" "$GHES_OWNER/$NAME"; then
   die "$GHES_HOST/$GHES_OWNER/$NAME already exists — refresh it with git-pull-skills.sh instead"
 fi

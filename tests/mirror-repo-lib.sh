@@ -14,7 +14,8 @@ trap 'rm -rf "$TMP"' EXIT
 BIN="$TMP/bin" LOG="$TMP/calls.log"
 mkdir -p "$BIN"
 
-# gh stub. Knobs: STUB_NOAUTH=<host>, STUB_UPSTREAM_MISSING=1, STUB_GHES_EXISTS=1.
+# gh stub. Knobs: STUB_NOAUTH=<host>, STUB_UPSTREAM_MISSING=1, STUB_GHES_EXISTS=1,
+# STUB_UPSTREAM_VIS=<PUBLIC|PRIVATE|INTERNAL> (default PUBLIC).
 cat >"$BIN/gh" <<'EOF'
 #!/usr/bin/env bash
 echo "gh GH_HOST=${GH_HOST:-} $*" >>"$STUB_LOG"
@@ -22,7 +23,8 @@ case "$1 $2" in
   "auth status") [ "$4" != "${STUB_NOAUTH:-}" ] ;;
   "api --hostname") echo ghes-user ;;
   "repo view")
-    if [ "$GH_HOST" = github.com ]; then [ -z "${STUB_UPSTREAM_MISSING:-}" ]
+    if [ "$GH_HOST" = github.com ]; then
+      [ -z "${STUB_UPSTREAM_MISSING:-}" ] || exit 1; echo "${STUB_UPSTREAM_VIS:-PUBLIC}"
     else [ -n "${STUB_GHES_EXISTS:-}" ] || [ -f "$STUB_STATE/created" ]; fi ;;
   "repo create") touch "$STUB_STATE/created" ;;
   *) exit 1 ;;
@@ -165,7 +167,15 @@ rm -rf "$TMP/state"; mkdir -p "$TMP/state"; : >"$LOG"; RC=0
 [ "$RC" -ne 0 ] && grep -q 'needs a value' "$TMP/out" && [ ! -s "$LOG" ] || fail "missing visibility value accepted"
 ok "invalid/missing --visibility aborts offline"
 
-# 16. host-agnostic: no github.<corp>.<tld> host literal in the skill
+# 16. --visibility public of a non-public upstream aborts before clone/create
+STUB_UPSTREAM_VIS=PRIVATE run "" test-skills --visibility public --yes
+[ "$RC" -ne 0 ] && grep -q 'refusing --visibility public' "$TMP/out" || fail "private upstream mirrored public"
+log_has 'clone|repo create|push' && fail "private-upstream public mirror still mutated"
+STUB_UPSTREAM_VIS=PRIVATE run "" test-skills --yes
+[ "$RC" -eq 0 ] && log_has 'repo create ghes-user/test-skills --private' || fail "private upstream default private mirror"
+ok "public mirror of a private upstream refused"
+
+# 17. host-agnostic: no github.<corp>.<tld> host literal in the skill
 if grep -rqE 'github\.[A-Za-z0-9-]+\.[a-z]+' "$ROOT/skills/mirror-repo"; then
   fail "hardcoded github.<corp>.<tld> GHES host in skills/mirror-repo"
 fi
