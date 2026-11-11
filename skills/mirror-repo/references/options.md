@@ -1,46 +1,55 @@
-# Options — full flag/argument reference for packaging:mirror-repo
+# Options — full flag reference for packaging:mirror-repo
 
-Positional `<repo-name>` (required) plus the flags below. Every flag maps 1:1
-onto `lib/mirror_repo.sh`; `--yes` is the script-only confirmation hand-off.
+Every flag maps 1:1 onto `lib/mirror_repo.sh`; `--yes` is the script-only
+confirmation hand-off.
 
 | Option | Required | Default | Description |
 |--------|----------|---------|-------------|
-| `<repo-name>` | yes | — | Repo name in `<domain>-skills` form. A missing `-skills` suffix is auto-appended. |
-| `--owner <owner>` | no | `dEitY719` | Upstream owner. |
-| `--ghes-owner <owner>` | no | active GHES login | GHES owner the mirror is created under (`gh api --hostname <ghes-host> user`). |
-| `--dest <path>` | no | `~/para/project/skills/` | Parent directory the repo is cloned into. |
-| `--host <host>` | no | `github.com` | Upstream host. |
-| `--ghes-host <host>` | no | `_gh_resolve_host` | GHES host. Read from the dotfiles SSOT `shell-common/functions/gh_host.sh` (honours `$SHELL_COMMON`). |
-| `--visibility <public\|private>` | no | `private` | Visibility of the created GHES repo, passed to `gh repo create` as `--public` / `--private`. Any other value, or a missing value, aborts offline. |
+| `--upstream <url>` | yes | — | Source repo URL. Cloned verbatim and set as the `upstream` remote. |
+| `--origin <url>` | yes | — | Mirror repo URL. Created on its host, set as the `origin` remote and pushed to. Its repo name is the clone directory name, used verbatim. |
+| `--dest <path>` | no | `~/para/project/` | Parent directory the repo is cloned into. |
+| `--visibility <public\|private>` | no | `private` | Visibility of the created mirror repo, passed to `gh repo create` as `--public` / `--private`. Any other value, or a missing value, aborts offline. |
 | `--dry-run` | no | off | Steps 0-2 only: plan, no clone, no repo, no push. |
 | `--yes` | no | off | Script only. Answers both confirmations — pass it only after the user said yes to create **and** push. |
-| `-h` / `--help` / `help` | no | — | Print `references/help.md` verbatim and stop. |
+| `-h` / `--help` / `help` | no | — | Print `references/help.md` verbatim and stop. The script's own `--help` prints usage with Examples. |
+
+## URL forms
+
+Both flags accept, with the `.git` suffix optional in every form:
+
+```
+https://<host>/<owner>/<repo>.git   http://<host>/<owner>/<repo>.git
+git@<host>:<owner>/<repo>.git       ssh://git@<host>/<owner>/<repo>.git
+```
+
+The URL strings are used verbatim for `git clone` and for the `origin` /
+`upstream` remotes. Host, owner and repo name are parsed from them; there are
+no separate host/owner flags and no naming convention (no `-skills` suffix).
 
 ## Validation rules (Steps 0-1)
 
 Offline, before any network call:
 
-- **Reject a `claude-plugin-` prefix** — pre-#1410 naming; the error proposes
-  the `<domain>-skills` rewrite.
-- Lowercase letters, digits and single hyphens only (`^[a-z0-9]+(-[a-z0-9]+)*$`).
-- Append `-skills` when missing (`video` -> `video-skills`), with an `[INFO]` line.
-- `--visibility` must be `public` or `private` (default `private`); anything else aborts.
-- Abort if `<dest>/<repo-name>` already exists — not idempotent.
-
-Host resolution:
-
-- No `--ghes-host` and no readable `gh_host.sh` -> abort; a host is never guessed.
-- GHES host equal to the upstream host (a public PC where `_gh_resolve_host`
-  returns `github.com`) -> abort; pass `--ghes-host`.
+- Missing `--upstream` or `--origin` prints usage and exits 1.
+- Unrecognized scheme aborts.
+- The path after the host must be exactly `<owner>/<repo>`; anything else aborts.
+- Host must match `^[A-Za-z0-9.-]+$`; owner and repo `^[A-Za-z0-9._-]+$`.
+- Origin host must differ from upstream host (case-insensitive) — a mirror
+  needs two different hosts.
+- **Internal-PC guard**: when `~/.dotfiles-setup-mode` reads `internal`, an
+  origin on `github.com` aborts — never push to `github.com` from an internal
+  PC. Other modes (or no file) proceed.
+- `--visibility` must be `public` or `private` (default `private`).
+- Abort if `<dest>/<repo>` already exists — not idempotent.
 
 Online:
 
 - `gh auth status --hostname <h>` must pass for both hosts.
-- `GH_HOST=<host> gh repo view <owner>/<repo-name>` must succeed (upstream exists).
+- `GH_HOST=<upstream-host> gh repo view <owner>/<repo>` must succeed (upstream exists).
 - `--visibility public` requires the upstream to be `PUBLIC`; a private or
   internal upstream aborts, so a mirror never publishes code kept private.
-- `GH_HOST=<ghes-host> gh repo view <ghes-owner>/<repo-name>` must fail
-  (mirror does not exist yet) — otherwise abort and point at `git-pull-skills.sh`.
+- `GH_HOST=<origin-host> gh repo view <owner>/<repo>` must fail (mirror does
+  not exist yet) — otherwise abort.
 
 ## Confirmation gates
 
@@ -49,8 +58,8 @@ again before `git push`. Only `y`/`yes` proceeds; EOF or anything else aborts:
 
 | Declined at | State left behind |
 |-------------|-------------------|
-| create | local clone only — delete `<dest>/<repo-name>` to retry |
-| push | GHES repo exists but is empty — push later with `git -C <dest>/<repo-name> push -u origin <branch>` |
+| create | local clone only — delete `<dest>/<repo>` to retry |
+| push | mirror repo exists but is empty — push later with `git -C <dest>/<repo> push -u origin <branch>` |
 
 ## Push
 
@@ -62,4 +71,5 @@ separate `--set-upstream-to` cannot run before that ref exists. Never
 ## Not in scope
 
 `marketplaces.json` is not modified — adding the repo to the manifest is the
-user's choice. Refreshing an existing mirror is `git-pull-skills.sh`.
+user's choice. Refreshing an existing mirror is a plain `git pull` /
+`git-pull-skills.sh`.

@@ -2,7 +2,8 @@
 # tests/mirror-repo-lib.sh — offline check for skills/mirror-repo/lib/mirror_repo.sh.
 #
 # gh and git are stubs on PATH that log every call and touch nothing real, so
-# no repo is ever cloned, created or pushed. Run: bash tests/mirror-repo-lib.sh
+# no repo is ever cloned, created or pushed. HOME points into the temp dir so
+# ~/.dotfiles-setup-mode is under test control. Run: bash tests/mirror-repo-lib.sh
 
 # shellcheck disable=SC2015  # `A && B || fail`: fail exits, so C never runs after a true A&&B
 set -euo pipefail
@@ -12,20 +13,21 @@ SCRIPT="$ROOT/skills/mirror-repo/lib/mirror_repo.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 BIN="$TMP/bin" LOG="$TMP/calls.log"
-mkdir -p "$BIN"
+mkdir -p "$BIN" "$TMP/home"
+export HOME="$TMP/home"
 
-# gh stub. Knobs: STUB_NOAUTH=<host>, STUB_UPSTREAM_MISSING=1, STUB_GHES_EXISTS=1,
-# STUB_UPSTREAM_VIS=<PUBLIC|PRIVATE|INTERNAL> (default PUBLIC).
+# gh stub. Knobs: STUB_NOAUTH=<host>, STUB_UPSTREAM_MISSING=1, STUB_MIRROR_EXISTS=1,
+# STUB_UPSTREAM_VIS=<PUBLIC|PRIVATE|INTERNAL> (default PUBLIC),
+# STUB_UP_HOST=<host> (which GH_HOST is the upstream; default github.com).
 cat >"$BIN/gh" <<'EOF'
 #!/usr/bin/env bash
 echo "gh GH_HOST=${GH_HOST:-} $*" >>"$STUB_LOG"
 case "$1 $2" in
   "auth status") [ "$4" != "${STUB_NOAUTH:-}" ] ;;
-  "api --hostname") echo ghes-user ;;
   "repo view")
-    if [ "$GH_HOST" = github.com ]; then
+    if [ "$GH_HOST" = "${STUB_UP_HOST:-github.com}" ]; then
       [ -z "${STUB_UPSTREAM_MISSING:-}" ] || exit 1; echo "${STUB_UPSTREAM_VIS:-PUBLIC}"
-    else [ -n "${STUB_GHES_EXISTS:-}" ] || [ -f "$STUB_STATE/created" ]; fi ;;
+    else [ -n "${STUB_MIRROR_EXISTS:-}" ] || [ -f "$STUB_STATE/created" ]; fi ;;
   "repo create") touch "$STUB_STATE/created" ;;
   *) exit 1 ;;
 esac
@@ -49,136 +51,162 @@ EOF
 chmod +x "$BIN/gh" "$BIN/git"
 export PATH="$BIN:$PATH" STUB_LOG="$LOG"
 
+UP=https://github.com/dEitY719/equinest.git
+OR=git@ghes.example:ghes-user/equinest.git
+
 pass=0
 fail() { echo "FAIL: $1" >&2; echo "--- output:" >&2; cat "$TMP/out" >&2; exit 1; }
 ok() { pass=$((pass + 1)); echo "ok    $1"; }
 
-# run <stdin> <args...> — fresh dest/state/log per case; sets RC.
-run() {
+# run <stdin> <args...> — fresh dest/state/log per case; sets RC. No --dest added.
+run_raw() {
   local input="$1"; shift
   rm -rf "$TMP/dest" "$TMP/state"; mkdir -p "$TMP/dest" "$TMP/state"; : >"$LOG"
   export STUB_STATE="$TMP/state"
   RC=0
-  printf '%s' "$input" | "$SCRIPT" "$@" --dest "$TMP/dest" --ghes-host ghes.example \
-    >"$TMP/out" 2>&1 || RC=$?
+  printf '%s' "$input" | "$SCRIPT" "$@" >"$TMP/out" 2>&1 || RC=$?
 }
+run() { local input="$1"; shift; run_raw "$input" "$@" --dest "$TMP/dest"; }
 log_has() { grep -qE -- "$1" "$LOG"; }
+offline() { [ ! -s "$LOG" ]; }
 
 # 1. dry-run prints the plan and writes/creates/pushes nothing
-run "" test-skills --dry-run
+run "" --upstream "$UP" --origin "$OR" --dry-run
 [ "$RC" -eq 0 ] || fail "dry-run exit $RC"
 grep -q '^\[PLAN\] packaging:mirror-repo' "$TMP/out" || fail "dry-run: no [PLAN]"
-grep -q 'origin    -> git@ghes.example:ghes-user/test-skills.git' "$TMP/out" || fail "dry-run: origin url"
+grep -qF "origin    -> $OR" "$TMP/out" || fail "dry-run: origin url"
+grep -qF "upstream  -> $UP" "$TMP/out" || fail "dry-run: upstream url"
 grep -q 'Dry-run     : on' "$TMP/out" || fail "dry-run: flag line"
 grep -q 'Visibility  : private' "$TMP/out" || fail "dry-run: default visibility line"
 [ -z "$(ls -A "$TMP/dest")" ] || fail "dry-run wrote into dest"
 log_has 'clone|repo create|push' && fail "dry-run ran a mutating call"
 ok "dry-run writes nothing"
 
-# 2. suffix auto-append
-run "" test --dry-run
-grep -q 'GHES repo    : ghes.example/ghes-user/test-skills' "$TMP/out" || fail "suffix not appended"
-ok "-skills suffix auto-appended"
+# 2. repo name used verbatim — no -skills suffix, no naming convention
+grep -qF "Mirror repo  : ghes.example/ghes-user/equinest" "$TMP/out" || fail "mirror name not verbatim"
+grep -qF "Destination  : $TMP/dest/equinest/" "$TMP/out" || fail "dest name not verbatim"
+grep -q 'equinest-skills' "$TMP/out" && fail "-skills leaked into output"
+run "" --upstream https://github.com/o/claude-plugin-Foo_Bar.git --origin git@ghes.example:u/claude-plugin-Foo_Bar.git --dry-run
+[ "$RC" -eq 0 ] && grep -qF 'ghes.example/u/claude-plugin-Foo_Bar' "$TMP/out" || fail "name convention still enforced"
+ok "repo name used verbatim"
 
-# 3. bad name rejected before any network call
-run "" Bad_Name --dry-run
-[ "$RC" -ne 0 ] && [ ! -s "$LOG" ] || fail "bad name accepted or hit network"
-ok "bad name rejected offline"
+# 3. HTTPS origin supported end to end
+OR_HTTPS=https://ghes.example/ghes-user/equinest.git
+run "" --upstream "$UP" --origin "$OR_HTTPS" --yes
+[ "$RC" -eq 0 ] || fail "https origin exit $RC"
+log_has "GH_HOST=ghes.example repo create ghes-user/equinest --private" || fail "https origin create"
+log_has "remote set-url origin $OR_HTTPS\$" || fail "https origin set-url"
+ok "HTTPS origin end to end"
 
-# 4. claude-plugin- prefix rejected
-run "" claude-plugin-video --dry-run
-[ "$RC" -ne 0 ] && grep -q 'pre-#1410' "$TMP/out" && [ ! -s "$LOG" ] || fail "claude-plugin- not rejected"
-ok "claude-plugin- prefix rejected"
+# 4. scp-form upstream without .git parses
+run "" --upstream git@github.com:dEitY719/equinest --origin "$OR" --dry-run
+[ "$RC" -eq 0 ] && grep -qF 'Source repo  : github.com/dEitY719/equinest' "$TMP/out" \
+  && grep -qF 'upstream  -> git@github.com:dEitY719/equinest' "$TMP/out" || fail "scp upstream without .git"
+ok "scp-form upstream without .git parses"
 
-# 5. dest exists -> abort, nothing touched
-rm -rf "$TMP/state"; mkdir -p "$TMP/state" "$TMP/dest/test-skills"; : >"$LOG"; RC=0
-"$SCRIPT" test-skills --dest "$TMP/dest" --ghes-host ghes.example --yes >"$TMP/out" 2>&1 || RC=$?
-[ "$RC" -ne 0 ] && grep -q 'already exists' "$TMP/out" && [ ! -s "$LOG" ] || fail "dest-exists not aborted"
-ok "dest exists aborts"
+# 5. ssh:// form parses
+run "" --upstream "$UP" --origin ssh://git@ghes.example/team/equinest.git --dry-run
+[ "$RC" -eq 0 ] && grep -qF 'Mirror repo  : ghes.example/team/equinest' "$TMP/out" || fail "ssh:// origin"
+ok "ssh:// form parses"
 
-# 6. upstream missing -> abort
-STUB_UPSTREAM_MISSING=1 run "" test-skills --yes
+# 6. malformed URLs rejected offline
+for bad in https://github.com/equinest.git https://github.com/dEitY719/ \
+           github.com/dEitY719/equinest.git ftp://github.com/a/b.git \
+           https://github.com/a/b/c.git 'git@gh!x:a/b.git' 'https://github.com/a/b;c'; do
+  run "" --upstream "$bad" --origin "$OR" --dry-run
+  [ "$RC" -ne 0 ] && grep -q '^\[ABORT\]' "$TMP/out" && offline || fail "malformed upstream accepted: $bad"
+done
+run "" --upstream "$UP" --origin git@ghes.example:equinest.git --dry-run
+[ "$RC" -ne 0 ] && offline || fail "ownerless origin accepted"
+ok "malformed URLs rejected offline"
+
+# 7. missing --upstream/--origin prints usage, offline; --help shows Examples
+run "" --origin "$OR" --dry-run
+[ "$RC" -ne 0 ] && grep -q '^Usage:' "$TMP/out" && offline || fail "missing --upstream"
+run "" --upstream "$UP" --dry-run
+[ "$RC" -ne 0 ] && grep -q '^Usage:' "$TMP/out" && offline || fail "missing --origin"
+run_raw "" --help
+[ "$RC" -eq 0 ] && grep -q '^Examples:' "$TMP/out" && offline || fail "--help lacks Examples"
+ok "missing URL prints usage offline; --help has Examples"
+
+# 8. origin host equals upstream host aborts
+run "" --upstream "$UP" --origin git@GitHub.com:me/equinest.git --dry-run
+[ "$RC" -ne 0 ] && grep -q 'two different hosts' "$TMP/out" && offline || fail "same host accepted"
+ok "same host aborts"
+
+# 9. internal-PC guard (upstream on a third host so the same-host guard stays quiet)
+echo internal >"$HOME/.dotfiles-setup-mode"
+STUB_UP_HOST=src.example run "" --upstream https://src.example/a/equinest.git --origin git@github.com:me/equinest.git --dry-run
+[ "$RC" -ne 0 ] && grep -q 'internal PC' "$TMP/out" && offline || fail "internal github.com origin accepted"
+echo external >"$HOME/.dotfiles-setup-mode"
+STUB_UP_HOST=src.example run "" --upstream https://src.example/a/equinest.git --origin git@github.com:me/equinest.git --dry-run
+[ "$RC" -eq 0 ] && grep -q '^\[PLAN\]' "$TMP/out" || fail "external github.com origin refused"
+rm -f "$HOME/.dotfiles-setup-mode"
+ok "internal-PC github.com origin guard"
+
+# 10. dest exists / upstream missing / mirror exists / auth failure abort without mutating
+rm -rf "$TMP/state" "$TMP/dest"; mkdir -p "$TMP/state" "$TMP/dest/equinest"; : >"$LOG"; RC=0
+"$SCRIPT" --upstream "$UP" --origin "$OR" --dest "$TMP/dest" --yes >"$TMP/out" 2>&1 || RC=$?
+[ "$RC" -ne 0 ] && grep -q 'already exists' "$TMP/out" && offline || fail "dest-exists not aborted"
+STUB_UPSTREAM_MISSING=1 run "" --upstream "$UP" --origin "$OR" --yes
 [ "$RC" -ne 0 ] && grep -q 'not found' "$TMP/out" || fail "upstream-missing not aborted"
 log_has 'clone|repo create|push' && fail "upstream-missing still mutated"
-ok "upstream missing aborts"
-
-# 7. GHES repo exists -> abort
-STUB_GHES_EXISTS=1 run "" test-skills --yes
-[ "$RC" -ne 0 ] && grep -q 'git-pull-skills.sh' "$TMP/out" || fail "ghes-exists not aborted"
-log_has 'clone|repo create|push' && fail "ghes-exists still mutated"
-ok "GHES repo exists aborts"
-
-# 8. auth missing on GHES -> abort
-STUB_NOAUTH=ghes.example run "" test-skills --yes
+STUB_MIRROR_EXISTS=1 run "" --upstream "$UP" --origin "$OR" --yes
+[ "$RC" -ne 0 ] && grep -q 'already exists' "$TMP/out" || fail "mirror-exists not aborted"
+log_has 'clone|repo create|push' && fail "mirror-exists still mutated"
+STUB_NOAUTH=ghes.example run "" --upstream "$UP" --origin "$OR" --yes
 [ "$RC" -ne 0 ] && grep -q 'not logged in to ghes.example' "$TMP/out" || fail "auth failure not aborted"
-ok "auth failure aborts"
+log_has 'clone|repo create|push' && fail "auth failure still mutated"
+ok "dest/upstream/mirror/auth failures abort"
 
-# 9. no confirmation (EOF / "n") -> no create, no push
-run "" test-skills
+# 11. both confirmation gates enforced independently
+run "" --upstream "$UP" --origin "$OR"
 [ "$RC" -ne 0 ] || fail "EOF confirmation proceeded"
 log_has 'repo create|push' && fail "create/push ran without confirmation"
-run $'n\n' test-skills
+run $'n\n' --upstream "$UP" --origin "$OR"
 log_has 'repo create|push' && fail "create/push ran after 'n'"
-ok "create gated on confirmation"
-
-# 10. create confirmed, push declined -> create yes, push no
-run $'y\nn\n' test-skills
-[ "$RC" -ne 0 ] && log_has 'repo create ghes-user/test-skills --private' || fail "create after y missing"
+run $'y\nn\n' --upstream "$UP" --origin "$OR"
+[ "$RC" -ne 0 ] && log_has 'repo create ghes-user/equinest --private' || fail "create after y missing"
 log_has ' push' && fail "push ran after 'n'"
-ok "push gated on its own confirmation"
+ok "create and push gated independently"
 
-# 11. full confirmed run: create, remotes, push, [OK]; never --force
-run $'y\ny\n' test-skills
+# 12. full confirmed run: URLs verbatim, create with visibility, push, [OK]
+run $'y\ny\n' --upstream "$UP" --origin "$OR"
 [ "$RC" -eq 0 ] || fail "confirmed run exit $RC"
-log_has '^git clone https://github.com/dEitY719/test-skills.git ' || fail "clone not via HTTPS"
-log_has 'GH_HOST=ghes.example repo create ghes-user/test-skills --private' || fail "create call"
-log_has 'remote set-url origin git@ghes.example:ghes-user/test-skills.git' || fail "origin set-url"
-log_has 'remote add upstream https://github.com/dEitY719/test-skills.git' || fail "upstream add"
+log_has "^git clone $UP " || fail "clone not from upstream URL verbatim"
+log_has 'GH_HOST=ghes.example repo create ghes-user/equinest --private' || fail "create call"
+log_has "remote set-url origin $OR\$" || fail "origin set-url"
+log_has "remote add upstream $UP\$" || fail "upstream add"
 log_has 'push -u origin main$' || fail "push call"
 grep -q '\[OK\] packaging:mirror-repo' "$TMP/out" || fail "no [OK] report"
 ok "confirmed run mirrors and reports"
 
-# 12. --yes is equivalent to confirming both; still no --force anywhere
-run "" test-skills --yes
+# 13. --yes is equivalent to confirming both; still no --force anywhere
+run "" --upstream "$UP" --origin "$OR" --yes
 [ "$RC" -eq 0 ] && log_has 'push -u origin main$' || fail "--yes run"
 grep -qE -- '--force|-f( |$)|\+main' "$LOG" && fail "force push issued"
 grep -vE '^[[:space:]]*#' "$SCRIPT" | grep -qE -- 'push[^#]*(--force|-f |\+)' && fail "script contains a force push"
 ok "--yes path, never --force"
 
-# 13. no --ghes-host and no dotfiles helper -> abort, never guess a host
-rm -rf "$TMP/state" "$TMP/dest"; mkdir -p "$TMP/state"; : >"$LOG"; RC=0
-SHELL_COMMON="$TMP/none" "$SCRIPT" test-skills --dest "$TMP/dest" --dry-run >"$TMP/out" 2>&1 || RC=$?
-[ "$RC" -ne 0 ] && grep -q 'pass --ghes-host' "$TMP/out" || fail "unresolvable GHES host not aborted"
-ok "unresolvable GHES host aborts"
-
-# 14. --visibility public: shown in [PLAN] and confirm, passed to gh repo create
-run "" test-skills --visibility public --dry-run
+# 14. --visibility: plan, confirm, create; invalid/missing offline; public of non-public refused
+run "" --upstream "$UP" --origin "$OR" --visibility public --dry-run
 [ "$RC" -eq 0 ] && grep -q 'Visibility  : public' "$TMP/out" || fail "dry-run: public visibility line"
-run $'y\nn\n' test-skills --visibility public
-log_has 'repo create ghes-user/test-skills --public' || fail "create not public"
-grep -q 'Create public repo ghes.example/ghes-user/test-skills?' "$TMP/out" || fail "confirm text lacks visibility"
-ok "--visibility public reaches plan, confirm and create"
-
-# 15. invalid or missing --visibility value aborts before any network call
-run "" test-skills --visibility internal --dry-run
-[ "$RC" -ne 0 ] && grep -q 'public|private' "$TMP/out" && [ ! -s "$LOG" ] || fail "invalid visibility accepted"
-rm -rf "$TMP/state"; mkdir -p "$TMP/state"; : >"$LOG"; RC=0
-"$SCRIPT" test-skills --visibility >"$TMP/out" 2>&1 || RC=$?
-[ "$RC" -ne 0 ] && grep -q 'needs a value' "$TMP/out" && [ ! -s "$LOG" ] || fail "missing visibility value accepted"
-ok "invalid/missing --visibility aborts offline"
-
-# 16. --visibility public of a non-public upstream aborts before clone/create
-STUB_UPSTREAM_VIS=PRIVATE run "" test-skills --visibility public --yes
+run $'y\nn\n' --upstream "$UP" --origin "$OR" --visibility public
+log_has 'repo create ghes-user/equinest --public' || fail "create not public"
+grep -q 'Create public repo ghes.example/ghes-user/equinest?' "$TMP/out" || fail "confirm text lacks visibility"
+run "" --upstream "$UP" --origin "$OR" --visibility internal --dry-run
+[ "$RC" -ne 0 ] && grep -q 'public|private' "$TMP/out" && offline || fail "invalid visibility accepted"
+run_raw "" --upstream "$UP" --origin "$OR" --visibility
+[ "$RC" -ne 0 ] && grep -q 'needs a value' "$TMP/out" && offline || fail "missing visibility value accepted"
+STUB_UPSTREAM_VIS=PRIVATE run "" --upstream "$UP" --origin "$OR" --visibility public --yes
 [ "$RC" -ne 0 ] && grep -q 'refusing --visibility public' "$TMP/out" || fail "private upstream mirrored public"
 log_has 'clone|repo create|push' && fail "private-upstream public mirror still mutated"
-STUB_UPSTREAM_VIS=PRIVATE run "" test-skills --yes
-[ "$RC" -eq 0 ] && log_has 'repo create ghes-user/test-skills --private' || fail "private upstream default private mirror"
-ok "public mirror of a private upstream refused"
+ok "--visibility reaches plan/confirm/create; validated; public-of-private refused"
 
-# 17. host-agnostic: no github.<corp>.<tld> host literal in the skill
+# 15. host-agnostic: no hardcoded mirror host literal in lib/
 if grep -rqE 'github\.[A-Za-z0-9-]+\.[a-z]+' "$ROOT/skills/mirror-repo"; then
-  fail "hardcoded github.<corp>.<tld> GHES host in skills/mirror-repo"
+  fail "hardcoded github.<corp>.<tld> mirror host in skills/mirror-repo"
 fi
-ok "no hardcoded GHES host"
+ok "no hardcoded mirror host in lib/"
 
 echo "ok    $pass mirror-repo checks passed"

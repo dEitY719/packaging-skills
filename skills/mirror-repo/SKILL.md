@@ -1,10 +1,11 @@
 ---
 name: mirror-repo
 description: >-
-  Mirror an external `*-skills` repo onto GHES: clone, create the GHES repo,
-  origin=GHES + upstream=github.com, push. Use for "외부 skills 레포 GHES로
-  미러링해", "GHES에 레포 복사", "mirror repo to GHES",
-  "/packaging:mirror-repo <name>". New mirrors only.
+  Mirror any existing repo onto another host (e.g. github.com -> GHES) from
+  two URLs: clone, create the mirror repo, origin=mirror + upstream=source,
+  push. Use for "외부 레포 GHES로 미러링해", "GHES에 레포 복사",
+  "mirror repo to GHES", "/packaging:mirror-repo --upstream <url> --origin <url>".
+  New mirrors only.
 license: MIT
 compatibility:
   tools: Read, Bash
@@ -17,12 +18,12 @@ metadata:
     non_claude: advisory-only
 ---
 
-# External Repo -> GHES Mirror
+# External Repo -> Mirror
 
-`git-clone-skills.sh` fails for any `*-skills` repo that exists on github.com
-but was never mirrored to GHES. This skill does the mirror once: clone over
-HTTPS, create the GHES repo, wire `origin`=GHES (SSH) and `upstream`=github.com
-(HTTPS), push. Refreshing an existing mirror is `git-pull-skills.sh`'s job.
+Mirrors an existing repo from one host onto another — typically a github.com
+repo onto GHES — once: clone the `--upstream` URL, create the `--origin` repo,
+wire `origin`=mirror and `upstream`=source, push. Any repo works; no naming
+convention is enforced. Refreshing an existing mirror is a plain pull.
 
 ## Help
 
@@ -34,24 +35,24 @@ stop. No filesystem or network calls.
 Every step below runs inside one script — never re-implement it in prose:
 
 ```
-bash skills/mirror-repo/lib/mirror_repo.sh <repo-name> [--owner <o>] [--ghes-owner <o>]
-     [--dest <path>] [--host <h>] [--ghes-host <h>] [--visibility public|private]
-     [--dry-run] [--yes]
+bash skills/mirror-repo/lib/mirror_repo.sh --upstream <url> --origin <url>
+     [--dest <path>] [--visibility public|private] [--dry-run] [--yes]
 ```
 
-Full flag table, defaults and validation rules: `references/options.md`.
+Full flag table, URL forms and validation rules: `references/options.md`.
 
-## Step 0: Hosts + Auth
+## Step 0: Parse URLs + Auth
 
-Upstream host `--host` (default `github.com`); GHES host `--ghes-host`, else
-the dotfiles SSOT `_gh_resolve_host`. Both need `gh auth status`; the GHES
-owner is the active GHES login unless `--ghes-owner`. Any failure HARD-aborts.
+Both URLs are required (`https://`, `http://`, `git@<host>:` or
+`ssh://git@`, `.git` optional); host, owner and repo name are parsed from
+them offline. Both hosts need `gh auth status`. Any failure HARD-aborts.
 
 ## Step 1: Validate
 
-Lowercase-hyphen names only; reject a `claude-plugin-` prefix (pre-#1410);
-auto-append `-skills`. Abort if `<dest>/<repo-name>` exists, the upstream
-repo is missing, or the GHES repo already exists.
+Abort on a malformed URL, origin host equal to upstream host, or — on an
+internal PC (`~/.dotfiles-setup-mode` = `internal`) — an origin on
+`github.com`. Abort if `<dest>/<repo>` exists, the upstream repo is missing,
+or the mirror repo already exists. The origin repo name is used verbatim.
 
 ## Step 2: Plan (always)
 
@@ -60,7 +61,7 @@ Run the script with `--dry-run` first and show the user the `[PLAN]` block.
 
 ## Steps 3-6: Clone, Create, Remotes, Push (confirm first)
 
-Ask the user two explicit questions from the plan: create the GHES repo with
+Ask the user two explicit questions from the plan: create the mirror repo with
 the `Visibility` the plan shows (`--visibility`, default `private`)? push to
 it? Only when **both** are yes, re-run without `--dry-run` and with `--yes`.
 Without `--yes` the script asks `[y/N]` on stdin and EOF counts as no. It then
@@ -69,16 +70,16 @@ clones, runs `gh repo create --public|--private`, sets the remotes and runs
 
 ## Step 7: Verify + Report
 
-The script re-reads `git remote -v` and `gh repo view` on GHES, then prints
+The script re-reads `git remote -v` and `gh repo view` on the mirror host, then prints
 the `[OK]` block (format in `references/help.md`). Relay it verbatim.
 
 ## Constraints
 
 - **HARD-abort** on auth failure, any Step 1 validation failure, a
   `gh repo create` failure, or a push rejection.
-- **Confirm first** on GHES repo create and on push; never pass `--yes`
+- **Confirm first** on mirror repo create and on push; never pass `--yes`
   without both answers. `--dry-run` writes nothing, creates nothing.
-- Host-agnostic: never hardcode a GHES host or user. Does not edit
+- Host-agnostic: every host comes from the URLs; never hardcode one. Does not edit
   `marketplaces.json`.
 
 ## Related Skills
