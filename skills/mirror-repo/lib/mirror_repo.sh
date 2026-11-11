@@ -84,11 +84,17 @@ parse_url() {
   else
     die "$flag '$url': unrecognized URL form (use https://, http://, git@<host>: or ssh://git@)"
   fi
+  # Checked before any message echoes the URL, so a token never reaches stderr.
+  case "$P_HOST" in
+    *@*) die "$flag: embedded credentials (user@ / user:token@) are not supported — use a credential helper or SSH" ;;
+    *:*) die "$flag '$url': a port in the URL is not supported" ;;
+  esac
   path="${path%.git}"
   [[ "$path" =~ ^([^/]+)/([^/]+)$ ]] \
     || die "$flag '$url': expected exactly <owner>/<repo> after the host"
   P_OWNER="${BASH_REMATCH[1]}" P_REPO="${BASH_REMATCH[2]}"
-  [[ "$P_HOST" =~ ^[A-Za-z0-9.-]+$ ]] || die "$flag '$url': invalid host '$P_HOST'"
+  # Letters/digits/dots/hyphens, no leading or trailing dot (github.com. is not a bypass).
+  [[ "$P_HOST" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || die "$flag '$url': invalid host '$P_HOST'"
   [[ "$P_OWNER" =~ ^[A-Za-z0-9._-]+$ ]] || die "$flag '$url': invalid owner '$P_OWNER'"
   [[ "$P_REPO" =~ ^[A-Za-z0-9._-]+$ ]] || die "$flag '$url': invalid repo name '$P_REPO'"
 }
@@ -106,8 +112,10 @@ while [ $# -gt 0 ]; do
       shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     --yes) YES=1; shift ;;
-    -h|--help) mirror_repo_help; exit 0 ;;
-    *) echo "unknown argument: $1" >&2; usage_die ;;
+    -h|--help|help) mirror_repo_help; exit 0 ;;
+    -*) echo "unknown argument: $1" >&2; usage_die ;;
+    *) echo "unexpected positional argument '$1': the <repo-name> form was removed — pass --upstream <url> --origin <url>" >&2
+       usage_die ;;
   esac
 done
 { [ -n "$UP_URL" ] && [ -n "$OR_URL" ]; } || usage_die
@@ -127,7 +135,7 @@ OR_HOST_LC=$(lc "$OR_HOST")
   || die "origin host equals upstream host ($UP_HOST) — a mirror needs two different hosts"
 MODE=""
 [ ! -r "$HOME/.dotfiles-setup-mode" ] || MODE=$(tr -d '[:space:]' <"$HOME/.dotfiles-setup-mode")
-if [ "$MODE" = internal ] && [ "$OR_HOST_LC" = github.com ]; then
+if [ "$MODE" = internal ] && { [ "$OR_HOST_LC" = github.com ] || [ "$OR_HOST_LC" = www.github.com ]; }; then
   die "origin is on github.com but this is an internal PC (~/.dotfiles-setup-mode=internal) — never push to github.com from here"
 fi
 

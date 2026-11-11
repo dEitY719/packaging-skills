@@ -33,12 +33,17 @@ Offline, before any network call:
 - Missing `--upstream` or `--origin` prints usage and exits 1.
 - Unrecognized scheme aborts.
 - The path after the host must be exactly `<owner>/<repo>`; anything else aborts.
-- Host must match `^[A-Za-z0-9.-]+$`; owner and repo `^[A-Za-z0-9._-]+$`.
+- Embedded credentials (`user@` / `user:token@`) abort without echoing the
+  URL; use a credential helper or SSH. A port in the URL aborts (not supported).
+- Host must match `^[A-Za-z0-9.-]+$` with no leading or trailing dot; owner
+  and repo `^[A-Za-z0-9._-]+$`.
+- A bare positional argument (the removed `<repo-name>` form) aborts with a
+  pointer to `--upstream` / `--origin`.
 - Origin host must differ from upstream host (case-insensitive) — a mirror
   needs two different hosts.
 - **Internal-PC guard**: when `~/.dotfiles-setup-mode` reads `internal`, an
-  origin on `github.com` aborts — never push to `github.com` from an internal
-  PC. Other modes (or no file) proceed.
+  origin on `github.com` (or `www.github.com`, any case) aborts — never push
+  to `github.com` from an internal PC. Other modes (or no file) proceed.
 - `--visibility` must be `public` or `private` (default `private`).
 - Abort if `<dest>/<repo>` already exists — not idempotent.
 

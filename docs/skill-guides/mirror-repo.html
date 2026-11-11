@@ -388,7 +388,7 @@
               </tr>
               <tr>
                 <td>이미 미러된 repo 를 <strong>최신으로 당긴다</strong></td>
-                <td class="pick"><code>git-pull-skills.sh</code> (스킬 아님)</td>
+                <td class="pick"><code>git pull</code> (<code>*-skills</code> repo 는 <code>git-pull-skills.sh</code>, 스킬 아님)</td>
               </tr>
               <tr>
                 <td>repo 가 아직 <strong>없다</strong>. 흩어진 스킬을 묶어 새로 만든다</td>
@@ -411,7 +411,7 @@
         </div>
 
         <div class="note">
-          <strong>mirror-repo 는 신규 미러 전용이다.</strong> 대상 디렉터리나 미러 repo 가 이미 존재하면 덮어쓰지 않고 중단한다 — 멱등하지 않다. 기존 미러 갱신은 <code>git-pull-skills.sh</code> 의 몫이다.
+          <strong>mirror-repo 는 신규 미러 전용이다.</strong> 대상 디렉터리나 미러 repo 가 이미 존재하면 덮어쓰지 않고 중단한다 — 멱등하지 않다. 기존 미러 갱신은 <code>git pull</code> (<code>*-skills</code> repo 는 <code>git-pull-skills.sh</code>) 의 몫이다.
         </div>
       </section>
 
@@ -427,7 +427,7 @@
                        [--visibility public|private] [--dry-run]
 /packaging:mirror-repo help
 
-URL 형식 (.git 생략 가능):
+URL 형식 (.git 생략 가능, 포트 / user:token@ 자격 증명 URL 은 거부):
   https://&lt;host&gt;/&lt;owner&gt;/&lt;repo&gt;.git   http://&lt;host&gt;/&lt;owner&gt;/&lt;repo&gt;.git
   git@&lt;host&gt;:&lt;owner&gt;/&lt;repo&gt;.git       ssh://git@&lt;host&gt;/&lt;owner&gt;/&lt;repo&gt;.git</pre>
 
@@ -594,7 +594,7 @@ URL 형식 (.git 생략 가능):
         <div class="grid">
           <article class="card stop">
             <h3>신규 미러 전용</h3>
-            <p><code>&lt;dest&gt;/&lt;repo&gt;</code> 이나 미러 repo 가 이미 있으면 무조건 중단한다. 기존 미러 갱신은 <code>git-pull-skills.sh</code> 를 쓴다.</p>
+            <p><code>&lt;dest&gt;/&lt;repo&gt;</code> 이나 미러 repo 가 이미 있으면 무조건 중단한다. 기존 미러 갱신은 <code>git pull</code> (<code>*-skills</code> repo 는 <code>git-pull-skills.sh</code>) 을 쓴다.</p>
           </article>
 
           <article class="card warn">
