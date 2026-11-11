@@ -12,7 +12,7 @@ bundles five skills used to build and maintain *other* skill marketplace repos:
 | Skill | Role |
 |-------|------|
 | `scaffold-repo` | Scaffold a new marketplace repo end to end. New repos only. |
-| `mirror-repo` | Mirror an existing external `*-skills` repo onto GHES. New mirrors only. |
+| `mirror-repo` | Mirror any existing repo onto another host (e.g. GHES) from `--upstream`/`--origin` URLs. New mirrors only. |
 | `rename-repo` | Rename an existing repo to convention, fixing every hardcoded reference. |
 | `structure-check` | Audit a repo's layout. Read-only. |
 | `structure-refactor` | Apply the fixes. Dry-run unless `--apply`. |

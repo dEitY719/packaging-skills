@@ -1,130 +1,164 @@
 #!/usr/bin/env bash
 # skills/mirror-repo/lib/mirror_repo.sh — packaging:mirror-repo, Steps 0-7.
 #
-# Mirrors an existing external `*-skills` repo onto a GHES host: clone from
-# the upstream host over HTTPS, create the GHES repo, point origin at GHES
-# (SSH) and upstream at the source (HTTPS), push. New mirrors only.
+# Mirrors an existing repo from one host onto another (typically github.com
+# onto GHES): clone from the --upstream URL, create the --origin repo, point
+# origin at the --origin URL and upstream at the --upstream URL, push. Works
+# for any repo — no naming convention is enforced. New mirrors only.
 #
 # Usage:
-#   mirror_repo.sh <repo-name> [--owner <o>] [--ghes-owner <o>] [--dest <path>]
-#                  [--host <h>] [--ghes-host <h>] [--visibility public|private]
-#                  [--dry-run] [--yes]
+#   mirror_repo.sh --upstream <url> --origin <url> [--dest <path>]
+#                  [--visibility public|private] [--dry-run] [--yes]
+#
+# URL forms (both flags, `.git` optional, used verbatim for clone/remotes):
+#   https://<host>/<owner>/<repo>.git   http://<host>/<owner>/<repo>.git
+#   git@<host>:<owner>/<repo>.git       ssh://git@<host>/<owner>/<repo>.git
 #
 # Safety contract:
 #   - --dry-run stops after the [PLAN] block: no clone, no create, no push.
-#   - GHES repo create and push each ask "[y/N]" on stdin; anything but y/yes
+#   - Mirror repo create and push each ask "[y/N]" on stdin; anything but y/yes
 #     aborts. --yes answers both — pass it only after the user confirmed both
 #     in chat. No stdin (EOF) is a "no".
-#   - Never `git push --force`. Aborts if <dest>/<repo-name> or the GHES repo
-#     already exists (refreshing a mirror is git-pull-skills.sh's job).
-#   - Host-agnostic: the GHES host comes from --ghes-host or the dotfiles SSOT
-#     `_gh_resolve_host` (shell-common/functions/gh_host.sh); none is
-#     hardcoded here.
+#   - Never `git push --force`. Aborts if <dest>/<repo> or the mirror repo
+#     already exists.
+#   - Origin host must differ from the upstream host, and an internal PC
+#     (~/.dotfiles-setup-mode = internal) never pushes to github.com.
+#   - Host-agnostic: every host comes from the URLs; none is hardcoded here.
 
 set -euo pipefail
 
 die() { printf '[ABORT] packaging:mirror-repo: %s\n' "$*" >&2; exit 1; }
-valid_id() { [[ "$2" =~ ^[A-Za-z0-9._-]+$ ]] || die "invalid $1 '$2'"; }
 repo_exists() { GH_HOST="$1" gh repo view "$2" --json name >/dev/null 2>&1; }
 
 mirror_repo_help() {
-  echo "Usage: $0 <repo-name> [--owner <o>] [--ghes-owner <o>] [--dest <path>]" >&2
-  echo "          [--host <h>] [--ghes-host <h>] [--visibility public|private]" >&2
-  echo "          [--dry-run] [--yes]    (--visibility defaults to private)" >&2
-  exit 1
+  cat <<'EOF'
+Usage: mirror_repo.sh --upstream <url> --origin <url> [--dest <path>]
+                      [--visibility public|private] [--dry-run] [--yes]
+
+  --upstream <url>   Source repo to clone (required).
+  --origin <url>     Mirror repo to create and push to (required). Its repo
+                     name is used verbatim as the clone directory name.
+  --dest <path>      Clone parent directory (default ~/para/project).
+  --visibility <v>   Mirror repo visibility: public|private (default private).
+  --dry-run          Print the plan only: no clone, no create, no push.
+  --yes              Answer both confirmations (script use only).
+
+URL forms (.git suffix optional):
+  https://<host>/<owner>/<repo>.git   http://<host>/<owner>/<repo>.git
+  git@<host>:<owner>/<repo>.git       ssh://git@<host>/<owner>/<repo>.git
+
+Examples:
+  # Check the plan first (nothing is cloned, created or pushed)
+  mirror_repo.sh --upstream https://github.com/dEitY719/equinest.git \
+                 --origin git@ghes.example.com:my-user/equinest.git --dry-run
+
+  # SSH (scp-form) origin
+  mirror_repo.sh --upstream https://github.com/dEitY719/video-skills.git \
+                 --origin git@ghes.example.com:my-user/video-skills.git
+
+  # HTTPS origin with a custom --dest
+  mirror_repo.sh --upstream https://github.com/dEitY719/notes-skills.git \
+                 --origin https://ghes.example.com/my-user/notes-skills.git \
+                 --dest ~/work/mirrors
+
+  # URLs without the .git suffix
+  mirror_repo.sh --upstream https://github.com/dEitY719/equinest \
+                 --origin git@ghes.example.com:my-user/equinest
+
+  # Public mirror under a team owner (upstream must be PUBLIC)
+  mirror_repo.sh --upstream https://github.com/dEitY719/herdr-skills.git \
+                 --origin ssh://git@ghes.example.com/my-team/herdr-skills.git \
+                 --visibility public
+EOF
+}
+usage_die() { mirror_repo_help >&2; exit 1; }
+
+# parse_url <flag> <url> — sets P_HOST P_OWNER P_REPO, or aborts. Offline.
+parse_url() {
+  local flag="$1" url="$2" path
+  if [[ "$url" =~ ^(https?://|ssh://git@)([^/]+)/(.*)$ ]]; then
+    P_HOST="${BASH_REMATCH[2]}" path="${BASH_REMATCH[3]}"
+  elif [[ "$url" =~ ^git@([^:/]+):(.*)$ ]]; then
+    P_HOST="${BASH_REMATCH[1]}" path="${BASH_REMATCH[2]}"
+  else
+    die "$flag '$url': unrecognized URL form (use https://, http://, git@<host>: or ssh://git@)"
+  fi
+  path="${path%.git}"
+  [[ "$path" =~ ^([^/]+)/([^/]+)$ ]] \
+    || die "$flag '$url': expected exactly <owner>/<repo> after the host"
+  P_OWNER="${BASH_REMATCH[1]}" P_REPO="${BASH_REMATCH[2]}"
+  [[ "$P_HOST" =~ ^[A-Za-z0-9.-]+$ ]] || die "$flag '$url': invalid host '$P_HOST'"
+  [[ "$P_OWNER" =~ ^[A-Za-z0-9._-]+$ ]] || die "$flag '$url': invalid owner '$P_OWNER'"
+  [[ "$P_REPO" =~ ^[A-Za-z0-9._-]+$ ]] || die "$flag '$url': invalid repo name '$P_REPO'"
 }
 
-NAME="" OWNER="dEitY719" GHES_OWNER="" DEST="$HOME/para/project/skills"
-HOST="github.com" GHES_HOST="" VISIBILITY="private" DRY_RUN=0 YES=0
+UP_URL="" OR_URL="" DEST="$HOME/para/project" VISIBILITY="private" DRY_RUN=0 YES=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --owner|--ghes-owner|--dest|--host|--ghes-host|--visibility)
+    --upstream|--origin|--dest|--visibility)
       [ $# -ge 2 ] || die "$1 needs a value"
       case "$1" in
-        --owner) OWNER="$2" ;; --ghes-owner) GHES_OWNER="$2" ;;
-        --dest) DEST="$2" ;; --host) HOST="$2" ;; --ghes-host) GHES_HOST="$2" ;;
-        --visibility) VISIBILITY="$2" ;;
+        --upstream) UP_URL="$2" ;; --origin) OR_URL="$2" ;;
+        --dest) DEST="$2" ;; --visibility) VISIBILITY="$2" ;;
       esac
       shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     --yes) YES=1; shift ;;
-    -h|--help) mirror_repo_help ;;
-    -*) echo "unknown flag: $1" >&2; mirror_repo_help ;;
-    *) [ -z "$NAME" ] || die "only one <repo-name> is accepted (got '$NAME' and '$1')"
-       NAME="$1"; shift ;;
+    -h|--help) mirror_repo_help; exit 0 ;;
+    *) echo "unknown argument: $1" >&2; usage_die ;;
   esac
 done
-[ -n "$NAME" ] || mirror_repo_help
+{ [ -n "$UP_URL" ] && [ -n "$OR_URL" ]; } || usage_die
 case "$VISIBILITY" in
   public|private) ;;
   *) die "invalid --visibility '$VISIBILITY': allowed values are public|private" ;;
 esac
 
-# --- Step 1 (offline half): name validation --------------------------------
-case "$NAME" in
-  claude-plugin-*)
-    die "'$NAME' uses the pre-#1410 claude-plugin- prefix; the convention is <domain>-skills (try '${NAME#claude-plugin-}-skills')" ;;
-esac
-[[ "$NAME" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] \
-  || die "invalid <repo-name> '$NAME': lowercase letters, digits and single hyphens only"
-case "$NAME" in
-  *-skills) ;;
-  *) NAME="$NAME-skills"; printf '[INFO] -skills suffix auto-appended: %s\n' "$NAME" ;;
-esac
-valid_id owner "$OWNER"
-valid_id host "$HOST"
+# --- Step 1 (offline half): URL parsing + host guards ----------------------
+parse_url --upstream "$UP_URL"
+UP_HOST="$P_HOST" UP_OWNER="$P_OWNER" UP_REPO="$P_REPO"
+parse_url --origin "$OR_URL"
+OR_HOST="$P_HOST" OR_OWNER="$P_OWNER" NAME="$P_REPO"
+
+[ "${OR_HOST,,}" != "${UP_HOST,,}" ] \
+  || die "origin host equals upstream host ($UP_HOST) — a mirror needs two different hosts"
+MODE=""
+[ ! -r "$HOME/.dotfiles-setup-mode" ] || MODE=$(tr -d '[:space:]' <"$HOME/.dotfiles-setup-mode")
+if [ "$MODE" = internal ] && [ "${OR_HOST,,}" = github.com ]; then
+  die "origin is on github.com but this is an internal PC (~/.dotfiles-setup-mode=internal) — never push to github.com from here"
+fi
+
 DEST="${DEST%/}"
 TARGET="$DEST/$NAME"
-[ ! -e "$TARGET" ] || die "$TARGET already exists — this skill creates new mirrors only; refresh with git-pull-skills.sh"
+[ ! -e "$TARGET" ] || die "$TARGET already exists — this skill creates new mirrors only"
 
-# --- Step 0: host resolution + auth ----------------------------------------
-if [ -z "$GHES_HOST" ]; then
-  helper="${SHELL_COMMON:-$HOME/dotfiles/shell-common}/functions/gh_host.sh"
-  [ -r "$helper" ] || die "cannot resolve the GHES host: $helper not found — pass --ghes-host <host>"
-  # Subshell + timeout: the helper is pure definitions, but never let a
-  # sourced dotfile hang this run.
-  # shellcheck disable=SC2016  # $1 expands in the inner bash, by design
-  GHES_HOST=$(timeout 20 bash -c '. "$1" >/dev/null 2>&1; _gh_resolve_host' _ "$helper" 2>/dev/null) \
-    || die "_gh_resolve_host failed — pass --ghes-host <host>"
-fi
-valid_id "GHES host" "$GHES_HOST"
-[ "$GHES_HOST" != "$HOST" ] \
-  || die "GHES host resolved to the upstream host ($HOST) — pass --ghes-host <host>"
-
-for h in "$HOST" "$GHES_HOST"; do
+# --- Step 0: auth ----------------------------------------------------------
+for h in "$UP_HOST" "$OR_HOST"; do
   gh auth status --hostname "$h" >/dev/null 2>&1 \
     || die "not logged in to $h — run: gh auth login --hostname $h"
 done
-if [ -z "$GHES_OWNER" ]; then
-  GHES_OWNER=$(gh api --hostname "$GHES_HOST" user --jq .login 2>/dev/null) \
-    || die "cannot detect the active $GHES_HOST login — pass --ghes-owner <owner>"
-fi
-valid_id "GHES owner" "$GHES_OWNER"
 
-# --- Step 1 (online half): upstream must exist, GHES repo must not --------
-SRC_VIS=$(GH_HOST="$HOST" gh repo view "$OWNER/$NAME" --json visibility --jq .visibility 2>/dev/null) \
-  || die "upstream repo $HOST/$OWNER/$NAME not found"
+# --- Step 1 (online half): upstream must exist, mirror must not -----------
+SRC_VIS=$(GH_HOST="$UP_HOST" gh repo view "$UP_OWNER/$UP_REPO" --json visibility --jq .visibility 2>/dev/null) \
+  || die "upstream repo $UP_HOST/$UP_OWNER/$UP_REPO not found"
 # A public mirror of a non-public source would publish code its owner kept private.
 if [ "$VISIBILITY" = public ] && [ "$SRC_VIS" != PUBLIC ]; then
-  die "upstream $HOST/$OWNER/$NAME is ${SRC_VIS:-of unknown visibility}, not PUBLIC — refusing --visibility public"
+  die "upstream $UP_HOST/$UP_OWNER/$UP_REPO is ${SRC_VIS:-of unknown visibility}, not PUBLIC — refusing --visibility public"
 fi
-if repo_exists "$GHES_HOST" "$GHES_OWNER/$NAME"; then
-  die "$GHES_HOST/$GHES_OWNER/$NAME already exists — refresh it with git-pull-skills.sh instead"
+if repo_exists "$OR_HOST" "$OR_OWNER/$NAME"; then
+  die "$OR_HOST/$OR_OWNER/$NAME already exists — this skill creates new mirrors only"
 fi
-
-SRC_URL="https://$HOST/$OWNER/$NAME.git"
-ORIGIN_URL="git@$GHES_HOST:$GHES_OWNER/$NAME.git"
 
 # --- Step 2: plan (always) -------------------------------------------------
 cat <<EOF
 [PLAN] packaging:mirror-repo
-  Source repo  : $HOST/$OWNER/$NAME
-  GHES repo    : $GHES_HOST/$GHES_OWNER/$NAME
+  Source repo  : $UP_HOST/$UP_OWNER/$UP_REPO
+  Mirror repo  : $OR_HOST/$OR_OWNER/$NAME
   Destination  : $TARGET/
   Remotes:
-    origin    -> $ORIGIN_URL
-    upstream  -> $SRC_URL
+    origin    -> $OR_URL
+    upstream  -> $UP_URL
   Visibility  : $VISIBILITY
   Dry-run     : $([ "$DRY_RUN" -eq 1 ] && echo on || echo off)
 EOF
@@ -138,40 +172,39 @@ confirm() {
   case "$ans" in y|Y|yes|YES) return 0 ;; *) return 1 ;; esac
 }
 
-# --- Step 3: clone from upstream (HTTPS) -----------------------------------
+# --- Step 3: clone from upstream -------------------------------------------
 mkdir -p "$DEST"
-git clone "$SRC_URL" "$TARGET" || die "git clone $SRC_URL failed"
+git clone "$UP_URL" "$TARGET" || die "git clone $UP_URL failed"
 BRANCH=$(git -C "$TARGET" symbolic-ref --short HEAD) || die "cannot read the cloned default branch"
 
-# --- Step 4: create the GHES repo (confirm first) --------------------------
-confirm "Create $VISIBILITY repo $GHES_HOST/$GHES_OWNER/$NAME?" \
-  || die "GHES repo create declined — nothing created; the clone at $TARGET is local only (delete it to retry)"
-GH_HOST="$GHES_HOST" gh repo create "$GHES_OWNER/$NAME" "--$VISIBILITY" \
-  || die "gh repo create $GHES_OWNER/$NAME on $GHES_HOST failed"
+# --- Step 4: create the mirror repo (confirm first) ------------------------
+confirm "Create $VISIBILITY repo $OR_HOST/$OR_OWNER/$NAME?" \
+  || die "mirror repo create declined — nothing created; the clone at $TARGET is local only (delete it to retry)"
+GH_HOST="$OR_HOST" gh repo create "$OR_OWNER/$NAME" "--$VISIBILITY" \
+  || die "gh repo create $OR_OWNER/$NAME on $OR_HOST failed"
 
 # --- Step 5: remotes -------------------------------------------------------
-git -C "$TARGET" remote set-url origin "$ORIGIN_URL"
-git -C "$TARGET" remote add upstream "$SRC_URL"
+git -C "$TARGET" remote set-url origin "$OR_URL"
+git -C "$TARGET" remote add upstream "$UP_URL"
 
 # --- Step 6: push (confirm first; never --force) ---------------------------
-confirm "Push $BRANCH to $ORIGIN_URL?" \
-  || die "push declined — GHES repo exists but is empty; push later with: git -C $TARGET push -u origin $BRANCH"
+confirm "Push $BRANCH to $OR_URL?" \
+  || die "push declined — mirror repo exists but is empty; push later with: git -C $TARGET push -u origin $BRANCH"
 # push -u also sets $BRANCH's tracking to origin/$BRANCH (a separate
 # --set-upstream-to cannot run before origin/$BRANCH exists).
-git -C "$TARGET" push -u origin "$BRANCH" || die "push to $ORIGIN_URL rejected"
+git -C "$TARGET" push -u origin "$BRANCH" || die "push to $OR_URL rejected"
 
 # --- Step 7: verify + report -----------------------------------------------
 REMOTES=$(git -C "$TARGET" remote -v)
-grep -qF "$ORIGIN_URL" <<<"$REMOTES" || die "origin is not $ORIGIN_URL after setup"
-grep -qF "$SRC_URL" <<<"$REMOTES" || die "upstream is not $SRC_URL after setup"
-repo_exists "$GHES_HOST" "$GHES_OWNER/$NAME" \
-  || die "GHES repo $GHES_OWNER/$NAME not visible after create"
+grep -qF "$OR_URL" <<<"$REMOTES" || die "origin is not $OR_URL after setup"
+grep -qF "$UP_URL" <<<"$REMOTES" || die "upstream is not $UP_URL after setup"
+repo_exists "$OR_HOST" "$OR_OWNER/$NAME" \
+  || die "mirror repo $OR_OWNER/$NAME not visible after create"
 
 cat <<EOF
 [OK] packaging:mirror-repo
-  Source    : https://$HOST/$OWNER/$NAME
-  GHES repo : https://$GHES_HOST/$GHES_OWNER/$NAME
-  Dest      : $TARGET/
-  Remotes   : origin=GHES, upstream=$HOST
-  Next      : Run skills-sync to verify (should show "already present (skipped)")
+  Source  : $UP_URL
+  Mirror  : $OR_URL
+  Dest    : $TARGET/
+  Remotes : origin=$OR_HOST, upstream=$UP_HOST
 EOF

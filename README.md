@@ -10,7 +10,7 @@ coding-agent harnesses.
 | Skill | Invoke | What it does |
 |-------|--------|--------------|
 | `scaffold-repo` | `/packaging:scaffold-repo <name>` | Scaffolds a new marketplace repo from scratch: structure, manifests, copy-only skill import, `git init`, repo create, push. New repos only. |
-| `mirror-repo` | `/packaging:mirror-repo <name>` | Mirrors an external `*-skills` repo to GHES: clone from github.com, create GHES repo, set up origin+upstream remotes, push. New mirrors only. |
+| `mirror-repo` | `/packaging:mirror-repo --upstream <url> --origin <url>` | Mirrors any existing repo onto another host (e.g. github.com to GHES): clone the upstream, create the mirror repo, set up origin+upstream remotes, push. New mirrors only. |
 | `rename-repo` | `/packaging:rename-repo <name>` | Renames an existing plugin repo to the team convention and fixes every hardcoded reference. Rename and push each need confirmation. |
 | `structure-check` | `/packaging:structure-check` | Audits a repo's directory layout against the standard. Read-only — it reports, it never edits. |
 | `structure-refactor` | `/packaging:structure-refactor` | Applies the fixes `structure-check` found. Prints a plan and stops unless you pass `--apply`. |
