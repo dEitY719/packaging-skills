@@ -122,11 +122,12 @@ UP_HOST="$P_HOST" UP_OWNER="$P_OWNER" UP_REPO="$P_REPO"
 parse_url --origin "$OR_URL"
 OR_HOST="$P_HOST" OR_OWNER="$P_OWNER" NAME="$P_REPO"
 
-[ "$(lc "$OR_HOST")" != "$(lc "$UP_HOST")" ] \
+OR_HOST_LC=$(lc "$OR_HOST")
+[ "$OR_HOST_LC" != "$(lc "$UP_HOST")" ] \
   || die "origin host equals upstream host ($UP_HOST) — a mirror needs two different hosts"
 MODE=""
 [ ! -r "$HOME/.dotfiles-setup-mode" ] || MODE=$(tr -d '[:space:]' <"$HOME/.dotfiles-setup-mode")
-if [ "$MODE" = internal ] && [ "$(lc "$OR_HOST")" = github.com ]; then
+if [ "$MODE" = internal ] && [ "$OR_HOST_LC" = github.com ]; then
   die "origin is on github.com but this is an internal PC (~/.dotfiles-setup-mode=internal) — never push to github.com from here"
 fi
 
