@@ -23,7 +23,8 @@ metadata:
 Mirrors an existing repo from one host onto another — typically a github.com
 repo onto GHES — once: clone the `--upstream` URL, create the `--origin` repo,
 wire `origin`=mirror and `upstream`=source, push. Any repo works; no naming
-convention is enforced. Refreshing an existing mirror is a plain pull.
+convention is enforced. Refreshing an existing mirror is a plain `git pull`
+(`git-pull-skills.sh` for `*-skills` repos).
 
 ## Help
 

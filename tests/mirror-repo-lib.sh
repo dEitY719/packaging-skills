@@ -118,6 +118,15 @@ for bad in https://github.com/equinest.git https://github.com/dEitY719/ \
 done
 run "" --upstream "$UP" --origin git@ghes.example:equinest.git --dry-run
 [ "$RC" -ne 0 ] && offline || fail "ownerless origin accepted"
+run "" --upstream https://user:s3cr3t-tok@github.com/a/b.git --origin "$OR" --dry-run
+[ "$RC" -ne 0 ] && grep -q 'embedded credentials' "$TMP/out" && offline || fail "credential URL accepted"
+grep -q 's3cr3t-tok' "$TMP/out" && fail "credential echoed to output"
+run "" --upstream "$UP" --origin ssh://git@ghes.example:2222/u/equinest.git --dry-run
+[ "$RC" -ne 0 ] && grep -q 'port in the URL' "$TMP/out" && offline || fail "port URL accepted"
+run "" --upstream http://github.com/dEitY719/equinest --origin "$OR" --dry-run
+[ "$RC" -eq 0 ] && grep -qF 'upstream  -> http://github.com/dEitY719/equinest' "$TMP/out" || fail "http:// form"
+run "" equinest --dry-run
+[ "$RC" -ne 0 ] && grep -q 'was removed' "$TMP/out" && offline || fail "old positional form not explained"
 ok "malformed URLs rejected offline"
 
 # 7. missing --upstream/--origin prints usage, offline; --help shows Examples
@@ -138,6 +147,10 @@ ok "same host aborts"
 echo internal >"$HOME/.dotfiles-setup-mode"
 STUB_UP_HOST=src.example run "" --upstream https://src.example/a/equinest.git --origin git@github.com:me/equinest.git --dry-run
 [ "$RC" -ne 0 ] && grep -q 'internal PC' "$TMP/out" && offline || fail "internal github.com origin accepted"
+for gh_host in www.github.com GitHub.com. ; do
+  STUB_UP_HOST=src.example run "" --upstream https://src.example/a/equinest.git --origin "git@$gh_host:me/equinest.git" --dry-run
+  [ "$RC" -ne 0 ] && offline || fail "internal guard bypassed via $gh_host"
+done
 echo external >"$HOME/.dotfiles-setup-mode"
 STUB_UP_HOST=src.example run "" --upstream https://src.example/a/equinest.git --origin git@github.com:me/equinest.git --dry-run
 [ "$RC" -eq 0 ] && grep -q '^\[PLAN\]' "$TMP/out" || fail "external github.com origin refused"

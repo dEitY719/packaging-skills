@@ -10,14 +10,14 @@
 | 상황 | 쓸 스킬 |
 |---|---|
 | repo 가 github.com 에는 **있는데 GHES 에는 없다** (`git-clone-skills.sh` 가 실패한다) | `mirror-repo` |
-| 이미 미러된 repo 를 **최신으로 당긴다** | `git-pull-skills.sh` (스킬 아님) |
+| 이미 미러된 repo 를 **최신으로 당긴다** | `git pull` (`*-skills` repo 는 `git-pull-skills.sh`, 스킬 아님) |
 | repo 가 아직 **없다**. 흩어진 스킬을 묶어 새로 만든다 | `scaffold-repo` |
 | repo 는 있는데 **이름**이 컨벤션에 안 맞는다 | `rename-repo` |
 | 미러한 repo 의 **구조**가 표준에서 벗어났는지 알고 싶다 | `structure-check` |
 | 그 구조를 실제로 **고친다** | `structure-refactor` |
 
 `mirror-repo` 는 신규 미러 전용이다. 대상 디렉터리나 미러 repo 가 이미 존재하면
-덮어쓰지 않고 중단한다 — 멱등하지 않다. 기존 미러 갱신은 `git-pull-skills.sh` 의 몫이다.
+덮어쓰지 않고 중단한다 — 멱등하지 않다. 기존 미러 갱신은 `git pull` (`*-skills` repo 는 `git-pull-skills.sh`) 의 몫이다.
 
 ## 호출 형식
 
@@ -35,7 +35,7 @@
 | `--visibility <v>` | 미러 repo 공개 범위 (`public`\|`private`) | `private` |
 | `--dry-run` | 계획만 출력, 클론 / repo 생성 / push 없음 | off |
 
-URL 형식 (두 플래그 공통, `.git` 생략 가능):
+URL 형식 (두 플래그 공통, `.git` 생략 가능. 포트나 `user:token@` 자격 증명이 든 URL 은 거부):
 
 ```
 https://<host>/<owner>/<repo>.git   http://<host>/<owner>/<repo>.git
@@ -61,7 +61,7 @@ git@<host>:<owner>/<repo>.git       ssh://git@<host>/<owner>/<repo>.git
 ## 주의사항 / 제약
 
 - **신규 미러 전용.** `<dest>/<repo>` 이나 미러 repo 가 이미 있으면 무조건 중단한다.
-  기존 미러 갱신은 `git-pull-skills.sh` 를 쓴다.
+  기존 미러 갱신은 `git pull` (`*-skills` repo 는 `git-pull-skills.sh`) 을 쓴다.
 - **호스트는 URL 에서만 온다.** origin 호스트가 upstream 호스트와 같으면 중단한다.
   내부 PC 에서는 github.com 으로 push 하지 않는다 (github.com origin 이면 중단).
   호스트나 사용자를 하드코딩하지 않는다.
