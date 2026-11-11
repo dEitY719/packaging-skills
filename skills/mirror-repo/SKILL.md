@@ -71,8 +71,9 @@ clones, runs `gh repo create --public|--private`, sets the remotes and runs
 
 ## Step 7: Verify + Report
 
-The script re-reads `git remote -v` and `gh repo view` on the mirror host, then prints
-the `[OK]` block (format in `references/help.md`). Relay it verbatim.
+The script re-reads `git remote -v` and `gh repo view` on the mirror host,
+then prints the `[OK]` block (format in `references/help.md`). Relay it
+verbatim.
 
 ## Constraints
 
@@ -80,8 +81,8 @@ the `[OK]` block (format in `references/help.md`). Relay it verbatim.
   `gh repo create` failure, or a push rejection.
 - **Confirm first** on mirror repo create and on push; never pass `--yes`
   without both answers. `--dry-run` writes nothing, creates nothing.
-- Host-agnostic: every host comes from the URLs; never hardcode one. Does not edit
-  `marketplaces.json`.
+- Host-agnostic: every host comes from the URLs; never hardcode one. Does
+  not edit `marketplaces.json`.
 
 ## Related Skills
 
